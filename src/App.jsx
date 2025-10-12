@@ -1,8 +1,14 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { Menu, Search, ChevronDown, ChevronUp, Plus, Bell, Settings, MoreVertical, ArrowUpRight } from "lucide-react";
+import { Menu, Search, ChevronDown, Bell, Settings, MoreVertical, ArrowUpRight } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import DirectoryPage from "./pages/DirectoryPage";
 import TasksPage from "./pages/TasksPage";
+import ProjectTrackingPage from "./pages/ProjectTrackingPage";
+import AgendaPage from "./pages/AgendaPage";
+import ArticlesPage from "./pages/ArticlesPage";
+import TasksMemoPage from "./pages/TasksMemoPage";
+import SettingsPage from "./pages/SettingsPage";
+import TeamMemberPage from "./pages/TeamMemberPage";
 
 // Mock data - KPI blanches (cartes horizontales)
 const whiteKpis = [
@@ -125,7 +131,7 @@ const agendaItems = [
   { id: "a5", day: "fri", start: "09:00", end: "09:30", title: "Rendez-vous client" },
 ];
 
-// Small UI helpers
+// Small UI helpers (unused but kept for potential future use)
 const Badge = ({ children }) => (
   <span className="px-2 py-1 text-xs rounded-full bg-neutral-100 text-neutral-700 border border-neutral-200">{children}</span>
 );
@@ -155,17 +161,28 @@ const PillIcon = ({ Icon }) => (
 
 // Layout pieces
 
-function Topbar() {
+function Topbar({ onSettingsClick = () => {} }) {
   return (
-    <header className="h-16 border-b bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
+    <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <button className="lg:hidden p-2 rounded-xl border"><Menu className="size-4" /></button>
-        <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Tableau de bord</h1>
+        <button className="lg:hidden p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Menu" title="Menu">
+          <Menu className="size-4" />
+        </button>
+        <h1 className="text-xl font-semibold text-neutral-900 my-2">Tableau de bord</h1>
       </div>
-      <div className="flex items-center gap-2">
-        <button className="p-2 rounded-xl border hover:bg-neutral-50"><Bell className="size-4" /></button>
-        <button className="p-2 rounded-xl border hover:bg-neutral-50"><Settings className="size-4" /></button>
-        <div className="flex items-center gap-2 pl-3 ml-2 border-l">
+      <div className="flex items-center gap-2 ml-auto">
+        <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Notifications" title="Notifications">
+          <Bell className="size-4" />
+        </button>
+        <button
+          className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50"
+          aria-label="Paramètres"
+          title="Paramètres"
+          onClick={onSettingsClick}
+        >
+          <Settings className="size-4" />
+        </button>
+        <div className="flex items-center gap-2 pl-3 ml-2 border-l border-neutral-200">
           <img src="https://i.pravatar.cc/40?img=12" alt="avatar" className="size-8 rounded-full" />
           <div className="text-sm leading-tight">
             <div className="font-semibold">Thomas</div>
@@ -184,7 +201,7 @@ function Searchbar() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
         <input
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white/70 placeholder:text-neutral-400"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white/70 placeholder:text-neutral-400"
           placeholder="Rechercher un client"
           type="search"
         />
@@ -198,39 +215,28 @@ function KpiStrip() {
   return (
     <div className="px-4 lg:px-6 mb-6">
       <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-neutral-900">Liste des KPI</h2>
-          <button 
-            aria-label="Plier/déplier les KPI"
-            className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50"
-          >
-            <ChevronUp className="size-4 text-neutral-600" />
-          </button>
-        </div>
-        
         {/* 4 cartes KPI horizontales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid gap-4 md:grid-cols-4">
           {whiteKpis.map((kpi) => (
-            <div key={kpi.id} className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 bg-neutral-50/50">
-              {/* Icône */}
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-sm">
+            <div key={kpi.id} className="rounded-2xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
+              {/* Médaillon icône */}
+              <div className="size-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-medium">
                 {kpi.icon}
               </div>
               
               {/* Contenu */}
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-neutral-600 mb-1">{kpi.label}</div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-bold text-neutral-900">{kpi.value}</span>
-                  <span className="text-xs text-neutral-500">/ {kpi.goal}</span>
+                <div className="text-sm font-medium text-neutral-900 mb-1">{kpi.label}</div>
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="text-lg font-semibold text-neutral-900">{kpi.value}</span>
+                  <span className="text-sm text-neutral-400">/ {kpi.goal}</span>
                 </div>
                 
                 {/* Barre de progression + pourcentage */}
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                  <div className="flex-1 h-0.5 bg-violet-200 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-violet-500 transition-all duration-300"
+                      className="h-full bg-violet-600 transition-all duration-300"
                       style={{ width: `${kpi.percent}%` }}
                       role="progressbar"
                       aria-valuenow={kpi.percent}
@@ -238,7 +244,7 @@ function KpiStrip() {
                       aria-valuemax={100}
                     />
                   </div>
-                  <span className="text-xs font-medium text-neutral-600">{kpi.percent}%</span>
+                  <span className="text-xs text-neutral-500">{kpi.percent}%</span>
                 </div>
               </div>
             </div>
@@ -254,15 +260,15 @@ function KpiStack() {
   return (
     <div className="space-y-4">
       {coloredKpis.map((kpi) => (
-        <div key={kpi.id} className={`relative rounded-2xl border bg-gradient-to-br ${kpi.color} p-5 shadow-sm`}> 
+        <div key={kpi.id} className={`relative rounded-2xl border border-neutral-200 bg-gradient-to-br ${kpi.color} p-4`}> 
           <div className="flex items-start justify-between">
             <div className="text-neutral-700">
-              <div className="text-sm font-semibold mb-1">{kpi.label}</div>
-              <div className="text-3xl lg:text-4xl font-black">{kpi.value}</div>
+              <div className="text-sm font-medium mb-1">{kpi.label}</div>
+              <div className="text-3xl font-black">{kpi.value}</div>
             </div>
             <button 
               onClick={() => console.log(`Ouvrir ${kpi.label}`)}
-              className="p-2 rounded-xl border bg-white/70 hover:bg-white transition-colors"
+              className="p-2 rounded-xl border border-neutral-200 bg-white/70 hover:bg-white transition-colors"
               aria-label={`Ouvrir ${kpi.label}`}
               title={`Ouvrir ${kpi.label}`}
             >
@@ -275,30 +281,77 @@ function KpiStack() {
   );
 }
 
+// Fonction pour obtenir les couleurs des tags
+function getTagColors(tag) {
+  switch (tag) {
+    case "Dossier tech & install":
+      return "bg-sky-100 text-sky-700";
+    case "Commande client":
+      return "bg-blue-100 text-blue-700";
+    case "Études en cours":
+      return "bg-pink-100 text-pink-700";
+    case "Mémo":
+      return "bg-neutral-900 text-white";
+    default:
+      return "bg-neutral-100 text-neutral-700";
+  }
+}
+
 function TaskRow({ task, index }) {
+  // Déterminer si cette tâche doit montrer les statuts (tâches 2, 4, 5 selon la spécification)
+  const showStatuses = [2, 4, 5].includes(task.id);
+  
   return (
-    <div className="p-4 sm:p-5 border rounded-2xl bg-white/70">
+    <div className="p-4 sm:p-5 border border-neutral-200 rounded-2xl bg-white">
       <div className="flex items-start gap-3">
-        <span className="size-8 grid place-items-center rounded-lg border bg-white text-sm font-bold text-neutral-600">{index + 1}</span>
+        <span className="size-7 grid place-items-center rounded-lg border border-neutral-200 text-xs font-semibold text-neutral-600">{index + 1}</span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            <div className="font-semibold text-base text-neutral-900 truncate">{task.title}</div>
-            {task.tag && <Tag>{task.tag}</Tag>}
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <div className="font-medium text-neutral-900 truncate">{task.title}</div>
+            {task.tag && (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTagColors(task.tag)}`}>
+                {task.tag}
+              </span>
+            )}
           </div>
-          <div className="text-sm text-neutral-500 mb-3">{task.due}</div>
+          <div className="text-xs text-neutral-500 mt-1 mb-3">{task.due}</div>
+          
+          {/* Barre de progression + % + bouton kebab */}
           <div className="flex items-center gap-4 mb-3">
-            <div className="flex-1"><Progress value={task.progress} /></div>
-            <div className="text-sm font-semibold text-neutral-600">{task.progress}%</div>
-            <button className="p-2 rounded-lg border hover:bg-neutral-50"><MoreVertical className="size-4" /></button>
+            <div className="flex-1">
+              <div className="h-2 rounded-full bg-neutral-200">
+                <div
+                  className="h-2 rounded-full bg-neutral-800"
+                  style={{ width: `${Math.min(100, Math.max(0, task.progress))}%` }}
+                  role="progressbar"
+                  aria-valuenow={task.progress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                />
+              </div>
+            </div>
+            <div className="text-sm text-neutral-500">{task.progress}%</div>
+            <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Options">
+              <MoreVertical className="size-4" />
+            </button>
           </div>
-          <div className="flex items-center gap-2 text-xs text-neutral-600 flex-wrap">
-            {task.stages?.map((s, i) => (
-              <React.Fragment key={s}>
-                <span className="px-2 py-1 rounded-md bg-neutral-100 border font-medium">{s}</span>
-                {i < (task.stages?.length ?? 0) - 1 && <span className="text-neutral-300">→</span>}
-              </React.Fragment>
-            ))}
-          </div>
+          
+          {/* Pills de statut (seulement pour certaines tâches) */}
+          {showStatuses && (
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              {task.stages?.map((status, i) => (
+                <button
+                  key={status}
+                  className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors ${
+                    i === 1 ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50'
+                  }`}
+                  aria-pressed={i === 1}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -309,27 +362,25 @@ function TasksPanel({ height }) {
   return (
     <div 
       className="rounded-2xl border border-neutral-200 bg-white/70 p-4 pt-5 flex flex-col" 
-      style={height ? { height: `600px` } : { minHeight: '600px' }}
+      style={height ? { height: `535px` } : {}}
     >
       {/* Header avec bouton externe en haut à droite */}
-      <div className="flex items-start justify-between mb-6 flex-shrink-0">
+      <div className="flex items-start justify-between mb-4 flex-shrink-0">
         <div>
-          <h2 className="text-lg font-bold text-neutral-900 mb-1">Priorité des tâches</h2>
+          <h2 className="text-lg font-semibold text-neutral-900">Priorité des tâches</h2>
           <div className="text-sm text-neutral-500">12 mars 2025</div>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={() => console.log('Ajouter tâche')}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-sm font-medium transition-colors"
+            className="px-3 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-sm font-medium transition-colors"
             aria-label="Ajouter une tâche ou une mémo"
           >
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">Ajouter une tâche ou une mémo</span>
-            <span className="sm:hidden">Ajouter</span>
+            + Ajouter une tâche ou une mémo
           </button>
           <button 
             onClick={() => console.log('Ouvrir dans nouvelle vue')}
-            className="p-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors"
+            className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors"
             aria-label="Ouvrir dans une nouvelle vue"
             title="Ouvrir dans une nouvelle vue"
           >
@@ -339,7 +390,7 @@ function TasksPanel({ height }) {
       </div>
       
       {/* Corps avec scroll interne */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2 min-h-0">
+      <div className="mt-4 flex-1 overflow-y-auto grid gap-3 pr-1 min-h-0">
         {tasks.map((t, i) => (
           <TaskRow key={t.id} task={t} index={i} />
         ))}
@@ -359,25 +410,27 @@ function Agenda() {
   return (
     <section className="px-4 lg:px-6 mt-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-neutral-800">Agenda</h2>
+        <h2 className="text-lg font-bold text-neutral-900">Agenda</h2>
         <div className="flex items-center gap-2">
-          <select className="px-3 py-2 rounded-xl border bg-white/70 text-sm font-medium" value={week} onChange={(e) => setWeek(e.target.value)}>
+          <select className="px-3 py-2 rounded-xl border border-neutral-200 bg-white/70 text-sm font-medium" value={week} onChange={(e) => setWeek(e.target.value)}>
             <option>12/05 - 17/05</option>
             <option>19/05 - 24/05</option>
           </select>
-          <button className="p-2 rounded-xl border hover:bg-neutral-50"><ChevronDown className="size-4" /></button>
+          <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Options agenda">
+            <ChevronDown className="size-4" />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {days.map((d) => (
-          <div key={d.key} className="rounded-2xl border bg-white/70 overflow-hidden">
-            <div className="px-4 py-3 border-b text-sm font-semibold text-neutral-700">{d.label}</div>
+          <div key={d.key} className="rounded-2xl border border-neutral-200 bg-white/70 overflow-hidden">
+            <div className="px-4 py-3 border-b border-neutral-200 text-sm font-semibold text-neutral-700">{d.label}</div>
             <div className="p-3 space-y-2">
               {itemsByDay[d.key].map((it) => (
-                <div key={it.id} className="rounded-xl border bg-white px-3 py-2 hover:bg-neutral-50 transition-colors">
+                <div key={it.id} className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 hover:bg-neutral-50 transition-colors">
                   <div className="text-xs text-neutral-500 font-medium">{it.start} - {it.end}</div>
-                  <div className="text-sm font-semibold text-neutral-800 mt-1">{it.title}</div>
+                  <div className="text-sm font-semibold text-neutral-900 mt-1">{it.title}</div>
                 </div>
               ))}
             </div>
@@ -442,12 +495,19 @@ function MainPanels() {
   );
 }
 
-function DashboardPage({ onNavigate }) {
+function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+  const sidebarWidth = sidebarCollapsed ? 72 : 256;
+  
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <Sidebar currentPage="dashboard" onNavigate={onNavigate} />
-      <main className="lg:ml-64 min-h-screen">
-        <Topbar />
+      <Sidebar 
+        currentPage="dashboard" 
+        onNavigate={onNavigate}
+        initialCollapsed={sidebarCollapsed}
+        onToggleCollapse={onToggleSidebar}
+      />
+      <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
+        <Topbar onSettingsClick={() => onNavigate("settings-connection")} />
         <div className="max-w-[1400px] mx-auto">
           <Searchbar />
           <KpiStrip />
@@ -462,22 +522,125 @@ function DashboardPage({ onNavigate }) {
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const handleNavigation = (route) => {
+  const navigateToRoute = (route) => {
     setCurrentRoute(route);
-    // Update URL hash for bookmarking
     window.location.hash = route === "dashboard" ? "" : route;
   };
 
+  const handleNavigation = (route) => {
+    navigateToRoute(route);
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
+
   // Simple routing logic (you can replace with React Router later)
+  const renderSettingsPage = (initialTab = "company") => (
+    <SettingsPage
+      onNavigate={handleNavigation}
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={handleToggleSidebar}
+      initialTab={initialTab}
+      onTabNavigate={(tabId) => {
+        const route = `settings-${tabId}`;
+        if (route !== currentRoute) {
+          navigateToRoute(route);
+        }
+      }}
+    />
+  );
+
   const renderPage = () => {
     switch (currentRoute) {
+      case "directory-all":
       case "directory-contacts":
-        return <DirectoryPage onNavigate={handleNavigation} />;
+      case "directory-clients":
+      case "directory-suppliers":
+      case "directory-artisans":
+      case "directory-institutional":
+      case "directory-prescriber":
+      case "directory-subcontractor":
+        return (
+          <DirectoryPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+            filter={currentRoute.replace("directory-", "")}
+          />
+        );
       case "tasks":
-        return <TasksPage onNavigate={handleNavigation} />;
+        return (
+          <TasksPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "project-tracking":
+        return (
+          <ProjectTrackingPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "agenda":
+        return (
+          <AgendaPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "articles":
+        return (
+          <ArticlesPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "tasks-memo":
+        return (
+          <TasksMemoPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "settings":
+        return renderSettingsPage("company");
+      case "settings-team":
+        return renderSettingsPage("team");
+      case "settings-company":
+        return renderSettingsPage("company");
+      case "settings-role":
+        return renderSettingsPage("role");
+      case "settings-connection":
+        return renderSettingsPage("connection");
       default:
-        return <DashboardPage onNavigate={handleNavigation} />;
+        // Check if it's a team member route (e.g., team-member-123)
+        if (currentRoute.startsWith("team-member-")) {
+          const memberId = currentRoute.replace("team-member-", "");
+          return (
+            <TeamMemberPage
+              onNavigate={handleNavigation}
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={handleToggleSidebar}
+              memberId={memberId}
+            />
+          );
+        }
+        return (
+          <DashboardPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
     }
   };
 
@@ -487,7 +650,7 @@ export default function App() {
     if (hash && hash !== currentRoute) {
       setCurrentRoute(hash || "dashboard");
     }
-  }, []);
+  }, [currentRoute]);
 
   return renderPage();
 }

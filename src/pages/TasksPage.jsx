@@ -511,11 +511,18 @@ const TasksCard = () => {
   );
 };
 
-export default function TasksPage({ onNavigate }) {
+export default function TasksPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+  const sidebarWidth = sidebarCollapsed ? 72 : 256;
+  
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <Sidebar currentPage="tasks" onNavigate={onNavigate} />
-      <main className="lg:ml-64 min-h-screen">
+      <Sidebar 
+        currentPage="tasks" 
+        onNavigate={onNavigate}
+        initialCollapsed={sidebarCollapsed}
+        onToggleCollapse={onToggleSidebar}
+      />
+      <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar />
         <div className="max-w-[1400px] mx-auto p-6">
           <TasksCard />

@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { 
-  Search, 
-  Download, 
-  Upload, 
-  Plus, 
-  Eye, 
-  MoreHorizontal, 
-  ChevronLeft, 
+import {
+  Search,
+  Download,
+  Upload,
+  Plus,
+  Eye,
+  MoreHorizontal,
+  ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
@@ -14,6 +14,8 @@ import {
   Layout
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
+import CreateContactModal from "../components/CreateContactModal";
+import UserTopBar from "../components/UserTopBar";
 
 // Mock data - 30+ contacts for filtering/pagination demo
 const mockContacts = [
@@ -115,24 +117,13 @@ const Select = ({ value, onChange, options, placeholder }) => {
   );
 };
 
-const Topbar = () => {
+const Topbar = ({ onNavigate }) => {
   return (
     <header className="h-16 border-b bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Annuaire</h1>
       </div>
-      <div className="flex items-center gap-2">
-        <IconButton icon={Search} label="Messages" />
-        <IconButton icon={Search} label="Notifications" />
-        <IconButton icon={Search} label="Paramètres" />
-        <div className="flex items-center gap-2 pl-3 ml-2 border-l">
-          <img src="https://i.pravatar.cc/40?img=12" alt="avatar" className="size-8 rounded-full" />
-          <div className="text-sm leading-tight">
-            <div className="font-semibold">Thomas</div>
-            <div className="text-neutral-500">Admin</div>
-          </div>
-        </div>
-      </div>
+      <UserTopBar onSettingsClick={() => onNavigate("settings-connection")} />
     </header>
   );
 };
@@ -313,7 +304,7 @@ const ContactsTable = ({ contacts, onViewContact }) => {
   );
 };
 
-const DirectoryContactsCard = () => {
+const DirectoryContactsCard = ({ filter = "all" }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     addedBy: "",
@@ -324,6 +315,7 @@ const DirectoryContactsCard = () => {
     dateAdded: ""
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const pageSize = 11;
 
   // Filter options
@@ -344,10 +336,15 @@ const DirectoryContactsCard = () => {
       const matchesOrigin = !filters.origin || contact.origin === filters.origin;
       const matchesLocation = !filters.location || contact.location === filters.location;
       const matchesStatus = !filters.status || contact.status === filters.status;
-      
+
+      // Apply type filter from sidebar submenu
+      // Pour le moment, on affiche tous les contacts car il n'y a pas de champ "type" dans mockContacts
+      // Dans une vraie application, on ajouterait un champ "type" et on filtrerait ici
+      // const matchesType = filter === "all" || filter === "contacts" || contact.type === filter;
+
       return matchesSearch && matchesAddedBy && matchesOrigin && matchesLocation && matchesStatus;
     });
-  }, [searchTerm, filters]);
+  }, [searchTerm, filters, filter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredContacts.length / pageSize);
@@ -367,8 +364,22 @@ const DirectoryContactsCard = () => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleCreateContact = async (formData) => {
+    console.log("Creating contact:", formData);
+    // Here you would typically make an API call
+    // For now, we'll just log the data
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm">
+    <>
+      <CreateContactModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateContact}
+      />
+
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm">
       {/* Card Header */}
       <div className="p-6 border-b border-neutral-200">
         <div className="flex items-start justify-between">
@@ -387,7 +398,10 @@ const DirectoryContactsCard = () => {
               <Upload className="size-4" />
               Importer
             </button>
-            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 text-sm font-medium transition-colors">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 text-sm font-medium transition-colors"
+            >
               <Plus className="size-4" />
               Ajouter une fiche contact
             </button>
@@ -455,16 +469,38 @@ const DirectoryContactsCard = () => {
           />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
-export default function DirectoryPage({ onNavigate }) {
+export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSidebar, filter = "all" }) {
+  const sidebarWidth = sidebarCollapsed ? 72 : 256;
+
+  // Map filter to display title
+  const filterTitles = {
+    all: "Tous les contacts",
+    contacts: "Tous les contacts",
+    clients: "Clients et Prospects",
+    suppliers: "Fournisseurs",
+    artisans: "Artisans",
+    institutional: "Institutionnel",
+    prescriber: "Prescripteur",
+    subcontractor: "Sous-traitant"
+  };
+
+  const pageTitle = filterTitles[filter] || "Tous les contacts";
+
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <Sidebar currentPage="directory-contacts" onNavigate={onNavigate} />
-      <main className="lg:ml-64 min-h-screen">
-        <Topbar />
+      <Sidebar
+        currentPage={`directory-${filter}`}
+        onNavigate={onNavigate}
+        initialCollapsed={sidebarCollapsed}
+        onToggleCollapse={onToggleSidebar}
+      />
+      <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
+        <Topbar onNavigate={onNavigate} />
         <div className="p-6">
           {/* Page Header */}
           <div className="mb-6">
@@ -472,11 +508,11 @@ export default function DirectoryPage({ onNavigate }) {
               <Layout className="size-4" />
               <span className="text-sm">Annuaire</span>
             </div>
-            <h1 className="text-xl font-semibold text-neutral-900">Fiche contact</h1>
+            <h1 className="text-xl font-semibold text-neutral-900">{pageTitle}</h1>
           </div>
 
           {/* Main Content */}
-          <DirectoryContactsCard />
+          <DirectoryContactsCard filter={filter} />
         </div>
       </main>
     </div>

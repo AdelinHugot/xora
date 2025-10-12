@@ -1,201 +1,347 @@
 import React, { useState } from "react";
-import { LogOut, CheckCircle2, Clock3, CircleDot, User2, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  LogOut,
+  CheckCircle2,
+  Clock3,
+  CircleDot,
+  User2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Calendar,
+  FileText,
+  Receipt,
+  FileBarChart,
+  Package,
+  ClipboardList,
+  ChevronDown
+} from "lucide-react";
 
-// Icon placeholders
-function CalendarIcon(props){return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" {...props}><rect x="3" y="4" width="18" height="18" rx="2" className="fill-none stroke-current"/><line x1="16" y1="2" x2="16" y2="6" className="stroke-current"/><line x1="8" y1="2" x2="8" y2="6" className="stroke-current"/><line x1="3" y1="10" x2="21" y2="10" className="stroke-current"/></svg>}
-function DocumentIcon(props){return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" {...props}><path d="M6 2h7l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" className="fill-none stroke-current"/></svg>}
-function InvoiceIcon(props){return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" {...props}><rect x="4" y="3" width="16" height="18" rx="2" className="fill-none stroke-current"/><line x1="8" y1="8" x2="16" y2="8" className="stroke-current"/><line x1="8" y1="12" x2="16" y2="12" className="stroke-current"/><line x1="8" y1="16" x2="12" y2="16" className="stroke-current"/></svg>}
-function QuoteIcon(props){return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" {...props}><path d="M7 7h6v6H7zM13 7h6v6h-6z" className="fill-none stroke-current"/></svg>}
-function BoxIcon(props){return <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" {...props}><path d="M3 7l9-4 9 4v10l-9 4-9-4z" className="fill-none stroke-current"/></svg>}
+// Configuration des items avec états désactivés
+const navigationConfig = [
+  { 
+    id: "dashboard", 
+    label: "Tableau de bord", 
+    icon: CircleDot, 
+    route: "dashboard",
+    disabled: false
+  },
+  { 
+    id: "project-tracking", 
+    label: "Suivi projets", 
+    icon: CheckCircle2, 
+    route: "project-tracking",
+    disabled: false
+  },
+  {
+    id: "directory",
+    label: "Annuaire",
+    icon: User2,
+    route: "directory-all", // Route par défaut affichant tous les contacts
+    disabled: false,
+    hasSubmenu: true,
+    submenu: [
+      { id: "clients", label: "Clients et Prospects", route: "directory-clients" },
+      { id: "suppliers", label: "Fournisseurs", route: "directory-suppliers" },
+      { id: "artisans", label: "Artisans", route: "directory-artisans" },
+      { id: "institutional", label: "Institutionnel", route: "directory-institutional" },
+      { id: "prescriber", label: "Prescripteur", route: "directory-prescriber" },
+      { id: "subcontractor", label: "Sous-traitant", route: "directory-subcontractor" }
+    ]
+  },
+  {
+    id: "tasks-memo",
+    label: "Tâches & mémo",
+    icon: ClipboardList,
+    route: "tasks-memo",
+    disabled: false
+  },
+  {
+    id: "agenda",
+    label: "Agenda",
+    icon: Calendar,
+    route: "agenda",
+    disabled: false
+  },
+  {
+    id: "articles",
+    label: "Articles",
+    icon: FileText,
+    route: "articles",
+    disabled: false
+  },
+  { 
+    id: "invoices", 
+    label: "Factures", 
+    icon: Receipt, 
+    route: "invoices",
+    disabled: true // Désactivé selon les guidelines
+  },
+  { 
+    id: "quotes", 
+    label: "Devis", 
+    icon: FileBarChart, 
+    route: "quotes",
+    disabled: true // Désactivé selon les guidelines
+  },
+  { 
+    id: "orders", 
+    label: "Commandes", 
+    icon: Package, 
+    route: "orders",
+    disabled: true // Désactivé selon les guidelines
+  },
+];
 
-export default function Sidebar({ currentPage = "dashboard", onNavigate }) {
-  const [expandedSections, setExpandedSections] = useState(["annuaire"]);
+// Sous-composant Header
+function SidebarHeader({ collapsed, onToggleCollapse }) {
+  return (
+    <div className="h-16 px-4 flex items-center justify-between border-b border-neutral-200">
+      {!collapsed && (
+        <img src="/logo-xora.png" alt="XORA" className="h-8" />
+      )}
+      <button
+        onClick={onToggleCollapse}
+        className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
+        aria-expanded={!collapsed}
+        aria-label={collapsed ? "Développer la sidebar" : "Réduire la sidebar"}
+        title={collapsed ? "Développer la sidebar" : "Réduire la sidebar"}
+      >
+        {collapsed ? (
+          <ChevronsRight className="size-4" />
+        ) : (
+          <ChevronsLeft className="size-4" />
+        )}
+      </button>
+    </div>
+  );
+}
 
-  const toggleSection = (sectionId) => {
-    setExpandedSections(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
+// Sous-composant Item de navigation avec sous-menu
+function NavItemWithSubmenu({ item, isActive, collapsed, onNavigate, currentPage }) {
+  const [isOpen, setIsOpen] = useState(
+    currentPage?.startsWith("directory") || false
+  );
 
-  const navigationItems = [
-    { 
-      id: "dashboard", 
-      label: "Tableau de bord", 
-      icon: CircleDot, 
-      route: "dashboard",
-      active: currentPage === "dashboard"
-    },
-    { 
-      id: "projects", 
-      label: "Suivi projets", 
-      icon: CheckCircle2, 
-      route: "projects",
-      active: currentPage === "projects"
-    },
-    {
-      id: "annuaire",
-      label: "Annuaire",
-      icon: User2,
-      expandable: true,
-      expanded: expandedSections.includes("annuaire"),
-      children: [
-        { 
-          id: "contacts", 
-          label: "Fiche contact", 
-          route: "directory-contacts",
-          active: currentPage === "directory-contacts"
-        },
-        { 
-          id: "fournisseurs", 
-          label: "Fiche fournisseurs", 
-          route: "directory-suppliers",
-          active: currentPage === "directory-suppliers"
-        },
-        { 
-          id: "artisans", 
-          label: "Fiche artisans", 
-          route: "directory-artisans",
-          active: currentPage === "directory-artisans"
-        },
-        { 
-          id: "institutionnel", 
-          label: "Fiche institutionnel", 
-          route: "directory-institutional",
-          active: currentPage === "directory-institutional"
-        },
-        { 
-          id: "prescripteur", 
-          label: "Fiche prescripteur", 
-          route: "directory-prescriber",
-          active: currentPage === "directory-prescriber"
-        },
-        { 
-          id: "soustraitant", 
-          label: "Fiche sous traitant", 
-          route: "directory-subcontractor",
-          active: currentPage === "directory-subcontractor"
-        },
-      ]
-    },
-    { 
-      id: "tasks", 
-      label: "Tâches & mémo", 
-      icon: Clock3, 
-      route: "tasks",
-      active: currentPage === "tasks"
-    },
-    { 
-      id: "agenda", 
-      label: "Agenda", 
-      icon: CalendarIcon, 
-      route: "agenda",
-      active: currentPage === "agenda"
-    },
-    { 
-      id: "articles", 
-      label: "Articles", 
-      icon: DocumentIcon, 
-      route: "articles",
-      active: currentPage === "articles"
-    },
-    { 
-      id: "factures", 
-      label: "Factures", 
-      icon: InvoiceIcon, 
-      route: "invoices",
-      active: currentPage === "invoices"
-    },
-    { 
-      id: "devis", 
-      label: "Devis", 
-      icon: QuoteIcon, 
-      route: "quotes",
-      active: currentPage === "quotes"
-    },
-    { 
-      id: "commandes", 
-      label: "Commandes", 
-      icon: BoxIcon, 
-      route: "orders",
-      active: currentPage === "orders"
-    },
-  ];
-
-  const handleItemClick = (item) => {
-    if (item.expandable) {
-      toggleSection(item.id);
-    } else if (item.route && onNavigate) {
+  const handleMainClick = () => {
+    // On navigue toujours vers la route principale
+    if (!item.disabled && item.route && onNavigate) {
       onNavigate(item.route);
     }
   };
 
-  const handleChildClick = (child) => {
-    if (child.route && onNavigate) {
-      onNavigate(child.route);
+  const handleToggleSubmenu = (e) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
+  const baseClasses = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-neutral-300";
+
+  let stateClasses;
+  if (item.disabled) {
+    stateClasses = "text-neutral-400 cursor-not-allowed";
+  } else if (isActive) {
+    stateClasses = "bg-neutral-100 border border-neutral-200 text-neutral-900";
+  } else {
+    stateClasses = "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900";
+  }
+
+  const iconClasses = item.disabled
+    ? "size-4 opacity-40"
+    : isActive
+      ? "size-4"
+      : "size-4 opacity-60";
+
+  return (
+    <div>
+      {/* Item principal */}
+      <button
+        onClick={handleMainClick}
+        className={`${baseClasses} ${stateClasses} ${collapsed ? 'justify-center' : ''}`}
+        aria-current={isActive ? "page" : undefined}
+        aria-disabled={item.disabled}
+        aria-expanded={!collapsed && isOpen}
+        tabIndex={item.disabled ? -1 : 0}
+        title={collapsed ? item.label : undefined}
+      >
+        <item.icon className={iconClasses} />
+        {!collapsed && (
+          <>
+            <span className="truncate flex-1 text-left">{item.label}</span>
+            <button
+              onClick={handleToggleSubmenu}
+              className="p-1 hover:bg-neutral-200/50 rounded transition-colors"
+              aria-label={isOpen ? "Fermer le sous-menu" : "Ouvrir le sous-menu"}
+            >
+              <ChevronDown
+                className={`size-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </>
+        )}
+      </button>
+
+      {/* Sous-menu */}
+      {!collapsed && isOpen && item.submenu && (
+        <div className="mt-1 space-y-1 ml-4">
+          {item.submenu.map((subitem) => {
+            const isSubActive = currentPage === subitem.route;
+            return (
+              <button
+                key={subitem.id}
+                onClick={() => onNavigate(subitem.route)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                  isSubActive
+                    ? "bg-neutral-50 text-neutral-900 font-medium"
+                    : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
+                }`}
+              >
+                <span className="truncate">{subitem.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Sous-composant Item de navigation simple
+function NavItem({ item, isActive, collapsed, onNavigate }) {
+  const handleClick = () => {
+    if (!item.disabled && item.route && onNavigate) {
+      onNavigate(item.route);
     }
   };
 
+  const baseClasses = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-neutral-300";
+
+  let stateClasses;
+  if (item.disabled) {
+    stateClasses = "text-neutral-400 cursor-not-allowed";
+  } else if (isActive) {
+    stateClasses = "bg-neutral-100 border border-neutral-200 text-neutral-900";
+  } else {
+    stateClasses = "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900";
+  }
+
+  const iconClasses = item.disabled
+    ? "size-4 opacity-40"
+    : isActive
+      ? "size-4"
+      : "size-4 opacity-60";
+
   return (
-    <aside className="fixed left-0 top-0 z-40 w-64 h-screen bg-white/90 backdrop-blur-sm border-r border-neutral-200 hidden lg:flex lg:flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-6 h-16 border-b border-neutral-200 bg-white/50">
-        <span className="font-black tracking-tight text-2xl text-neutral-900">XORA</span>
-      </div>
+    <button
+      onClick={handleClick}
+      className={`${baseClasses} ${stateClasses} ${collapsed ? 'justify-center' : ''}`}
+      aria-current={isActive ? "page" : undefined}
+      aria-disabled={item.disabled}
+      tabIndex={item.disabled ? -1 : 0}
+      title={collapsed ? item.label : undefined}
+    >
+      <item.icon className={iconClasses} />
+      {!collapsed && (
+        <span className="truncate">{item.label}</span>
+      )}
+    </button>
+  );
+}
+
+// Sous-composant Navigation
+function SidebarNav({ currentPage, collapsed, onNavigate }) {
+  return (
+    <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto" aria-label="Navigation latérale">
+      {navigationConfig.map((item) => {
+        const isActive = currentPage === item.route ||
+                        (item.id === "directory" && currentPage?.startsWith("directory")) ||
+                        (item.id === "project-tracking" && currentPage === "project-tracking");
+
+        // Utiliser le composant avec sous-menu si nécessaire
+        if (item.hasSubmenu) {
+          return (
+            <NavItemWithSubmenu
+              key={item.id}
+              item={item}
+              isActive={isActive}
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+              currentPage={currentPage}
+            />
+          );
+        }
+
+        return (
+          <NavItem
+            key={item.id}
+            item={item}
+            isActive={isActive}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
+          />
+        );
+      })}
+    </nav>
+  );
+}
+
+// Sous-composant Footer
+function SidebarFooter({ collapsed }) {
+  return (
+    <div className={`border-t border-neutral-200 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'}`}>
+      <button 
+        className={`text-rose-700 inline-flex items-center gap-2 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300 rounded ${
+          collapsed ? 'justify-center p-2' : ''
+        }`}
+        title={collapsed ? "Se déconnecter" : undefined}
+      >
+        <LogOut className="size-4" />
+        {!collapsed && <span>Se déconnecter</span>}
+      </button>
+    </div>
+  );
+}
+
+// Composant principal Sidebar
+export default function Sidebar({ 
+  currentPage = "dashboard", 
+  onNavigate,
+  initialCollapsed = false,
+  onToggleCollapse
+}) {
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+
+  const handleToggleCollapse = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setCollapsed(prev => !prev);
+    }
+  };
+
+  // Utiliser la prop ou l'état local
+  const isCollapsed = onToggleCollapse ? initialCollapsed : collapsed;
+
+  return (
+    <aside 
+      className={`fixed left-0 top-0 z-40 h-screen bg-white border-r border-neutral-200 hidden lg:flex lg:flex-col transition-[width] duration-200 ${
+        isCollapsed ? 'w-18' : 'w-64'
+      } shrink-0`}
+      style={{ width: isCollapsed ? '72px' : '256px' }}
+    >
+      <SidebarHeader 
+        collapsed={isCollapsed} 
+        onToggleCollapse={handleToggleCollapse} 
+      />
       
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navigationItems.map((item) => (
-          <div key={item.id}>
-            <button 
-              onClick={() => handleItemClick(item)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
-                item.active 
-                  ? "bg-neutral-100 text-neutral-900 border-l-2 border-neutral-900" 
-                  : "text-neutral-700 hover:bg-neutral-100/80 hover:text-neutral-900"
-              }`}
-            >
-              <item.icon className="size-5 flex-shrink-0" />
-              <span className="truncate flex-1 text-left">{item.label}</span>
-              {item.expandable && (
-                item.expanded ? (
-                  <ChevronDown className="size-4 flex-shrink-0" />
-                ) : (
-                  <ChevronRight className="size-4 flex-shrink-0" />
-                )
-              )}
-            </button>
-            
-            {/* Submenu */}
-            {item.expandable && item.expanded && item.children && (
-              <div className="mt-1 ml-4 space-y-1">
-                {item.children.map((child) => (
-                  <button
-                    key={child.id}
-                    onClick={() => handleChildClick(child)}
-                    className={`w-full flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 ${
-                      child.active
-                        ? "bg-neutral-100 text-neutral-900 font-medium"
-                        : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
-                    }`}
-                  >
-                    <span className="truncate text-left">{child.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
+      <SidebarNav 
+        currentPage={currentPage} 
+        collapsed={isCollapsed} 
+        onNavigate={onNavigate} 
+      />
       
-      {/* Footer */}
-      <div className="p-4 border-t border-neutral-200">
-        <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors duration-200">
-          <span>Se déconnecter</span>
-          <LogOut className="size-4" />
-        </button>
-      </div>
+      <SidebarFooter collapsed={isCollapsed} />
     </aside>
   );
 }
