@@ -304,7 +304,7 @@ const ContactsTable = ({ contacts, onViewContact }) => {
   );
 };
 
-const DirectoryContactsCard = ({ filter = "all" }) => {
+const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     addedBy: "",
@@ -357,7 +357,9 @@ const DirectoryContactsCard = ({ filter = "all" }) => {
   }, [searchTerm, filters]);
 
   const handleViewContact = (contact) => {
-    alert(`Voir la fiche de ${contact.name} (ID: ${contact.id})`);
+    if (onNavigate) {
+      onNavigate(`contact-${contact.id}`);
+    }
   };
 
   const updateFilter = (key, value) => {
@@ -512,7 +514,7 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
           </div>
 
           {/* Main Content */}
-          <DirectoryContactsCard filter={filter} />
+          <DirectoryContactsCard filter={filter} onNavigate={onNavigate} />
         </div>
       </main>
     </div>

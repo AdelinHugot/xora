@@ -9,6 +9,8 @@ import ArticlesPage from "./pages/ArticlesPage";
 import TasksMemoPage from "./pages/TasksMemoPage";
 import SettingsPage from "./pages/SettingsPage";
 import TeamMemberPage from "./pages/TeamMemberPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
+import ContactDetailPage from "./pages/ContactDetailPage";
 
 // Mock data - KPI blanches (cartes horizontales)
 const whiteKpis = [
@@ -631,6 +633,30 @@ export default function App() {
               sidebarCollapsed={sidebarCollapsed}
               onToggleSidebar={handleToggleSidebar}
               memberId={memberId}
+            />
+          );
+        }
+        // Check if it's a project detail route (e.g., project-detail-123)
+        if (currentRoute.startsWith("project-detail-")) {
+          const projectId = currentRoute.replace("project-detail-", "");
+          return (
+            <ProjectDetailPage
+              onNavigate={handleNavigation}
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={handleToggleSidebar}
+              projectId={projectId}
+            />
+          );
+        }
+        // Check if it's a contact detail route (e.g., contact-123)
+        if (currentRoute.startsWith("contact-")) {
+          const contactId = currentRoute.replace("contact-", "");
+          return (
+            <ContactDetailPage
+              onNavigate={handleNavigation}
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={handleToggleSidebar}
+              contactId={contactId}
             />
           );
         }

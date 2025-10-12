@@ -139,11 +139,25 @@ function Topbar({ onNavigate }) {
 }
 
 // Composant ligne de projet
-function ProjectRow({ project }) {
+function ProjectRow({ project, onViewProject }) {
   const statusColors = getStatusColors(project.status);
 
+  const handleRowClick = (e) => {
+    // Empêcher la navigation si on clique sur les boutons d'action
+    if (e.target.closest('button')) {
+      return;
+    }
+    if (onViewProject) {
+      onViewProject(project);
+    }
+  };
+
   return (
-    <tr className="border-b last:border-0 hover:bg-neutral-50 transition-colors" role="row">
+    <tr
+      onClick={handleRowClick}
+      className="border-b last:border-0 hover:bg-neutral-50 transition-colors cursor-pointer"
+      role="row"
+    >
       {/* Nom & prénom */}
       <td className="py-4 px-3" role="cell">
         <div className="flex items-center justify-between">
@@ -296,8 +310,14 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
   const [selectedAgent, setSelectedAgent] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  
+
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
+
+  const handleViewProject = (project) => {
+    if (onNavigate) {
+      onNavigate(`project-detail-${project.id}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
@@ -390,7 +410,11 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
                 </thead>
                 <tbody>
                   {mockProjects.map((project) => (
-                    <ProjectRow key={project.id} project={project} />
+                    <ProjectRow
+                      key={project.id}
+                      project={project}
+                      onViewProject={handleViewProject}
+                    />
                   ))}
                 </tbody>
               </table>
