@@ -1,43 +1,40 @@
 import React, { useState } from "react";
+import { LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown } from "lucide-react";
 import {
-  LogOut,
-  CheckCircle2,
-  Clock3,
-  CircleDot,
-  User2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Calendar,
-  FileText,
-  Receipt,
-  FileBarChart,
-  Package,
-  ClipboardList,
-  ChevronDown
-} from "lucide-react";
+  DashboardIcon,
+  SuiviProjetsIcon,
+  AnnuaireIcon,
+  TachesEtMemoIcon,
+  AgendaIcon,
+  ArticlesIcon,
+  KPIIcon,
+  FacturesIcon,
+  DevisIcon,
+  CommandesIcon,
+  NotreEntrepriseIcon,
+  SuiviSAVIcon,
+} from "./MenuIcons";
 
 // Configuration des items avec états désactivés
 const navigationConfig = [
-  { 
-    id: "dashboard", 
-    label: "Tableau de bord", 
-    icon: CircleDot, 
+  {
+    id: "dashboard",
+    label: "Tableau de bord",
+    icon: DashboardIcon,
     route: "dashboard",
     disabled: false
   },
-  { 
-    id: "project-tracking", 
-    label: "Suivi projets", 
-    icon: CheckCircle2, 
+  {
+    id: "project-tracking",
+    label: "Projets",
+    icon: SuiviProjetsIcon,
     route: "project-tracking",
     disabled: false
   },
   {
     id: "directory",
     label: "Annuaire",
-    icon: User2,
+    icon: AnnuaireIcon,
     route: "directory-all", // Route par défaut affichant tous les contacts
     disabled: false,
     hasSubmenu: true,
@@ -53,42 +50,42 @@ const navigationConfig = [
   {
     id: "tasks-memo",
     label: "Tâches & mémo",
-    icon: ClipboardList,
+    icon: TachesEtMemoIcon,
     route: "tasks-memo",
     disabled: false
   },
   {
     id: "agenda",
     label: "Agenda",
-    icon: Calendar,
+    icon: AgendaIcon,
     route: "agenda",
     disabled: false
   },
   {
     id: "articles",
     label: "Articles",
-    icon: FileText,
+    icon: ArticlesIcon,
     route: "articles",
     disabled: false
   },
-  { 
-    id: "invoices", 
-    label: "Factures", 
-    icon: Receipt, 
+  {
+    id: "invoices",
+    label: "Factures",
+    icon: FacturesIcon,
     route: "invoices",
     disabled: true // Désactivé selon les guidelines
   },
-  { 
-    id: "quotes", 
-    label: "Devis", 
-    icon: FileBarChart, 
+  {
+    id: "quotes",
+    label: "Devis",
+    icon: DevisIcon,
     route: "quotes",
     disabled: true // Désactivé selon les guidelines
   },
-  { 
-    id: "orders", 
-    label: "Commandes", 
-    icon: Package, 
+  {
+    id: "orders",
+    label: "Commandes",
+    icon: CommandesIcon,
     route: "orders",
     disabled: true // Désactivé selon les guidelines
   },
@@ -117,6 +114,10 @@ function SidebarHeader({ collapsed, onToggleCollapse }) {
     </div>
   );
 }
+
+// Constantes de couleur
+const ACTIVE_COLOR = "#323130";
+const INACTIVE_COLOR = "#A9A9A9";
 
 // Sous-composant Item de navigation avec sous-menu
 function NavItemWithSubmenu({ item, isActive, collapsed, onNavigate, currentPage }) {
@@ -147,11 +148,7 @@ function NavItemWithSubmenu({ item, isActive, collapsed, onNavigate, currentPage
     stateClasses = "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900";
   }
 
-  const iconClasses = item.disabled
-    ? "size-4 opacity-40"
-    : isActive
-      ? "size-4"
-      : "size-4 opacity-60";
+  const iconColor = item.disabled ? "#D1D5DB" : (isActive ? ACTIVE_COLOR : INACTIVE_COLOR);
 
   return (
     <div>
@@ -165,7 +162,7 @@ function NavItemWithSubmenu({ item, isActive, collapsed, onNavigate, currentPage
         tabIndex={item.disabled ? -1 : 0}
         title={collapsed ? item.label : undefined}
       >
-        <item.icon className={iconClasses} />
+        <item.icon color={iconColor} />
         {!collapsed && (
           <>
             <span className="truncate flex-1 text-left">{item.label}</span>
@@ -226,11 +223,7 @@ function NavItem({ item, isActive, collapsed, onNavigate }) {
     stateClasses = "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900";
   }
 
-  const iconClasses = item.disabled
-    ? "size-4 opacity-40"
-    : isActive
-      ? "size-4"
-      : "size-4 opacity-60";
+  const iconColor = item.disabled ? "#D1D5DB" : (isActive ? ACTIVE_COLOR : INACTIVE_COLOR);
 
   return (
     <button
@@ -241,7 +234,7 @@ function NavItem({ item, isActive, collapsed, onNavigate }) {
       tabIndex={item.disabled ? -1 : 0}
       title={collapsed ? item.label : undefined}
     >
-      <item.icon className={iconClasses} />
+      <item.icon color={iconColor} />
       {!collapsed && (
         <span className="truncate">{item.label}</span>
       )}

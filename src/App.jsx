@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { Menu, Search, ChevronDown, Bell, Settings, MoreVertical, ArrowUpRight } from "lucide-react";
+import { Menu, Search, ChevronDown, Bell, Settings, MoreVertical, ArrowUpRight, AlertCircle, Eye, Pencil, Trash2 } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import DirectoryPage from "./pages/DirectoryPage";
 import TasksPage from "./pages/TasksPage";
@@ -11,6 +11,9 @@ import SettingsPage from "./pages/SettingsPage";
 import TeamMemberPage from "./pages/TeamMemberPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ContactDetailPage from "./pages/ContactDetailPage";
+import KPIPage from "./pages/KPIPage";
+import OurCompanyPage from "./pages/OurCompanyPage";
+import AfterSalesPage from "./pages/AfterSalesPage";
 
 // Mock data - KPI blanches (cartes horizontales)
 const whiteKpis = [
@@ -50,70 +53,99 @@ const whiteKpis = [
 
 // Mock data - KPI colorés (cartes pastel)
 const coloredKpis = [
-  { id: "leads", label: "Leads", value: 8, color: "from-indigo-200 to-indigo-100" },
-  { id: "studies", label: "Études en cours", value: 8, color: "from-fuchsia-200 to-pink-100" },
-  { id: "order", label: "Commande client", value: 8, color: "from-sky-200 to-sky-100" },
-  { id: "tech", label: "Dossier tech & install", value: 10, color: "from-cyan-200 to-teal-100" },
-  { id: "sav", label: "SAV", value: 7, color: "from-rose-200 to-orange-100" },
+  { id: "leads", label: "Leads", value: 8, color: "#EEE8FD" },
+  { id: "studies", label: "Études en cours", value: 8, color: "#EED1F4" },
+  { id: "order", label: "Commande client", value: 8, color: "#A9C9F9" },
+  { id: "tech", label: "Dossier tech & install", value: 10, color: "#A4E6FE" },
+  { id: "sav", label: "SAV", value: 7, color: "#FFD0C1" },
 ];
 
-// Mock data - Tâches (exactement 7 selon la maquette)
+// Mock data - Tâches & Mémos
 const tasks = [
   {
     id: 1,
-    title: "Livraison Cuisine – Coline FARGET",
-    due: "Aujourd'hui",
-    tag: "Dossier tech & install",
-    stages: ["Non commencé", "En cours", "Terminé"],
+    clientName: "Coline FARGET",
+    projectName: "Cuisine Moderne",
+    tag: "Dossier technique",
+    dueDate: "20/08/2025",
+    isLate: false,
+    hasAlert: false,
     progress: 45,
+    stages: ["Non commencé", "En cours", "Terminé"],
+    currentStage: 1,
   },
   {
     id: 2,
-    title: "Appeler Laurent",
-    due: "1 jour restant",
-    tag: "Mémo",
+    clientName: "Laurent DURAND",
+    projectName: "Appel client",
+    tag: "Appel",
+    dueDate: "15/08/2025",
+    isLate: true,
+    daysLate: 2,
+    hasAlert: true,
+    progress: 0,
     stages: ["Non commencé", "En cours", "Terminé"],
-    progress: 45,
+    currentStage: 0,
   },
   {
     id: 3,
-    title: "Installation client – Nicolas DUMONT",
-    due: "3 jours restants",
+    clientName: "Nicolas DUMONT",
+    projectName: "Installation client",
     tag: "Commande client",
+    dueDate: "25/08/2025",
+    isLate: false,
+    hasAlert: false,
+    progress: 60,
     stages: ["Non commencé", "En cours", "Terminé"],
-    progress: 45,
+    currentStage: 1,
   },
   {
     id: 4,
-    title: "Rendez-vous avec Romain pour Mme Dubois",
-    due: "1 jour restant",
+    clientName: "Mme Dubois",
+    projectName: "Rendez-vous avec Romain",
     tag: "Mémo",
+    dueDate: "18/08/2025",
+    isLate: false,
+    hasAlert: false,
+    progress: 0,
     stages: ["Non commencé", "En cours", "Terminé"],
-    progress: 45,
+    currentStage: 0,
   },
   {
     id: 5,
-    title: "Rendez-vous avec Romain pour Mme Dubois",
-    due: "1 jour restant",
-    tag: "Mémo",
+    clientName: "Pierre HERME",
+    projectName: "Cuisine Salon - Devis",
+    tag: "Email",
+    dueDate: "22/08/2025",
+    isLate: false,
+    hasAlert: false,
+    progress: 0,
     stages: ["Non commencé", "En cours", "Terminé"],
-    progress: 45,
+    currentStage: 0,
   },
   {
     id: 6,
-    title: "Cuisine Salon – Pierre HERME",
-    due: "1 jour restant",
+    clientName: "Marie MARTIN",
+    projectName: "Salle de bain",
     tag: "Études en cours",
+    dueDate: "28/08/2025",
+    isLate: false,
+    hasAlert: false,
+    progress: 75,
     stages: ["Non commencé", "En cours", "Terminé"],
-    progress: 45,
+    currentStage: 1,
   },
   {
     id: 7,
-    title: "Cuisine Salon – Pierre HERME",
-    due: "Aujourd'hui",
-    tag: "Dossier tech & install",
+    clientName: "Jean FONTAINE",
+    projectName: "Placard intégré",
+    tag: "Dossier technique",
+    dueDate: "30/08/2025",
+    isLate: false,
+    hasAlert: false,
+    progress: 30,
     stages: ["Non commencé", "En cours", "Terminé"],
-    progress: 45,
+    currentStage: 1,
   },
 ];
 
@@ -218,14 +250,14 @@ function KpiStrip() {
     <div className="px-4 lg:px-6 mb-6">
       <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
         {/* 4 cartes KPI horizontales */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {whiteKpis.map((kpi) => (
             <div key={kpi.id} className="rounded-2xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
               {/* Médaillon icône */}
-              <div className="size-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-medium">
+              <div className="size-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-medium flex-shrink-0">
                 {kpi.icon}
               </div>
-              
+
               {/* Contenu */}
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-neutral-900 mb-1">{kpi.label}</div>
@@ -233,11 +265,11 @@ function KpiStrip() {
                   <span className="text-lg font-semibold text-neutral-900">{kpi.value}</span>
                   <span className="text-sm text-neutral-400">/ {kpi.goal}</span>
                 </div>
-                
+
                 {/* Barre de progression + pourcentage */}
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-0.5 bg-violet-200 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-violet-600 transition-all duration-300"
                       style={{ width: `${kpi.percent}%` }}
                       role="progressbar"
@@ -262,13 +294,13 @@ function KpiStack() {
   return (
     <div className="space-y-4">
       {coloredKpis.map((kpi) => (
-        <div key={kpi.id} className={`relative rounded-2xl border border-neutral-200 bg-gradient-to-br ${kpi.color} p-4`}> 
+        <div key={kpi.id} className="relative rounded-2xl border border-neutral-200 p-4" style={{ backgroundColor: kpi.color }}>
           <div className="flex items-start justify-between">
             <div className="text-neutral-700">
               <div className="text-sm font-medium mb-1">{kpi.label}</div>
               <div className="text-3xl font-black">{kpi.value}</div>
             </div>
-            <button 
+            <button
               onClick={() => console.log(`Ouvrir ${kpi.label}`)}
               className="p-2 rounded-xl border border-neutral-200 bg-white/70 hover:bg-white transition-colors"
               aria-label={`Ouvrir ${kpi.label}`}
@@ -283,78 +315,161 @@ function KpiStack() {
   );
 }
 
-// Fonction pour obtenir les couleurs des tags
+// Fonction pour obtenir les couleurs des tags/badges
 function getTagColors(tag) {
-  switch (tag) {
-    case "Dossier tech & install":
-      return "bg-sky-100 text-sky-700";
-    case "Commande client":
-      return "bg-blue-100 text-blue-700";
-    case "Études en cours":
-      return "bg-pink-100 text-pink-700";
-    case "Mémo":
-      return "bg-neutral-900 text-white";
-    default:
-      return "bg-neutral-100 text-neutral-700";
-  }
+  const tagColorMap = {
+    "Dossier technique": { bg: "#A4E6FE", text: "#0369A1", border: "#0EA5E9" },
+    "Dossier tech & install": { bg: "#A4E6FE", text: "#0369A1", border: "#0EA5E9" },
+    "Études en cours": { bg: "#EED1F4", text: "#9F1239", border: "#EC4899" },
+    "Commande client": { bg: "#A9C9F9", text: "#1E40AF", border: "#3B82F6" },
+    "SAV": { bg: "#FFD0C1", text: "#92400E", border: "#EA580C" },
+    "Leads": { bg: "#EEE8FD", text: "#6B21A8", border: "#A855F7" },
+    "Appel": { bg: "#FDE68A", text: "#78350F", border: "#FBBF24" },
+    "Email": { bg: "#DDD6FE", text: "#4C1D95", border: "#A78BFA" },
+    "Mémo": { bg: "#F3F4F6", text: "#1F2937", border: "#D1D5DB" },
+  };
+
+  return tagColorMap[tag] || { bg: "#F3F4F6", text: "#1F2937", border: "#D1D5DB" };
 }
 
 function TaskRow({ task, index }) {
-  // Déterminer si cette tâche doit montrer les statuts (tâches 2, 4, 5 selon la spécification)
-  const showStatuses = [2, 4, 5].includes(task.id);
-  
+  const [menuOpen, setMenuOpen] = useState(false);
+  const colors = getTagColors(task.tag);
+
   return (
-    <div className="p-4 sm:p-5 border border-neutral-200 rounded-2xl bg-white">
-      <div className="flex items-start gap-3">
-        <span className="size-7 grid place-items-center rounded-lg border border-neutral-200 text-xs font-semibold text-neutral-600">{index + 1}</span>
+    <div className="p-4 border border-neutral-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow">
+      {/* Ligne 1 : Numéro | Client + Projet | Badge | Barre progression | Alerte | Menu */}
+      <div className="flex items-start gap-4">
+        {/* 1. Numéro priorité */}
+        <div className="size-8 rounded-lg bg-neutral-200 text-neutral-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+          {index + 1}
+        </div>
+
+        {/* 2. Client + Projet (Colonne flexible) */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <div className="font-medium text-neutral-900 truncate">{task.title}</div>
-            {task.tag && (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTagColors(task.tag)}`}>
-                {task.tag}
-              </span>
+          <div className="text-sm font-bold text-neutral-900">
+            {task.clientName}
+          </div>
+          <div className="text-xs text-neutral-600 mt-0.5">
+            {task.projectName}
+          </div>
+        </div>
+
+        {/* 3. Badge coloré */}
+        <div
+          className="px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0"
+          style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
+        >
+          {task.tag}
+        </div>
+
+        {/* 4. Barre progression + % */}
+        <div className="flex items-center gap-3 flex-shrink-0 min-w-[120px]">
+          <div className="h-1.5 flex-1 rounded-full bg-neutral-200" style={{ minWidth: "60px" }}>
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${task.progress}%`,
+                backgroundColor: colors.border,
+              }}
+            />
+          </div>
+          <span className="text-xs font-semibold text-neutral-600 w-8 text-right">
+            {task.progress}%
+          </span>
+        </div>
+
+        {/* 5. Alerte */}
+        <div className="relative flex-shrink-0">
+          <button
+            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors relative"
+            aria-label="Alerte"
+            title={task.isLate ? `${task.daysLate} jour(s) de retard` : "Pas d'alerte"}
+          >
+            <AlertCircle
+              className={`size-5 ${task.isLate ? "text-red-500" : "text-neutral-400"}`}
+            />
+            {task.hasAlert && (
+              <div className="absolute top-0.5 right-0.5 size-2.5 bg-red-500 rounded-full" />
             )}
-          </div>
-          <div className="text-xs text-neutral-500 mt-1 mb-3">{task.due}</div>
-          
-          {/* Barre de progression + % + bouton kebab */}
-          <div className="flex items-center gap-4 mb-3">
-            <div className="flex-1">
-              <div className="h-2 rounded-full bg-neutral-200">
-                <div
-                  className="h-2 rounded-full bg-neutral-800"
-                  style={{ width: `${Math.min(100, Math.max(0, task.progress))}%` }}
-                  role="progressbar"
-                  aria-valuenow={task.progress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                />
-              </div>
-            </div>
-            <div className="text-sm text-neutral-500">{task.progress}%</div>
-            <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Options">
-              <MoreVertical className="size-4" />
-            </button>
-          </div>
-          
-          {/* Pills de statut (seulement pour certaines tâches) */}
-          {showStatuses && (
-            <div className="flex items-center gap-2 text-xs flex-wrap">
-              {task.stages?.map((status, i) => (
-                <button
-                  key={status}
-                  className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors ${
-                    i === 1 ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50'
-                  }`}
-                  aria-pressed={i === 1}
-                >
-                  {status}
-                </button>
-              ))}
+          </button>
+        </div>
+
+        {/* 6. Menu à trois points */}
+        <div className="relative flex-shrink-0">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+            aria-label="Options"
+          >
+            <MoreVertical className="size-5 text-neutral-500" />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute top-full right-0 z-30 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg min-w-[140px]">
+              <button
+                onClick={() => {
+                  console.log("Voir tâche", task.id);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-neutral-50 transition-colors"
+              >
+                <Eye className="size-4" />
+                Voir
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Modifier tâche", task.id);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-neutral-50 transition-colors"
+              >
+                <Pencil className="size-4" />
+                Modifier
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Supprimer tâche", task.id);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-neutral-50 transition-colors text-red-600"
+              >
+                <Trash2 className="size-4" />
+                Supprimer
+              </button>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Ligne 2 : Date ou Alerte retard */}
+      <div className="mt-3 pl-12 text-xs">
+        {task.isLate ? (
+          <span className="text-red-500 font-semibold">
+            ⚠️ {task.daysLate} jour{task.daysLate > 1 ? "s" : ""} de retard
+          </span>
+        ) : (
+          <span className="text-neutral-500">
+            Date limite : {task.dueDate}
+          </span>
+        )}
+      </div>
+
+      {/* Ligne 3 : Boutons statuts */}
+      <div className="mt-3 pl-12 flex items-center gap-2">
+        {task.stages.map((stage, i) => (
+          <button
+            key={stage}
+            onClick={() => console.log(`Étape ${stage}`)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              i === task.currentStage
+                ? "bg-neutral-900 text-white"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+            }`}
+          >
+            {stage}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -362,37 +477,28 @@ function TaskRow({ task, index }) {
 
 function TasksPanel({ height }) {
   return (
-    <div 
-      className="rounded-2xl border border-neutral-200 bg-white/70 p-4 pt-5 flex flex-col" 
-      style={height ? { height: `535px` } : {}}
+    <div
+      className="rounded-2xl border border-neutral-200 bg-white/70 p-5 flex flex-col"
+      style={height ? { height: `${height}px` } : {}}
     >
-      {/* Header avec bouton externe en haut à droite */}
-      <div className="flex items-start justify-between mb-4 flex-shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900">Priorité des tâches</h2>
-          <div className="text-sm text-neutral-500">12 mars 2025</div>
+          <h2 className="text-lg font-bold text-neutral-900">Priorité des tâches & mémos</h2>
+          <div className="text-xs text-neutral-500">12 mars 2025</div>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => console.log('Ajouter tâche')}
-            className="px-3 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-sm font-medium transition-colors"
-            aria-label="Ajouter une tâche ou une mémo"
-          >
-            + Ajouter une tâche ou une mémo
-          </button>
-          <button 
-            onClick={() => console.log('Ouvrir dans nouvelle vue')}
-            className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors"
-            aria-label="Ouvrir dans une nouvelle vue"
-            title="Ouvrir dans une nouvelle vue"
-          >
-            <ArrowUpRight className="size-4 text-neutral-600" />
-          </button>
-        </div>
+        <button
+          onClick={() => console.log('Ajouter tâche')}
+          className="px-4 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-sm font-medium transition-colors whitespace-nowrap"
+          aria-label="Ajouter une tâche manuelle ou un mémo"
+          title="Ajouter une tâche manuelle ou un mémo"
+        >
+          + Ajouter une tâche manuelle ou un mémo
+        </button>
       </div>
-      
-      {/* Corps avec scroll interne */}
-      <div className="mt-4 flex-1 overflow-y-auto grid gap-3 pr-1 min-h-0">
+
+      {/* Tâches avec scroll interne */}
+      <div className="flex-1 overflow-y-auto grid gap-3 pr-2 min-h-0">
         {tasks.map((t, i) => (
           <TaskRow key={t.id} task={t} index={i} />
         ))}
@@ -411,7 +517,7 @@ function Agenda() {
 
   return (
     <section className="px-4 lg:px-6 mt-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-lg font-bold text-neutral-900">Agenda</h2>
         <div className="flex items-center gap-2">
           <select className="px-3 py-2 rounded-xl border border-neutral-200 bg-white/70 text-sm font-medium" value={week} onChange={(e) => setWeek(e.target.value)}>
@@ -424,7 +530,7 @@ function Agenda() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
         {days.map((d) => (
           <div key={d.key} className="rounded-2xl border border-neutral-200 bg-white/70 overflow-hidden">
             <div className="px-4 py-3 border-b border-neutral-200 text-sm font-semibold text-neutral-700">{d.label}</div>
@@ -484,12 +590,12 @@ function MainPanels() {
 
   return (
     <section className="px-4 lg:px-6">
-      <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[350px_1fr] 2xl:grid-cols-[400px_1fr] gap-6">
         {/* Colonne gauche - KPI colorés */}
         <div ref={kpiRef}>
           <KpiStack />
         </div>
-        
+
         {/* Colonne droite - Tâches avec hauteur synchronisée */}
         <TasksPanel height={isWide && kpiHeight > 0 ? kpiHeight : null} />
       </div>
@@ -510,7 +616,7 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onSettingsClick={() => onNavigate("settings-connection")} />
-        <div className="max-w-[1400px] mx-auto">
+        <div className="w-full">
           <Searchbar />
           <KpiStrip />
           <MainPanels />
@@ -608,6 +714,30 @@ export default function App() {
       case "tasks-memo":
         return (
           <TasksMemoPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "kpi":
+        return (
+          <KPIPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "our-company":
+        return (
+          <OurCompanyPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        );
+      case "after-sales":
+        return (
+          <AfterSalesPage
             onNavigate={handleNavigation}
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={handleToggleSidebar}
