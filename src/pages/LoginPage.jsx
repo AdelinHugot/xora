@@ -1,14 +1,25 @@
 import React, { useState } from "react";
-import { LogIn } from "lucide-react";
+import { LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const VALID_EMAIL = "contact@xora.fr";
+  const VALID_PASSWORD = "Xora123@.";
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Peu importe les identifiants, on connecte l'utilisateur
-    onLogin();
+    setError("");
+
+    // Valider les identifiants
+    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
+      onLogin();
+    } else {
+      setError("Identifiants incorrects. Veuillez vérifier votre email et mot de passe.");
+      setPassword("");
+    }
   };
 
   return (
@@ -33,6 +44,12 @@ export default function LoginPage({ onLogin }) {
 
         {/* Formulaire de connexion */}
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-lg p-8">
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex gap-3 items-start">
+              <AlertCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
