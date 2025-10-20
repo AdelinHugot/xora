@@ -821,9 +821,11 @@ function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit }) {
 function Topbar({ onNavigate }) {
   return (
     <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-2xl border border-neutral-200 bg-white">
-          <CalendarDays className="size-4 text-neutral-600" />
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.25 7.5H15.75M12 1.5V4.5M6 1.5V4.5M3.75 16.5H14.25C15.0784 16.5 15.75 15.8284 15.75 15V4.5C15.75 3.67157 15.0784 3 14.25 3H3.75C2.92157 3 2.25 3.67157 2.25 4.5V15C2.25 15.8284 2.92157 16.5 3.75 16.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
         <h1 className="text-xl font-semibold text-neutral-900">Agenda</h1>
       </div>
@@ -909,7 +911,7 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         style={{ marginLeft: `${sidebarWidth}px` }}
       >
         <Topbar onNavigate={onNavigate} />
-        <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-8">
+        <div className="w-full py-8 px-4 lg:px-6">
           <div className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

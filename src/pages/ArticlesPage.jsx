@@ -136,7 +136,12 @@ const useClientTable = (data, filters, sortConfig, pageSize = 11) => {
 const Topbar = ({ onNavigate }) => {
   return (
     <header className="h-16 border-b bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 7.5V14.625C15 15.2463 14.4963 15.75 13.875 15.75H4.125C3.50368 15.75 3 15.2463 3 14.625V7.5M7.5 9.75H10.5M2.25 2.25H15.75C16.1642 2.25 16.5 2.58579 16.5 3V6.75C16.5 7.16421 16.1642 7.5 15.75 7.5H2.25C1.83579 7.5 1.5 7.16421 1.5 6.75V3C1.5 2.58579 1.83579 2.25 2.25 2.25Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Articles</h1>
       </div>
       <UserTopBar onSettingsClick={() => onNavigate("settings-connection")} />
@@ -570,7 +575,7 @@ export default function ArticlesPage({ onNavigate, sidebarCollapsed, onToggleSid
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
-        <div className="mx-auto max-w-7xl px-6 py-6">
+        <div className="w-full py-6 px-4 lg:px-6">
           {/* Page Header */}
           <div className="mb-6">
             <div className="flex items-center gap-2 text-gray-600 mb-2">

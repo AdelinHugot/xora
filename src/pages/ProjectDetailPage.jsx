@@ -1209,7 +1209,7 @@ export default function ProjectDetailPage({
           className="bg-[#F2F4F7] transition-[margin] duration-300"
           style={{ marginRight: `${progressSidebarWidth}px` }}
         >
-          <div className="max-w-[1400px] mx-auto px-4 pb-8">
+          <div className="w-full pb-8 px-4 lg:px-6">
             <div className="bg-white border border-[#E5E5E5] border-t-0 rounded-b-lg p-8">
               {activeTab === "study" && activeSubTab === "discovery" && (
                 <DiscoveryTabContent />

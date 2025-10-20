@@ -524,7 +524,7 @@ export default function TasksPage({ onNavigate, sidebarCollapsed, onToggleSideba
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar />
-        <div className="max-w-[1400px] mx-auto p-6">
+        <div className="w-full py-6 px-4 lg:px-6">
           <TasksCard />
         </div>
       </main>

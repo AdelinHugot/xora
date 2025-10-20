@@ -120,7 +120,12 @@ const Select = ({ value, onChange, options, placeholder }) => {
 const Topbar = ({ onNavigate }) => {
   return (
     <header className="h-16 border-b bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 14.625V3.375C3 2.33947 3.83947 1.5 4.875 1.5H15V16.5H4.875C3.83947 16.5 3 15.6605 3 14.625ZM3 14.625C3 13.5895 3.83946 12.75 4.87498 12.75H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Annuaire</h1>
       </div>
       <UserTopBar onSettingsClick={() => onNavigate("settings-connection")} />
@@ -503,7 +508,7 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
-        <div className="p-6">
+        <div className="w-full py-6 px-4 lg:px-6">
           {/* Page Header */}
           <div className="mb-6">
             <div className="flex items-center gap-2 text-neutral-600 mb-2">

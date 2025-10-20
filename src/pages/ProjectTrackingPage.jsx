@@ -130,7 +130,12 @@ function getStatusColors(status) {
 function Topbar({ onNavigate }) {
   return (
     <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.25 15.75H15.75M5.25 11.25H12.75M6.75 6.75H11.25M14.25 15.75L9.98715 2.96151C9.84555 2.5366 9.4479 2.25 9 2.25C8.5521 2.25 8.15445 2.5366 8.01285 2.96151L3.75 15.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Suivi projets</h1>
       </div>
       <UserTopBar onSettingsClick={() => onNavigate("settings-connection")} />
@@ -330,8 +335,8 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
       
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
-        
-        <div className="max-w-[1400px] mx-auto p-6">
+
+        <div className="w-full py-6 px-4 lg:px-6">
           {/* Barre de filtres */}
           <div className="mb-6">
             <div className="flex items-center gap-3 flex-wrap">

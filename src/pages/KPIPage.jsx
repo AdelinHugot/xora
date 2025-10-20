@@ -15,10 +15,15 @@ export default function KPIPage({ onNavigate, sidebarCollapsed, onToggleSidebar 
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button className="lg:hidden p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Menu">
               <Menu className="size-4" />
             </button>
+            <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2.25 2.25V15.75H15.75M5.25 12L9.1875 8.0625L11.8125 10.6875L15.75 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
             <h1 className="text-xl font-semibold text-neutral-900">KPI</h1>
           </div>
           <div className="flex items-center gap-2 ml-auto">

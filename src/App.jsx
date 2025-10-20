@@ -199,11 +199,17 @@ const PillIcon = ({ Icon }) => (
 function Topbar({ onSettingsClick = () => {} }) {
   return (
     <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.25 11.0625C2.25 10.7518 2.50184 10.5 2.8125 10.5H9.1875C9.49815 10.5 9.75 10.7518 9.75 11.0625V15.1875C9.75 15.4982 9.49815 15.75 9.1875 15.75H2.8125C2.50184 15.75 2.25 15.4982 2.25 15.1875V11.0625Z" fill="currentColor"/>
+            <path d="M2.25 2.8125C2.25 2.50184 2.50184 2.25 2.8125 2.25H15.1875C15.4982 2.25 15.75 2.50184 15.75 2.8125V6.9375C15.75 7.24816 15.4982 7.5 15.1875 7.5H2.8125C2.50184 7.5 2.25 7.24816 2.25 6.9375V2.8125Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <h1 className="text-xl font-semibold text-neutral-900 my-2">Tableau de bord</h1>
         <button className="lg:hidden p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Menu" title="Menu">
           <Menu className="size-4" />
         </button>
-        <h1 className="text-xl font-semibold text-neutral-900 my-2">Tableau de bord</h1>
       </div>
       <div className="flex items-center gap-2 ml-auto">
         <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Notifications" title="Notifications">

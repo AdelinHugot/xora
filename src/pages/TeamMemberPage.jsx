@@ -138,7 +138,7 @@ function TabNavigation({ activeTab, onTabChange }) {
 
   return (
     <div className="bg-white border-b border-neutral-200">
-      <div className="max-w-[1400px] mx-auto px-6">
+      <div className="w-full px-4 lg:px-6">
         <nav className="flex gap-8" aria-label="Onglets">
           {tabs.map((tab) => (
             <button

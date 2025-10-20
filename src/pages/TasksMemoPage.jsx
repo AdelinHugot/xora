@@ -153,10 +153,10 @@ const TableIcon = () => (
 );
 
 const MoreVerticalIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <circle cx="8" cy="3" r="1" fill="currentColor" />
-    <circle cx="8" cy="8" r="1" fill="currentColor" />
-    <circle cx="8" cy="13" r="1" fill="currentColor" />
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <circle cx="10" cy="4" r="1.5" fill="currentColor" />
+    <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+    <circle cx="10" cy="16" r="1.5" fill="currentColor" />
   </svg>
 );
 
@@ -178,11 +178,30 @@ const NoteIcon = () => (
   </svg>
 );
 
+const Eye = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M8 3C4.5 3 1.5 5.5 1 8c.5 2.5 3.5 5 7 5s6.5-2.5 7-5c-.5-2.5-3.5-5-7-5z" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+  </svg>
+);
+
+const Pencil = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M11.3 1.7L14.3 4.7L3.5 15.5H0.5V12.5L11.3 1.7Z" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M11.3 1.7L14.3 4.7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 // Components
 const Topbar = ({ onNavigate }) => {
   return (
     <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16.5 3.88501L7.9425 12.45L4.7625 9.27001L5.82 8.21251L7.9425 10.335L15.4425 2.83501L16.5 3.88501ZM14.8425 7.66501C14.94 8.09251 15 8.54251 15 9.00001C15 12.315 12.315 15 9 15C5.685 15 3 12.315 3 9.00001C3 5.68501 5.685 3.00001 9 3.00001C10.185 3.00001 11.28 3.34501 12.21 3.93751L13.29 2.85751C12.0348 1.97217 10.536 1.49788 9 1.50001C4.86 1.50001 1.5 4.86001 1.5 9.00001C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9.00001C16.5 8.10751 16.335 7.25251 16.05 6.45751L14.8425 7.66501Z" fill="currentColor"/>
+          </svg>
+        </div>
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Tâches & mémo</h1>
       </div>
       <UserTopBar onSettingsClick={() => onNavigate("settings-connection")} />
@@ -434,9 +453,32 @@ const NoteButton = ({ note, onChange }) => {
 };
 
 const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, isDragging }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
     return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  };
+
+  const getTypeStyles = (type) => {
+    switch (type) {
+      case "Tâche":
+        return {
+          bg: "bg-gray-200",
+          text: "text-gray-800"
+        };
+      case "Mémo":
+        return {
+          bg: "bg-gray-900",
+          text: "text-white"
+        };
+      default:
+        return {
+          bg: "bg-gray-300",
+          text: "text-gray-900"
+        };
+    }
   };
 
   const handleStatusChange = (newStatus) => {
@@ -448,79 +490,140 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
     onUpdate(item.id, { status: newStatus, progress: newProgress });
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
   return (
-    <li
+    <div
       draggable
       onDragStart={(e) => onDragStart(e, item.id)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, item.id)}
-      className={`rounded-xl border bg-white px-4 py-3 hover:bg-gray-50 transition-colors ${
-        isDragging ? "opacity-50" : ""
+      className={`px-6 py-4 hover:bg-gray-100 transition-colors grid gap-3 items-center ${
+        isDragging ? "opacity-50 bg-gray-100" : "bg-gray-50"
       }`}
+      style={{
+        gridTemplateColumns: "50px 1.5fr 1fr 1.2fr 1fr 1fr 1fr 0.8fr 40px"
+      }}
     >
-      <div className="grid grid-cols-[auto,auto,1fr,auto,auto,auto,auto,1fr,auto] items-center gap-4">
-        {/* Drag handle */}
+      {/* Ordre */}
+      <div className="flex items-center justify-center">
         <div className="cursor-move text-gray-400 hover:text-gray-600">
           <GripVerticalIcon />
         </div>
+      </div>
 
-        {/* Index */}
-        <div className="w-10 h-10 rounded-lg border flex items-center justify-center text-sm font-semibold bg-white">
-          {item.index}
+      {/* Descriptif */}
+      <div className="min-w-0 overflow-hidden">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-semibold text-gray-900 truncate">{item.title}</span>
+          <TagBadge tag={item.tag} />
         </div>
+        <div className="text-xs text-gray-500 truncate">{item.client}</div>
+      </div>
 
-        {/* Title & Client */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-gray-900 truncate">{item.title}</span>
-            <TagBadge tag={item.tag} />
-          </div>
-          <div className="text-xs text-gray-500">{item.client}</div>
+      {/* Type */}
+      <div className="flex items-center justify-center">
+        <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(item.type).bg} ${getTypeStyles(item.type).text}`}>
+          {item.type}
         </div>
+      </div>
 
-        {/* Assignee */}
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <img
-            src={`https://i.pravatar.cc/24?img=${item.assignee.charCodeAt(0)}`}
-            alt={item.assignee}
-            className="size-6 rounded-full"
-          />
-          <span className="text-sm text-gray-700">{item.assignee}</span>
-        </div>
-
-        {/* Due date */}
-        <div className="text-xs text-gray-500 whitespace-nowrap">
-          Jusqu'au {formatDate(item.due)}
-        </div>
-
-        {/* Note button */}
-        <NoteButton
-          note={item.note}
-          onChange={(v) => onUpdate(item.id, { note: v })}
-        />
-
-        {/* Status segmented */}
+      {/* Statut */}
+      <div>
         <StatusSegmented
           value={item.status}
           onChange={handleStatusChange}
         />
-
-        {/* Progress */}
-        <ProgressBar value={item.progress} status={item.status} />
-
-        {/* Menu */}
-        <RowMenu
-          onView={() => console.log("Voir", item)}
-          onEdit={() => console.log("Éditer", item)}
-          onDuplicate={() => console.log("Dupliquer", item)}
-          onDelete={() => {
-            if (window.confirm(`Supprimer "${item.title}" ?`)) {
-              onDelete(item.id);
-            }
-          }}
-        />
       </div>
-    </li>
+
+      {/* Échéance */}
+      <div className="text-xs text-gray-500 whitespace-nowrap">
+        {formatDate(item.due)}
+      </div>
+
+      {/* Collaborateur.s */}
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <img
+          src={`https://i.pravatar.cc/24?img=${item.assignee.charCodeAt(0)}`}
+          alt={item.assignee}
+          className="size-6 rounded-full"
+        />
+        <span className="text-sm text-gray-700">{item.assignee}</span>
+      </div>
+
+      {/* Note */}
+      <NoteButton
+        note={item.note}
+        onChange={(v) => onUpdate(item.id, { note: v })}
+      />
+
+      {/* Progression */}
+      <ProgressBar value={item.progress} status={item.status} />
+
+      {/* Actions Menu */}
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="p-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 hover:text-gray-900 transition-all"
+        >
+          <MoreVerticalIcon className="size-5" />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            {item.type === "Tâche" ? (
+              <>
+                <button
+                  onClick={() => {
+                    console.log("Voir le projet:", item);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                >
+                  <Eye className="size-4" />
+                  Voir le projet
+                </button>
+                <button
+                  onClick={() => {
+                    console.log("Modifier la tâche:", item);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Pencil className="size-4" />
+                  Modifier la tâche
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  console.log("Modifier le mémo:", item);
+                  setMenuOpen(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Pencil className="size-4" />
+                Éditer le mémo
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -611,7 +714,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 // Main component
 export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
   const [tasks, setTasks] = useState(mockTasks);
-  const [viewMode, setViewMode] = useState("table");
+  const [statusFilterPill, setStatusFilterPill] = useState("en-cours");
   const [filters, setFilters] = useState({
     search: "",
     type: "",
@@ -723,9 +826,16 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
         if (filters.echeance === "late" && daysDiff >= 0) return false;
       }
 
+      // Status Filter Pill
+      if (statusFilterPill === "en-cours") {
+        if (task.status !== "En cours" && task.status !== "Non commencé") return false;
+      } else if (statusFilterPill === "termine") {
+        if (task.status !== "Terminé") return false;
+      }
+
       return true;
     });
-  }, [tasks, filters]);
+  }, [tasks, filters, statusFilterPill]);
 
   // Pagination
   const totalPages = Math.ceil(filteredTasks.length / pageSize);
@@ -750,68 +860,74 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
-        <div className="mx-auto max-w-7xl px-6 py-6">
-          {/* Page Header */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 text-gray-600 mb-2">
-              <ClipboardIcon />
-              <span className="text-sm">Tâches & mémo</span>
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900">Liste des tâches et mémo</h1>
-          </div>
-
+        <div className="w-full py-6 px-4 lg:px-6">
           {/* Main Card */}
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
             {/* Card Header */}
             <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ClipboardIcon />
-                  <h2 className="text-base font-semibold text-gray-900">
-                    Liste des tâches et mémo ({tasks.length})
-                  </h2>
-                </div>
+              {/* First row: Title, Pill, Button */}
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  {/* View mode toggle */}
-                  <div className="inline-flex rounded-full border border-gray-300 overflow-hidden">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Liste des tâches et mémo ({filteredTasks.length})
+                  </h2>
+                  {/* Status Filter Pill */}
+                  <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-100 p-1">
                     <button
-                      onClick={() => setViewMode("table")}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm ${
-                        viewMode === "table" ? "bg-gray-900 text-white" : "hover:bg-gray-50"
+                      onClick={() => setStatusFilterPill("en-cours")}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                        statusFilterPill === "en-cours"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-700 hover:text-gray-900"
                       }`}
                     >
-                      <TableIcon />
-                      Tableau
+                      En cours
                     </button>
                     <button
-                      onClick={() => setViewMode("grid")}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm ${
-                        viewMode === "grid" ? "bg-gray-900 text-white" : "hover:bg-gray-50"
+                      onClick={() => setStatusFilterPill("termine")}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                        statusFilterPill === "termine"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-700 hover:text-gray-900"
                       }`}
                     >
-                      <GridIcon />
-                      Grille
+                      Terminé
                     </button>
                   </div>
-
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    <PlusIcon />
-                    Ajouter une mémo
-                  </button>
                 </div>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  <PlusIcon />
+                  Ajouter une tâche ou un mémo
+                </button>
               </div>
+
+              {/* Second row: Filters */}
+              <FiltersBar filters={filters} onFilterChange={handleFilterChange} />
             </div>
 
-            {/* Filters */}
-            <FiltersBar filters={filters} onFilterChange={handleFilterChange} />
+            {/* Content - Gray background container */}
+            <div className="bg-gray-50">
+              {/* Table Headers */}
+              <div className="px-6 py-4 border-b border-gray-200 grid gap-3" style={{
+                gridTemplateColumns: "50px 1.5fr 1fr 1.2fr 1fr 1fr 1fr 0.8fr 40px"
+              }}>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Ordre</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Descriptif</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Type</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Statut</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Échéance</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Collaborateur.s</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Note</div>
+                <div className="text-xs font-semibold text-gray-600 uppercase">Progression</div>
+                <div></div>
+              </div>
 
-            {/* Content */}
-            {viewMode === "table" ? (
-              <div className="p-6">
-                <ul className="space-y-3">
+              {/* Table Rows */}
+              {paginatedTasks.length > 0 ? (
+                <div>
                   {paginatedTasks.map((task) => (
                     <TaskRow
                       key={task.id}
@@ -824,66 +940,26 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                       isDragging={draggedTaskId === task.id}
                     />
                   ))}
-                </ul>
+                </div>
+              ) : (
+                <div className="px-6 py-12 text-center text-gray-500">
+                  Aucune tâche ou mémo à afficher
+                </div>
+              )}
 
-                {/* Footer */}
-                <div className="mt-6 flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)} sur{" "}
-                    {filteredTasks.length} éléments
-                  </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-white">
+                <div className="text-sm text-gray-600">
+                  Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)} sur{" "}
+                  {filteredTasks.length} éléments
                 </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </div>
-            ) : (
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedTasks.map((task) => (
-                    <div key={task.id} className="rounded-xl border bg-white p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="font-semibold text-gray-900">{task.title}</span>
-                        <TagBadge tag={task.tag} />
-                      </div>
-                      <div className="text-xs text-gray-500 mb-3">{task.client}</div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <img
-                          src={`https://i.pravatar.cc/24?img=${task.assignee.charCodeAt(0)}`}
-                          alt={task.assignee}
-                          className="size-6 rounded-full"
-                        />
-                        <span className="text-sm text-gray-700">{task.assignee}</span>
-                      </div>
-                      <StatusSegmented
-                        value={task.status}
-                        onChange={(newStatus) =>
-                          handleUpdateTask(task.id, { status: newStatus })
-                        }
-                      />
-                      <div className="mt-3">
-                        <ProgressBar value={task.progress} status={task.status} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Footer */}
-                <div className="mt-6 flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)} sur{" "}
-                    {filteredTasks.length} éléments
-                  </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </main>
