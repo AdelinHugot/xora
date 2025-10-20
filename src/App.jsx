@@ -14,6 +14,7 @@ import ContactDetailPage from "./pages/ContactDetailPage";
 import KPIPage from "./pages/KPIPage";
 import OurCompanyPage from "./pages/OurCompanyPage";
 import AfterSalesPage from "./pages/AfterSalesPage";
+import LoginPage from "./pages/LoginPage";
 
 // Mock data - KPI blanches (cartes horizontales)
 const whiteKpis = [
@@ -631,6 +632,7 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const navigateToRoute = (route) => {
     setCurrentRoute(route);
@@ -643,6 +645,10 @@ export default function App() {
 
   const handleToggleSidebar = () => {
     setSidebarCollapsed(prev => !prev);
+  };
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
   };
 
   // Simple routing logic (you can replace with React Router later)
@@ -807,6 +813,11 @@ export default function App() {
       setCurrentRoute(hash || "dashboard");
     }
   }, [currentRoute]);
+
+  // Si l'utilisateur n'est pas connecté, afficher la page de login
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return renderPage();
 }
