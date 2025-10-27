@@ -610,7 +610,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
       {/* Descriptif */}
       <div className="min-w-0 overflow-hidden">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-neutral-900 truncate">{item.title}</span>
+          <span className={`font-semibold truncate ${item.status === "Terminé" ? "line-through text-neutral-400" : "text-neutral-900"}`}>{item.title}</span>
         </div>
         <div className="text-xs text-neutral-500 truncate">{item.client}</div>
       </div>
