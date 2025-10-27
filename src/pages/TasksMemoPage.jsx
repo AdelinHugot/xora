@@ -594,10 +594,12 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
         isDragging ? "opacity-50 bg-neutral-100" : "bg-white"
       }`}
       style={{
-        gridTemplateColumns: "50px 250px 150px 120px 150px 100px 80px 120px 40px",
+        gridTemplateColumns: "50px 2fr 1.2fr 1fr 1.2fr 0.8fr 0.8fr 1.2fr 40px",
         paddingLeft: "24px",
         paddingRight: "24px",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
+        width: "100%",
+        minWidth: "min-content"
       }}
     >
       {/* Ordre */}
@@ -1020,13 +1022,15 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
             </div>
 
             {/* Content - Gray background container */}
-            <div className="bg-white w-full" style={{ boxSizing: "border-box" }}>
+            <div className="bg-white w-full overflow-x-auto" style={{ boxSizing: "border-box" }}>
               {/* Table Headers */}
-              <div className="py-4 border-b border-[#E9E9E9] grid gap-3 w-full items-start" style={{
-                gridTemplateColumns: "50px 250px 150px 120px 150px 100px 80px 120px 40px",
+              <div className="py-4 border-b border-[#E9E9E9] grid gap-3 items-start" style={{
+                gridTemplateColumns: "50px 2fr 1.2fr 1fr 1.2fr 0.8fr 0.8fr 1.2fr 40px",
                 paddingLeft: "24px",
                 paddingRight: "24px",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
+                width: "100%",
+                minWidth: "min-content"
               }}>
                 <div className="text-xs font-semibold text-neutral-600 uppercase">Ordre</div>
                 <div className="text-xs font-semibold text-neutral-600 uppercase">Descriptif</div>
