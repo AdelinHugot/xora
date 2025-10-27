@@ -594,7 +594,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
         isDragging ? "opacity-50 bg-neutral-100" : "bg-white"
       }`}
       style={{
-        gridTemplateColumns: "50px 1.5fr 1fr 1fr 1fr 1fr 0.5fr 1fr 40px",
+        gridTemplateColumns: "50px 250px 150px 120px 150px 100px 80px 120px 40px",
         paddingLeft: "24px",
         paddingRight: "24px",
         boxSizing: "border-box"
@@ -1023,7 +1023,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
             <div className="bg-white w-full" style={{ boxSizing: "border-box" }}>
               {/* Table Headers */}
               <div className="py-4 border-b border-[#E9E9E9] grid gap-3 w-full items-start" style={{
-                gridTemplateColumns: "50px 1.5fr 1fr 1fr 1fr 1fr 0.5fr 1fr 40px",
+                gridTemplateColumns: "50px 250px 150px 120px 150px 100px 80px 120px 40px",
                 paddingLeft: "24px",
                 paddingRight: "24px",
                 boxSizing: "border-box"
