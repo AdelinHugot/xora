@@ -15,40 +15,46 @@ import KPIPage from "./pages/KPIPage";
 import OurCompanyPage from "./pages/OurCompanyPage";
 import AfterSalesPage from "./pages/AfterSalesPage";
 import LoginPage from "./pages/LoginPage";
+import KpiCaGenereSvg from "../SVG Menu/KPI - CA Généré.svg";
+import KpiMargeGenereSvg from "../SVG Menu/KPI - Marge générée.svg";
+import KpiTauxMargeSvg from "../SVG Menu/KPI - Taux de marge.svg";
+import KpiTauxTransformationSvg from "../SVG Menu/KPI - Taux de transformation.svg";
+import AttentionSvg from "../SVG Menu/Attention.svg";
+import MenuSvg from "../SVG Menu/3 Points.svg";
 
 // Mock data - KPI blanches (cartes horizontales)
 const whiteKpis = [
-  { 
-    id: "ca-genere", 
-    label: "CA Généré", 
-    value: "53.456€", 
-    goal: "110.000€", 
+  {
+    id: "ca-genere",
+    label: "CA Généré",
+    value: "53.456€",
+    goal: "110.000€",
     percent: 65,
-    icon: "€"
+    icon: KpiCaGenereSvg
   },
-  { 
-    id: "marge-generee", 
-    label: "Marge générée", 
-    value: "12.326€", 
-    goal: "15.000€", 
+  {
+    id: "marge-generee",
+    label: "Marge générée",
+    value: "12.326€",
+    goal: "15.000€",
     percent: 73,
-    icon: "📈"
+    icon: KpiMargeGenereSvg
   },
-  { 
-    id: "taux-marge", 
-    label: "Taux de marge", 
-    value: "23,4%", 
-    goal: "35%", 
+  {
+    id: "taux-marge",
+    label: "Taux de marge",
+    value: "23,4%",
+    goal: "35%",
     percent: 68,
-    icon: "%"
+    icon: KpiTauxMargeSvg
   },
-  { 
-    id: "taux-transformation", 
-    label: "Taux de transformation", 
-    value: "32,2%", 
-    goal: "33%", 
+  {
+    id: "taux-transformation",
+    label: "Taux de transformation",
+    value: "32,2%",
+    goal: "33%",
     percent: 96,
-    icon: "🎯"
+    icon: KpiTauxTransformationSvg
   },
 ];
 
@@ -253,43 +259,73 @@ function Searchbar() {
 
 // Composant pour les cartes KPI blanches horizontales
 function KpiStrip() {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   return (
     <div className="px-4 lg:px-6 mb-6">
-      <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-5">
-        {/* 4 cartes KPI horizontales */}
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {whiteKpis.map((kpi) => (
-            <div key={kpi.id} className="rounded-2xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
-              {/* Médaillon icône */}
-              <div className="size-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-medium flex-shrink-0">
-                {kpi.icon}
-              </div>
+      <div className="border border-neutral-200 rounded-2xl overflow-hidden" style={{ backgroundColor: "#F3F3F3" }}>
+        {/* En-tête avec titre et bouton collapse/expand */}
+        <div className="bg-white px-4 md:px-5 py-3 border-b border-neutral-200 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-neutral-900">Liste des KPI</h3>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+            aria-label={isExpanded ? "Replier les KPIs" : "Déplier les KPIs"}
+            title={isExpanded ? "Replier les KPIs" : "Déplier les KPIs"}
+          >
+            <ChevronDown
+              className={`size-5 text-neutral-600 transition-transform duration-300 ${
+                isExpanded ? "rotate-0" : "rotate-180"
+              }`}
+            />
+          </button>
+        </div>
 
-              {/* Contenu */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-neutral-900 mb-1">{kpi.label}</div>
-                <div className="flex items-center gap-1 mb-2">
-                  <span className="text-lg font-semibold text-neutral-900">{kpi.value}</span>
-                  <span className="text-sm text-neutral-400">/ {kpi.goal}</span>
-                </div>
-
-                {/* Barre de progression + pourcentage */}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-0.5 bg-violet-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-violet-600 transition-all duration-300"
-                      style={{ width: `${kpi.percent}%` }}
-                      role="progressbar"
-                      aria-valuenow={kpi.percent}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    />
+        {/* Contenu des KPIs avec animation collapse/expand */}
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{
+            maxHeight: isExpanded ? "1000px" : "0px",
+            opacity: isExpanded ? 1 : 0,
+          }}
+        >
+          <div className="p-4 md:p-5">
+            {/* 4 cartes KPI horizontales */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              {whiteKpis.map((kpi) => (
+                <div key={kpi.id} className="rounded-2xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
+                  {/* Médaillon icône - Carré avec radius 10px */}
+                  <div className="size-8 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#A886D7" }}>
+                    <img src={kpi.icon} alt={kpi.label} className="size-5" />
                   </div>
-                  <span className="text-xs text-neutral-500">{kpi.percent}%</span>
+
+                  {/* Contenu */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-neutral-900 mb-1">{kpi.label}</div>
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="text-lg font-semibold text-neutral-900">{kpi.value}</span>
+                      <span className="text-sm text-neutral-400">/ {kpi.goal}</span>
+                    </div>
+
+                    {/* Barre de progression + pourcentage */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-0.5 bg-violet-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-violet-600 transition-all duration-300"
+                          style={{ width: `${kpi.percent}%` }}
+                          role="progressbar"
+                          aria-valuenow={kpi.percent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        />
+                      </div>
+                      <span className="text-xs text-neutral-500">{kpi.percent}%</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
@@ -325,15 +361,15 @@ function KpiStack() {
 // Fonction pour obtenir les couleurs des tags/badges
 function getTagColors(tag) {
   const tagColorMap = {
-    "Dossier technique": { bg: "#A4E6FE", text: "#0369A1", border: "#0EA5E9" },
-    "Dossier tech & install": { bg: "#A4E6FE", text: "#0369A1", border: "#0EA5E9" },
-    "Études en cours": { bg: "#EED1F4", text: "#9F1239", border: "#EC4899" },
+    "Dossier technique": { bg: "#A4E6FE", text: "#1A8AB3", border: "#0EA5E9" },
+    "Dossier tech & install": { bg: "#A4E6FE", text: "#1A8AB3", border: "#0EA5E9" },
+    "Études en cours": { bg: "#EBC5F2", text: "#C970AB", border: "#EBC5F2" },
     "Commande client": { bg: "#A9C9F9", text: "#1E40AF", border: "#3B82F6" },
     "SAV": { bg: "#FFD0C1", text: "#92400E", border: "#EA580C" },
     "Leads": { bg: "#EEE8FD", text: "#6B21A8", border: "#A855F7" },
-    "Appel": { bg: "#FDE68A", text: "#78350F", border: "#FBBF24" },
-    "Email": { bg: "#DDD6FE", text: "#4C1D95", border: "#A78BFA" },
-    "Mémo": { bg: "#F3F4F6", text: "#1F2937", border: "#D1D5DB" },
+    "Appel": { bg: "#F8F9FA", text: "#504B4D", border: "#E5E5E5" },
+    "Email": { bg: "#F8F9FA", text: "#504B4D", border: "#E5E5E5" },
+    "Mémo": { bg: "#504B4D", text: "white", border: "#E9E9E9" },
   };
 
   return tagColorMap[tag] || { bg: "#F3F4F6", text: "#1F2937", border: "#D1D5DB" };
@@ -341,76 +377,105 @@ function getTagColors(tag) {
 
 function TaskRow({ task, index }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentStage, setCurrentStage] = useState(task.currentStage);
   const colors = getTagColors(task.tag);
 
+  // Determine if task has progress bar (not Appel, Email, Mémo)
+  const hasProgressBar = !["Appel", "Email", "Mémo"].includes(task.tag);
+
   return (
-    <div className="p-4 border border-neutral-200 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow">
-      {/* Ligne 1 : Numéro | Client + Projet | Badge | Barre progression | Alerte | Menu */}
-      <div className="flex items-start gap-4">
-        {/* 1. Numéro priorité */}
-        <div className="size-8 rounded-lg bg-neutral-200 text-neutral-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+    <>
+      {/* Ligne principale */}
+      <div className="px-4 bg-white flex items-center gap-3 w-full" style={{ height: "80px", borderBottom: "1px solid #E5E5E5", borderBottomWidth: "0.5px", marginBottom: "0.5px", marginTop: "0.5px", backgroundImage: "linear-gradient(to right, transparent 5%, #E5E5E5 5%, #E5E5E5 95%, transparent 95%)", backgroundSize: "100% 0.5px", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
+        {/* 1. Numéro priorité - Fond gris */}
+        <div className="size-8 rounded-lg text-neutral-900 flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ backgroundColor: "#F3F3F3" }}>
           {index + 1}
         </div>
 
-        {/* 2. Client + Projet (Colonne flexible) */}
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-neutral-900">
-            {task.clientName}
-          </div>
-          <div className="text-xs text-neutral-600 mt-0.5">
-            {task.projectName}
-          </div>
-        </div>
+        {/* 2. Gauche: Client - Projet + Pastille + Date (flex-1, ~50%) */}
+        <div className="flex-1 min-w-0 flex flex-col gap-0">
+          {/* Row: Client - Projet + Pastille */}
+          <div className="flex items-center gap-2">
+            {/* Texte Client - Projet */}
+            <div className="text-sm font-bold text-neutral-900 whitespace-nowrap overflow-hidden text-ellipsis">
+              {task.clientName} - {task.projectName}
+            </div>
 
-        {/* 3. Badge coloré */}
-        <div
-          className="px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0"
-          style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
-        >
-          {task.tag}
-        </div>
-
-        {/* 4. Barre progression + % */}
-        <div className="flex items-center gap-3 flex-shrink-0 min-w-[120px]">
-          <div className="h-1.5 flex-1 rounded-full bg-neutral-200" style={{ minWidth: "60px" }}>
+            {/* Badge/Pastille - Collé à droite du projet */}
             <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${task.progress}%`,
-                backgroundColor: colors.border,
-              }}
-            />
+              className="px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0"
+              style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
+            >
+              {task.tag}
+            </div>
           </div>
-          <span className="text-xs font-semibold text-neutral-600 w-8 text-right">
-            {task.progress}%
-          </span>
+
+          {/* Date en dessous */}
+          <div className="text-xs text-neutral-900 leading-tight">
+            Date limite : {task.dueDate}
+          </div>
         </div>
 
-        {/* 5. Alerte */}
-        <div className="relative flex-shrink-0">
-          <button
-            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors relative"
-            aria-label="Alerte"
-            title={task.isLate ? `${task.daysLate} jour(s) de retard` : "Pas d'alerte"}
-          >
-            <AlertCircle
-              className={`size-5 ${task.isLate ? "text-red-500" : "text-neutral-400"}`}
-            />
-            {task.hasAlert && (
-              <div className="absolute top-0.5 right-0.5 size-2.5 bg-red-500 rounded-full" />
-            )}
-          </button>
+        {/* 3. Droite: Barre de progression OU Statuts (flex-1, ~50%) */}
+        <div className="flex-1 flex items-center gap-2">
+          {/* Barre de progression OU Pastilles statuts */}
+          {hasProgressBar ? (
+            <>
+              {/* Barre progression + % */}
+              <div className="flex items-center gap-2 flex-1">
+                <div className="h-1.5 flex-1 rounded-full bg-neutral-200">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${task.progress}%`,
+                      backgroundColor: colors.border,
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-semibold w-6 text-right flex-shrink-0" style={{ color: colors.text }}>
+                  {task.progress}%
+                </span>
+              </div>
+
+              {/* Bouton Attention - Uniquement pour tâches avec barre */}
+              <button
+                className="p-2 rounded-lg flex-shrink-0 hover:opacity-80 transition-opacity"
+                style={{ backgroundColor: "#F3F3F3" }}
+                aria-label="Alerte"
+                title={task.isLate ? `${task.daysLate} jour(s) de retard` : "Pas d'alerte"}
+              >
+                <img src={AttentionSvg} alt="Attention" className="size-5" />
+              </button>
+            </>
+          ) : (
+            /* Pastilles statuts pour Appel/Email/Mémo */
+            <div className="flex-1 flex items-center gap-1 rounded-full px-2 py-1.5" style={{ backgroundColor: "#F8F9FA", border: "1px solid #E4E4E7" }}>
+              {task.stages.map((stage, i) => (
+                <button
+                  key={stage}
+                  onClick={() => setCurrentStage(i)}
+                  className="flex-1 px-3 py-1 rounded-full text-xs font-medium transition-all text-center"
+                  style={{
+                    backgroundColor: i === currentStage ? "#FFFFFF" : "transparent",
+                    color: i === currentStage ? "#000000" : "#6B7280",
+                    border: i === currentStage ? "1px solid #E4E4E7" : "none",
+                  }}
+                >
+                  {stage}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* 6. Menu à trois points */}
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
-            aria-label="Options"
-          >
-            <MoreVertical className="size-5 text-neutral-500" />
-          </button>
+        {/* 4. Menu 3 Points - TOUT À DROITE pour TOUTES les cartes */}
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="p-2 rounded-lg flex-shrink-0 hover:opacity-80 transition-opacity relative"
+          style={{ backgroundColor: "#F3F3F3" }}
+          aria-label="Options"
+        >
+          <img src={MenuSvg} alt="Menu" className="size-5" />
 
           {menuOpen && (
             <div className="absolute top-full right-0 z-30 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg min-w-[140px]">
@@ -446,66 +511,70 @@ function TaskRow({ task, index }) {
               </button>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Ligne 2 : Date ou Alerte retard */}
-      <div className="mt-3 pl-12 text-xs">
-        {task.isLate ? (
-          <span className="text-red-500 font-semibold">
-            ⚠️ {task.daysLate} jour{task.daysLate > 1 ? "s" : ""} de retard
-          </span>
-        ) : (
-          <span className="text-neutral-500">
-            Date limite : {task.dueDate}
-          </span>
-        )}
-      </div>
-
-      {/* Ligne 3 : Boutons statuts */}
-      <div className="mt-3 pl-12 flex items-center gap-2">
-        {task.stages.map((stage, i) => (
-          <button
-            key={stage}
-            onClick={() => console.log(`Étape ${stage}`)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              i === task.currentStage
-                ? "bg-neutral-900 text-white"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
-          >
-            {stage}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TasksPanel({ height }) {
-  return (
-    <div
-      className="rounded-2xl border border-neutral-200 bg-white/70 p-5 flex flex-col"
-      style={height ? { height: `${height}px` } : {}}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-neutral-900">Priorité des tâches & mémos</h2>
-          <div className="text-xs text-neutral-500">12 mars 2025</div>
-        </div>
-        <button
-          onClick={() => console.log('Ajouter tâche')}
-          className="px-4 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-sm font-medium transition-colors whitespace-nowrap"
-          aria-label="Ajouter une tâche manuelle ou un mémo"
-          title="Ajouter une tâche manuelle ou un mémo"
-        >
-          + Ajouter une tâche manuelle ou un mémo
         </button>
       </div>
 
-      {/* Tâches avec scroll interne */}
-      <div className="flex-1 overflow-y-auto grid gap-3 pr-2 min-h-0">
+      {/* Séparateur gris à 90% largeur - Intégré directement */}
+    </>
+  );
+}
+
+function TasksPanel({ height, onNavigate }) {
+  // Format date in French
+  const formatDateFrench = () => {
+    const now = new Date();
+    const months = [
+      "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+      "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+    ];
+    const day = now.getDate();
+    const month = months[now.getMonth()];
+    const year = now.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  return (
+    <div
+      className="rounded-2xl border border-neutral-200 bg-white/70 p-5 flex flex-col overflow-hidden"
+      style={height ? { height: `${height}px`, maxHeight: `${height}px` } : {}}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4 flex-shrink-0 gap-4">
+        {/* Gauche: Titre et Date */}
+        <div>
+          <h2 className="text-lg font-bold text-neutral-900">Priorité des tâches & mémos</h2>
+          <div className="text-xs text-neutral-500 mt-1">{formatDateFrench()}</div>
+        </div>
+
+        {/* Droite: Boutons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Bouton Ajouter tâche */}
+          <button
+            onClick={() => console.log('Ajouter tâche')}
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
+            style={{ backgroundColor: "#F3F3F3", color: "#374151" }}
+            aria-label="Ajouter une tâche manuelle ou un mémo"
+            title="Ajouter une tâche manuelle ou un mémo"
+          >
+            + Ajouter une tâche manuelle ou un mémo
+          </button>
+
+          {/* Bouton Flèche vers haut-droit */}
+          <button
+            onClick={() => onNavigate && onNavigate('tasks-memo')}
+            className="size-10 rounded-lg flex items-center justify-center transition-colors hover:opacity-80"
+            style={{ backgroundColor: "#F3F3F3" }}
+            aria-label="Ouvrir la page Tâches et mémo"
+            title="Ouvrir la page Tâches et mémo"
+          >
+            <ArrowUpRight className="size-5 text-neutral-600" />
+          </button>
+        </div>
+      </div>
+
+      {/* Tâches avec scroll interne - scrollbar cachée */}
+      <div className="flex-1 overflow-y-auto grid gap-3 min-h-0" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {tasks.map((t, i) => (
           <TaskRow key={t.id} task={t} index={i} />
         ))}
@@ -558,7 +627,7 @@ function Agenda() {
 
 
 // Grille principale avec hauteurs synchronisées
-function MainPanels() {
+function MainPanels({ onNavigate }) {
   const kpiRef = useRef(null);
   const [kpiHeight, setKpiHeight] = useState(0);
   const [isWide, setIsWide] = useState(false);
@@ -580,19 +649,46 @@ function MainPanels() {
   // ResizeObserver pour synchroniser les hauteurs (uniquement ≥1280px)
   useEffect(() => {
     if (!kpiRef.current || !isWide) return;
-    
+
     const updateHeight = () => {
-      const rect = kpiRef.current.getBoundingClientRect();
-      setKpiHeight(rect.height);
+      if (kpiRef.current) {
+        // Mesurer la hauteur exacte du conteneur KPI
+        const allChildren = kpiRef.current.querySelectorAll('[class*="rounded-2xl"]');
+        let totalHeight = 0;
+
+        allChildren.forEach((child) => {
+          const rect = child.getBoundingClientRect();
+          totalHeight += rect.height;
+        });
+
+        // Ajouter les gaps (space-y-4 = 1rem = 16px par gap, il y a n-1 gaps)
+        if (allChildren.length > 1) {
+          totalHeight += (allChildren.length - 1) * 16; // 4 * 4px = 16px
+        }
+
+        // Si on ne trouve pas d'enfants, utiliser scrollHeight
+        if (totalHeight === 0) {
+          totalHeight = kpiRef.current.scrollHeight;
+        }
+
+        setKpiHeight(totalHeight);
+      }
     };
+
+    // Délai court pour permettre au DOM de se stabiliser
+    const timeoutId = setTimeout(updateHeight, 150);
 
     const ro = new ResizeObserver(updateHeight);
     ro.observe(kpiRef.current);
-    
-    // Calcul initial
-    updateHeight();
-    
-    return () => ro.disconnect();
+
+    // Calcul initial après stabilisation
+    const initialTimeoutId = setTimeout(updateHeight, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(initialTimeoutId);
+      ro.disconnect();
+    };
   }, [isWide]);
 
   return (
@@ -604,7 +700,7 @@ function MainPanels() {
         </div>
 
         {/* Colonne droite - Tâches avec hauteur synchronisée */}
-        <TasksPanel height={isWide && kpiHeight > 0 ? kpiHeight : null} />
+        <TasksPanel height={isWide && kpiHeight > 0 ? kpiHeight : null} onNavigate={onNavigate} />
       </div>
     </section>
   );
@@ -626,7 +722,7 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
         <div className="w-full">
           <Searchbar />
           <KpiStrip />
-          <MainPanels />
+          <MainPanels onNavigate={onNavigate} />
           <Agenda />
           <footer className="h-16" />
         </div>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import L from "leaflet";
 
 // SVG Icons
 const XIcon = () => (
@@ -119,7 +121,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className="flex items-center gap-2">
           {selectedAgenceur ? (
@@ -129,10 +131,10 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
                 alt=""
                 className="size-6 rounded-full"
               />
-              <span className="text-gray-900">{selectedAgenceur.name}</span>
+              <span className="text-neutral-900">{selectedAgenceur.name}</span>
             </>
           ) : (
-            <span className="text-gray-400">Choisir un agenseur</span>
+            <span className="text-neutral-400">Choisir un agenceur</span>
           )}
         </span>
         <ChevronDownIcon />
@@ -141,7 +143,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
       {isOpen && (
         <div
           role="listbox"
-          className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="absolute z-10 mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg"
         >
           {options.map((option, index) => (
             <div
@@ -152,8 +154,8 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
               onClick={() => handleOptionClick(option.name)}
               onMouseEnter={() => setFocusedIndex(index)}
               className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors ${
-                focusedIndex === index ? "bg-gray-100" : ""
-              } ${value === option.name ? "bg-gray-50" : ""} ${
+                focusedIndex === index ? "bg-neutral-100" : ""
+              } ${value === option.name ? "bg-neutral-50" : ""} ${
                 index === 0 ? "rounded-t-lg" : ""
               } ${index === options.length - 1 ? "rounded-b-lg" : ""}`}
             >
@@ -162,7 +164,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
                 alt=""
                 className="size-6 rounded-full"
               />
-              <span className="text-gray-900">{option.name}</span>
+              <span className="text-neutral-900">{option.name}</span>
             </div>
           ))}
         </div>
@@ -174,19 +176,30 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
 const CreateContactModal = ({ open, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     civilite: "",
-    nom: "",
     prenom: "",
+    nom: "",
+    email: "",
+    telephone: "",
     adresse: "",
     complementAdresse: "",
-    agence: "",
-    agenceurReferent: ""
+    adresseCoordinates: null,
+    origine: "",
+    sousOrigine: "",
+    societe: "",
+    agenceurReferent: "",
+    rgpd: false
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [adresseSearchResults, setAdresseSearchResults] = useState([]);
+  const [adresseValidated, setAdresseValidated] = useState(false);
+  const [showAddressMap, setShowAddressMap] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const modalRef = useRef(null);
   const firstInputRef = useRef(null);
   const lastFocusedElement = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   // Mock data for select options
   const agenceurs = [
@@ -195,7 +208,15 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
     { id: "3", name: "Lucas", avatarUrl: "https://i.pravatar.cc/24?img=15" }
   ];
 
-  const agences = ["Travaux confort", "Rénov' expert", "Maison+"];
+  const origines = ["Relation", "Salon", "Web", "Recommandation", "Démarchage"];
+
+  const sousOrigines = {
+    "Relation": ["Client existant", "Bouche à oreille", "Partenaire"],
+    "Salon": ["Salon de l'habitat", "Salon du luxe", "Autre"],
+    "Web": ["Google", "Site web", "Réseaux sociaux", "Autre"],
+    "Recommandation": ["Client", "Architecte", "Autre professionnel"],
+    "Démarchage": ["Porte à porte", "Appel téléphonique", "Email"]
+  };
 
   // Save last focused element when modal opens
   useEffect(() => {
@@ -230,21 +251,118 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
     if (!open) {
       setFormData({
         civilite: "",
-        nom: "",
         prenom: "",
+        nom: "",
+        email: "",
+        telephone: "",
         adresse: "",
         complementAdresse: "",
-        agence: "",
-        agenceurReferent: ""
+        adresseCoordinates: null,
+        origine: "",
+        sousOrigine: "",
+        societe: "",
+        agenceurReferent: "",
+        rgpd: false
       });
       setErrors({});
       setIsSubmitting(false);
+      setAdresseValidated(false);
+      setShowAddressMap(false);
+      setAdresseSearchResults([]);
     }
   }, [open]);
 
+  // Search address using Nominatim API with debounce
+  const searchAddress = async (addressQuery) => {
+    if (!addressQuery.trim()) {
+      setAdresseSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=fr&limit=5`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+      const results = await response.json();
+      setAdresseSearchResults(results.slice(0, 5));
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error("Error searching address:", error);
+      }
+      setAdresseSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounced search handler
+  const handleAddressSearch = (query) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!query.trim()) {
+      setAdresseSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    if (query.trim().length <= 3) {
+      setAdresseSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Debounce: wait 500ms before searching
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAddress(query);
+    }, 500);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle address selection
+  const handleSelectAddress = (result) => {
+    setFormData(prev => ({
+      ...prev,
+      adresse: result.display_name,
+      adresseCoordinates: [parseFloat(result.lat), parseFloat(result.lon)]
+    }));
+    setAdresseValidated(true);
+    setShowAddressMap(true);
+    setAdresseSearchResults([]);
+  };
+
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
+
+    // Special handling for adresse field - search for addresses with debounce
+    if (field === "adresse") {
+      setAdresseValidated(false);
+      setShowAddressMap(false);
+      handleAddressSearch(value);
+    }
+
+    // Reset sous-origine when origine changes
+    if (field === "origine") {
+      setFormData(prev => ({ ...prev, sousOrigine: "" }));
+    }
+
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
@@ -253,12 +371,12 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.nom.trim()) {
-      newErrors.nom = "Le nom est requis";
-    }
-
     if (!formData.prenom.trim()) {
       newErrors.prenom = "Le prénom est requis";
+    }
+
+    if (!formData.nom.trim()) {
+      newErrors.nom = "Le nom est requis";
     }
 
     setErrors(newErrors);
@@ -274,23 +392,28 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
 
     setIsSubmitting(true);
 
-    // Trim all string values
-    const trimmedData = {
-      civilite: formData.civilite,
-      nom: formData.nom.trim(),
-      prenom: formData.prenom.trim(),
-      adresse: formData.adresse.trim(),
-      complementAdresse: formData.complementAdresse.trim(),
-      agence: formData.agence,
-      agenceurReferent: formData.agenceurReferent
-    };
-
     try {
+      const submitData = {
+        civilite: formData.civilite,
+        prenom: formData.prenom.trim(),
+        nom: formData.nom.trim(),
+        email: formData.email.trim(),
+        telephone: formData.telephone.trim(),
+        adresse: formData.adresse.trim(),
+        complementAdresse: formData.complementAdresse.trim(),
+        adresseCoordinates: formData.adresseCoordinates,
+        origine: formData.origine,
+        sousOrigine: formData.sousOrigine,
+        societe: formData.societe.trim(),
+        agenceurReferent: formData.agenceurReferent,
+        rgpd: formData.rgpd
+      };
+
       if (onSubmit) {
-        await onSubmit(trimmedData);
+        await onSubmit(submitData);
         onClose();
       } else {
-        console.log(trimmedData);
+        console.log(submitData);
         onClose();
       }
     } catch (error) {
@@ -312,19 +435,17 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       onClick={handleOverlayClick}
     >
-      {/* Backdrop with blur */}
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
 
-      {/* Modal Panel */}
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-contact-title"
-        className="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl"
+        className="relative w-full max-w-4xl rounded-2xl bg-white shadow-xl my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -335,29 +456,29 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
           <button
             aria-label="Fermer"
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            className="p-2 rounded-md hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-300"
           >
             <XIcon />
           </button>
         </header>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
           <div className="p-6 space-y-4">
-            {/* Ligne 1: Civilité | Nom | Prénom */}
-            <section className="rounded-xl bg-gray-50 p-4">
+
+            {/* BLOC 1: Civilité | Prénom | Nom | Email | Téléphone */}
+            <div className="rounded-xl bg-neutral-50 p-4 space-y-4 border border-[#E9E9E9]">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Civilité client */}
                 <div>
-                  <label htmlFor="civilite" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Civilité client
+                  <label htmlFor="civilite" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Civilité
                   </label>
                   <select
                     ref={firstInputRef}
                     id="civilite"
                     value={formData.civilite}
                     onChange={(e) => handleChange("civilite", e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
                   >
                     <option value="">Sélectionner</option>
                     <option value="Mme">Mme</option>
@@ -366,62 +487,77 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   </select>
                 </div>
 
-                {/* Nom du contact */}
                 <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Nom du contact <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="nom"
-                    value={formData.nom}
-                    onChange={(e) => handleChange("nom", e.target.value)}
-                    placeholder="Ex : Dupont"
-                    className={`w-full rounded-lg border ${
-                      errors.nom ? "border-red-500" : "border-gray-300"
-                    } bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400`}
-                    aria-invalid={errors.nom ? "true" : "false"}
-                    aria-describedby={errors.nom ? "nom-error" : undefined}
-                  />
-                  {errors.nom && (
-                    <p id="nom-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600">
-                      {errors.nom}
-                    </p>
-                  )}
-                </div>
-
-                {/* Prénom du contact */}
-                <div>
-                  <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Prénom du contact <span className="text-red-500">*</span>
+                  <label htmlFor="prenom" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Prénom <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     id="prenom"
                     value={formData.prenom}
                     onChange={(e) => handleChange("prenom", e.target.value)}
-                    placeholder="Ex : Chloé"
-                    className={`w-full rounded-lg border ${
-                      errors.prenom ? "border-red-500" : "border-gray-300"
-                    } bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400`}
-                    aria-invalid={errors.prenom ? "true" : "false"}
-                    aria-describedby={errors.prenom ? "prenom-error" : undefined}
+                    placeholder="Chloé"
+                    className={`w-full rounded-xl border ${
+                      errors.prenom ? "border-red-500" : "border-neutral-200"
+                    } bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
                   />
-                  {errors.prenom && (
-                    <p id="prenom-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600">
-                      {errors.prenom}
-                    </p>
-                  )}
+                  {errors.prenom && <p className="mt-1 text-sm text-red-600">{errors.prenom}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="nom" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Nom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="nom"
+                    value={formData.nom}
+                    onChange={(e) => handleChange("nom", e.target.value)}
+                    placeholder="DUBOIS"
+                    className={`w-full rounded-xl border ${
+                      errors.nom ? "border-red-500" : "border-neutral-200"
+                    } bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
+                  />
+                  {errors.nom && <p className="mt-1 text-sm text-red-600">{errors.nom}</p>}
                 </div>
               </div>
-            </section>
 
-            {/* Ligne 2: Adresse | Complément d'adresse */}
-            <section className="rounded-xl bg-gray-50 p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Adresse */}
                 <div>
-                  <label htmlFor="adresse" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="email" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => handleChange("email", e.target.value)}
+                    placeholder="chloe@example.com"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="telephone" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    id="telephone"
+                    value={formData.telephone}
+                    onChange={(e) => handleChange("telephone", e.target.value)}
+                    placeholder="+33 6 XX XX XX XX"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* BLOC 2: Adresse avec recherche et Leaflet */}
+            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="adresse" className="block text-sm font-medium text-neutral-900 mb-2">
                     Adresse
                   </label>
                   <input
@@ -429,14 +565,42 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     id="adresse"
                     value={formData.adresse}
                     onChange={(e) => handleChange("adresse", e.target.value)}
-                    placeholder="Ex : 7 Rue de Provence, 34350 Valras-Plage"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                    placeholder="Tapez une adresse..."
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
                   />
+
+                  {/* Address search results or loading indicator */}
+                  {formData.adresse.trim().length > 3 && !adresseValidated && (
+                    <>
+                      {isSearching && (
+                        <div className="mt-2 rounded-lg border border-neutral-200 bg-white shadow-sm p-3">
+                          <div className="flex items-center gap-2">
+                            <Spinner />
+                            <span className="text-sm text-neutral-600">Recherche en cours...</span>
+                          </div>
+                        </div>
+                      )}
+                      {!isSearching && adresseSearchResults.length > 0 && (
+                        <div className="mt-2 rounded-lg border border-neutral-200 bg-white shadow-sm max-h-48 overflow-y-auto">
+                          {adresseSearchResults.map((result, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSelectAddress(result)}
+                              className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 border-b border-neutral-200 last:border-b-0"
+                            >
+                              {result.display_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+
                 </div>
 
-                {/* Complément d'adresse */}
                 <div>
-                  <label htmlFor="complementAdresse" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="complementAdresse" className="block text-sm font-medium text-neutral-900 mb-2">
                     Complément d'adresse
                   </label>
                   <input
@@ -444,39 +608,89 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     id="complementAdresse"
                     value={formData.complementAdresse}
                     onChange={(e) => handleChange("complementAdresse", e.target.value)}
-                    placeholder="Appartement, bâtiment, etc."
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                    placeholder="Appartement, bâtiment..."
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
                   />
                 </div>
               </div>
-            </section>
 
-            {/* Ligne 3: Agence | Agenceur référent */}
-            <section className="rounded-xl bg-gray-50 p-4">
+              {/* Leaflet Map */}
+              {showAddressMap && formData.adresseCoordinates && (
+                <div className="rounded-lg overflow-hidden border border-neutral-200 h-48">
+                  <MapContainer
+                    center={formData.adresseCoordinates}
+                    zoom={13}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; OpenStreetMap contributors'
+                    />
+                    <Marker position={formData.adresseCoordinates} />
+                  </MapContainer>
+                </div>
+              )}
+            </div>
+
+            {/* BLOC 3: Origine et Sous-Origine */}
+            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Agence */}
                 <div>
-                  <label htmlFor="agence" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Agence
+                  <label htmlFor="origine" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Origine
                   </label>
                   <select
-                    id="agence"
-                    value={formData.agence}
-                    onChange={(e) => handleChange("agence", e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                    id="origine"
+                    value={formData.origine}
+                    onChange={(e) => handleChange("origine", e.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
                   >
-                    <option value="">Sélectionner une agence</option>
-                    {agences.map((agence) => (
-                      <option key={agence} value={agence}>
-                        {agence}
-                      </option>
+                    <option value="">Sélectionner une origine</option>
+                    {origines.map(origine => (
+                      <option key={origine} value={origine}>{origine}</option>
                     ))}
                   </select>
                 </div>
 
-                {/* Agenceur référent - Custom Select with Avatar */}
                 <div>
-                  <label htmlFor="agenceurReferent" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="sousOrigine" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Sous-Origine
+                  </label>
+                  <select
+                    id="sousOrigine"
+                    value={formData.sousOrigine}
+                    onChange={(e) => handleChange("sousOrigine", e.target.value)}
+                    disabled={!formData.origine}
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Sélectionner une sous-origine</option>
+                    {formData.origine && sousOrigines[formData.origine]?.map(sous => (
+                      <option key={sous} value={sous}>{sous}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* BLOC 4: Société et Agenceur référent */}
+            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="societe" className="block text-sm font-medium text-neutral-900 mb-2">
+                    Nom de la société
+                  </label>
+                  <input
+                    type="text"
+                    id="societe"
+                    value={formData.societe}
+                    onChange={(e) => handleChange("societe", e.target.value)}
+                    placeholder="Nom de la société"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="agenceurReferent" className="block text-sm font-medium text-neutral-900 mb-2">
                     Agenceur référent
                   </label>
                   <AgenceurSelect
@@ -487,15 +701,62 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   />
                 </div>
               </div>
-            </section>
+            </div>
+
+            {/* BLOC 5: RGPD */}
+            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+              <div className="flex items-center gap-3">
+                <div className="relative inline-block w-12 h-6">
+                  <input
+                    type="checkbox"
+                    id="rgpd"
+                    name="rgpd"
+                    checked={formData.rgpd}
+                    onChange={(e) => handleChange("rgpd", e.target.checked)}
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor="rgpd"
+                    className={`block w-full h-full rounded-full transition cursor-pointer ${
+                      formData.rgpd ? "bg-neutral-900" : "bg-neutral-300"
+                    }`}
+                  >
+                    <div
+                      className={`absolute left-0 top-0 w-6 h-6 bg-white rounded-full shadow transition transform ${
+                        formData.rgpd ? "translate-x-6" : ""
+                      }`}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <span className="text-sm font-medium">
+                    {formData.rgpd ? "Oui" : "Non"}
+                  </span>
+                  <button type="button" className="text-sm text-neutral-600 hover:underline ml-2">
+                    Voir les informations RGPD
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-600">
+                Mes données ne seront utilisées qu'à cette fin et je pourrai retirer mon consentement à tout moment sur mon accès portail ou sur demande à contact@xora.fr
+              </p>
+            </div>
+
           </div>
 
           {/* Footer */}
-          <footer className="px-6 pb-6 pt-2 flex justify-center">
+          <footer className="px-6 py-4 border-t border-neutral-200 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
+            >
+              Annuler
+            </button>
             <button
               type="submit"
               disabled={!isFormValid || isSubmitting}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
             >
               {isSubmitting ? <Spinner /> : <PlusIcon />}
               <span>Créer la fiche contact</span>

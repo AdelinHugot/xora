@@ -302,7 +302,7 @@ const TaskRow = ({ task, onTaskUpdate }) => {
 
 const Topbar = () => {
   return (
-    <header className="h-16 border-b bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
+    <header className="h-16 border-b bg-[#F8F9FA] border-neutral-200 px-4 lg:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Tâches & mémo</h1>
       </div>

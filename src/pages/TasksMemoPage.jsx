@@ -50,7 +50,11 @@ const generateMockTasks = () => {
     "Mémo",
     "Dossier technique",
     "Études en cours",
-    "Installation"
+    "Installation",
+    "Prospect",
+    "Étude client",
+    "SAV",
+    "Terminé"
   ];
 
   const statuses = [
@@ -94,6 +98,16 @@ const generateMockTasks = () => {
 };
 
 const mockTasks = generateMockTasks();
+
+// Statuts de projets pour la diversification
+const PROJECT_STATUSES = [
+  "Prospect",
+  "Étude client",
+  "Dossier technique",
+  "Installation",
+  "SAV",
+  "Terminé"
+];
 
 // Utility hooks
 const useOutsideClick = (ref, handler) => {
@@ -195,9 +209,9 @@ const Pencil = () => (
 // Components
 const Topbar = ({ onNavigate }) => {
   return (
-    <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+    <header className="h-16 border-b border-[#E9E9E9] bg-white px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
-        <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
+        <div className="p-2.5 bg-neutral-50 border border-[#E9E9E9] rounded-lg text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16.5 3.88501L7.9425 12.45L4.7625 9.27001L5.82 8.21251L7.9425 10.335L15.4425 2.83501L16.5 3.88501ZM14.8425 7.66501C14.94 8.09251 15 8.54251 15 9.00001C15 12.315 12.315 15 9 15C5.685 15 3 12.315 3 9.00001C3 5.68501 5.685 3.00001 9 3.00001C10.185 3.00001 11.28 3.34501 12.21 3.93751L13.29 2.85751C12.0348 1.97217 10.536 1.49788 9 1.50001C4.86 1.50001 1.5 4.86001 1.5 9.00001C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9.00001C16.5 8.10751 16.335 7.25251 16.05 6.45751L14.8425 7.66501Z" fill="currentColor"/>
           </svg>
@@ -213,10 +227,10 @@ const FiltersBar = ({ filters, onFilterChange }) => {
   const assignees = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
 
   return (
-    <div className="p-6 border-b border-gray-200">
+    <div className="py-4 px-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
             <SearchIcon />
           </div>
           <input
@@ -224,14 +238,14 @@ const FiltersBar = ({ filters, onFilterChange }) => {
             value={filters.search}
             onChange={(e) => onFilterChange("search", e.target.value)}
             placeholder="Rechercher client/projet"
-            className="w-full pl-10 pr-3 h-10 rounded-lg border border-gray-300 bg-white text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
           />
         </div>
 
         <select
           value={filters.type}
           onChange={(e) => onFilterChange("type", e.target.value)}
-          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
         >
           <option value="">Tâches & mémo</option>
           <option value="Tâche">Tâche</option>
@@ -241,7 +255,7 @@ const FiltersBar = ({ filters, onFilterChange }) => {
         <select
           value={filters.status}
           onChange={(e) => onFilterChange("status", e.target.value)}
-          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
         >
           <option value="">Statut</option>
           <option value="Non commencé">Non commencé</option>
@@ -252,7 +266,7 @@ const FiltersBar = ({ filters, onFilterChange }) => {
         <select
           value={filters.assignee}
           onChange={(e) => onFilterChange("assignee", e.target.value)}
-          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
         >
           <option value="">Agenceur·s</option>
           {assignees.map(a => <option key={a} value={a}>{a}</option>)}
@@ -261,7 +275,7 @@ const FiltersBar = ({ filters, onFilterChange }) => {
         <select
           value={filters.echeance}
           onChange={(e) => onFilterChange("echeance", e.target.value)}
-          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
         >
           <option value="">Échéance</option>
           <option value="today">Aujourd'hui</option>
@@ -295,7 +309,7 @@ const StatusSegmented = ({ value, onChange }) => {
   const statuses = ["Non commencé", "En cours", "Terminé"];
 
   return (
-    <div className="inline-flex items-center rounded-full border border-gray-300 p-1" role="radiogroup">
+    <div className="inline-flex items-center rounded-full border border-neutral-300 p-1" role="radiogroup">
       {statuses.map((s) => (
         <button
           key={s}
@@ -304,7 +318,7 @@ const StatusSegmented = ({ value, onChange }) => {
           aria-checked={value === s}
           onClick={() => onChange(s)}
           className={`px-3 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
-            value === s ? "bg-gray-900 text-white" : "hover:bg-gray-50"
+            value === s ? "bg-gray-900 text-white" : "hover:bg-white"
           }`}
         >
           {s}
@@ -314,22 +328,23 @@ const StatusSegmented = ({ value, onChange }) => {
   );
 };
 
-const ProgressBar = ({ value, status }) => {
+const ProgressBar = ({ value, status, color }) => {
   const getColor = () => {
+    if (color) return color;
     if (status === "Terminé") return "bg-green-500";
     if (status === "En cours") return "bg-blue-500";
-    return "bg-gray-400";
+    return "bg-neutral-400";
   };
 
   const getTextColor = () => {
     if (status === "Terminé") return "text-green-600";
     if (status === "En cours") return "text-blue-600";
-    return "text-gray-600";
+    return "text-neutral-600";
   };
 
   return (
     <div className="flex items-center gap-2 flex-1 min-w-[120px]">
-      <div className="relative h-1.5 rounded-full bg-gray-200 flex-1">
+      <div className="relative h-1.5 rounded-full bg-neutral-200 flex-1">
         <div
           className={`absolute inset-y-0 left-0 rounded-full ${getColor()}`}
           style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -379,7 +394,7 @@ const RowMenu = ({ onView, onEdit, onDuplicate, onDelete }) => {
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        className="p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+        className="p-2 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
       >
         <MoreVerticalIcon />
       </button>
@@ -387,7 +402,7 @@ const RowMenu = ({ onView, onEdit, onDuplicate, onDelete }) => {
       {isOpen && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-40 rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="absolute right-0 z-20 mt-1 w-40 rounded-lg border border-neutral-200 bg-white shadow-lg"
         >
           {menuItems.map((item, idx) => (
             <button
@@ -397,7 +412,7 @@ const RowMenu = ({ onView, onEdit, onDuplicate, onDelete }) => {
                 item.action();
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-white ${
                 idx === 0 ? "rounded-t-lg" : ""
               } ${idx === menuItems.length - 1 ? "rounded-b-lg" : ""}`}
             >
@@ -426,14 +441,14 @@ const NoteButton = ({ note, onChange }) => {
     <div className="relative" ref={popoverRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm"
+        className="inline-flex items-center justify-center p-2 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-500 hover:text-neutral-700 transition-colors"
+        title="Note"
       >
         <NoteIcon />
-        Note
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-gray-200 bg-white shadow-lg p-3">
+        <div className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-neutral-200 bg-white shadow-lg p-3">
           <textarea
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -443,7 +458,7 @@ const NoteButton = ({ note, onChange }) => {
             }}
             placeholder="Ajouter une note..."
             rows={4}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300"
             autoFocus
           />
         </div>
@@ -458,6 +473,16 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
 
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+
+    const daysLate = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+
+    if (daysLate > 0) {
+      return <span className="font-bold text-red-600">{daysLate} j retard</span>;
+    }
+
     return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
   };
 
@@ -465,18 +490,71 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
     switch (type) {
       case "Tâche":
         return {
-          bg: "bg-gray-200",
-          text: "text-gray-800"
+          bg: "bg-blue-100",
+          text: "text-blue-700",
+          progressColor: "bg-blue-500"
         };
       case "Mémo":
         return {
-          bg: "bg-gray-900",
-          text: "text-white"
+          bg: "bg-neutral-900",
+          text: "text-white",
+          progressColor: "bg-neutral-900"
         };
       default:
         return {
-          bg: "bg-gray-300",
-          text: "text-gray-900"
+          bg: "bg-neutral-100",
+          text: "text-neutral-900",
+          progressColor: "bg-neutral-400"
+        };
+    }
+  };
+
+  const getTagStyles = (tag) => {
+    switch (tag) {
+      case "Prospect":
+        return {
+          bg: "bg-[#E0E7FF]",
+          text: "text-[#4F46E5]"
+        };
+      case "Étude client":
+        return {
+          bg: "bg-[#EED1F4]",
+          text: "text-[#C970AB]"
+        };
+      case "Dossier technique":
+        return {
+          bg: "bg-[#A4E6FE]",
+          text: "text-[#1A8AB3]"
+        };
+      case "Installation":
+        return {
+          bg: "bg-[#A9C9F9]",
+          text: "text-[#385D95]"
+        };
+      case "SAV":
+        return {
+          bg: "bg-[#FFD0C1]",
+          text: "text-[#DF7959]"
+        };
+      case "Terminé":
+        return {
+          bg: "bg-[#76D88B]",
+          text: "text-[#2A732F]"
+        };
+      case "Mémo":
+        return {
+          bg: "bg-neutral-900",
+          text: "text-white"
+        };
+      case "Études en cours":
+        return {
+          bg: "bg-orange-100",
+          text: "text-orange-700"
+        };
+      default:
+        return {
+          bg: "bg-neutral-100",
+          text: "text-neutral-900"
         };
     }
   };
@@ -512,16 +590,19 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
       onDragStart={(e) => onDragStart(e, item.id)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, item.id)}
-      className={`px-6 py-4 hover:bg-gray-100 transition-colors grid gap-3 items-center ${
-        isDragging ? "opacity-50 bg-gray-100" : "bg-gray-50"
+      className={`w-full py-4 hover:bg-neutral-100 transition-colors grid gap-3 items-center ${
+        isDragging ? "opacity-50 bg-neutral-100" : "bg-white"
       }`}
       style={{
-        gridTemplateColumns: "50px 1.5fr 1fr 1.2fr 1fr 1fr 1fr 0.8fr 40px"
+        gridTemplateColumns: "50px 1.5fr 1fr 1fr 1fr 1fr 0.5fr 1fr 40px",
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        boxSizing: "border-box"
       }}
     >
       {/* Ordre */}
       <div className="flex items-center justify-center">
-        <div className="cursor-move text-gray-400 hover:text-gray-600">
+        <div className="cursor-move text-neutral-400 hover:text-neutral-600">
           <GripVerticalIcon />
         </div>
       </div>
@@ -529,29 +610,26 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
       {/* Descriptif */}
       <div className="min-w-0 overflow-hidden">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-gray-900 truncate">{item.title}</span>
-          <TagBadge tag={item.tag} />
+          <span className="font-semibold text-neutral-900 truncate">{item.title}</span>
         </div>
-        <div className="text-xs text-gray-500 truncate">{item.client}</div>
+        <div className="text-xs text-neutral-500 truncate">{item.client}</div>
       </div>
 
-      {/* Type */}
-      <div className="flex items-center justify-center">
-        <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(item.type).bg} ${getTypeStyles(item.type).text}`}>
-          {item.type}
-        </div>
-      </div>
-
-      {/* Statut */}
-      <div>
-        <StatusSegmented
-          value={item.status}
-          onChange={handleStatusChange}
-        />
+      {/* Type/Tag */}
+      <div className="flex items-center justify-start">
+        {item.tag ? (
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTagStyles(item.tag).bg} ${getTagStyles(item.tag).text}`}>
+            {item.tag}
+          </div>
+        ) : (
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(item.type).bg} ${getTypeStyles(item.type).text}`}>
+            {item.type}
+          </div>
+        )}
       </div>
 
       {/* Échéance */}
-      <div className="text-xs text-gray-500 whitespace-nowrap">
+      <div className="text-xs text-neutral-500 whitespace-nowrap">
         {formatDate(item.due)}
       </div>
 
@@ -562,7 +640,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
           alt={item.assignee}
           className="size-6 rounded-full"
         />
-        <span className="text-sm text-gray-700">{item.assignee}</span>
+        <span className="text-sm text-neutral-700">{item.assignee}</span>
       </div>
 
       {/* Note */}
@@ -571,20 +649,53 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
         onChange={(v) => onUpdate(item.id, { note: v })}
       />
 
-      {/* Progression */}
-      <ProgressBar value={item.progress} status={item.status} />
+      {/* Progression ou Statut Badge */}
+      {item.type === "Mémo" ? (
+        <div className="flex items-center justify-start">
+          <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-50 p-1">
+            <button
+              onClick={() => handleStatusChange("Non commencé")}
+              className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                item.status === "Non commencé" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100 text-neutral-700"
+              }`}
+            >
+              Non
+            </button>
+            <button
+              onClick={() => handleStatusChange("En cours")}
+              className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                item.status === "En cours" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100 text-neutral-700"
+              }`}
+            >
+              Cours
+            </button>
+            <button
+              onClick={() => handleStatusChange("Terminé")}
+              className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                item.status === "Terminé" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100 text-neutral-700"
+              }`}
+            >
+              Terminé
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-start">
+          <ProgressBar value={item.progress} status={item.status} color={getTypeStyles(item.type).progressColor} />
+        </div>
+      )}
 
       {/* Actions Menu */}
-      <div className="relative" ref={menuRef}>
+      <div className="relative flex justify-end" ref={menuRef}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="p-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 hover:text-gray-900 transition-all"
+          className="p-2 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-neutral-600 hover:text-neutral-900 transition-all border border-[#E4E4E7]"
         >
           <MoreVerticalIcon className="size-5" />
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <div className="absolute right-0 mt-1 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg z-50">
             {item.type === "Tâche" ? (
               <>
                 <button
@@ -592,7 +703,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
                     console.log("Voir le projet:", item);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                  className="w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-white flex items-center gap-2 border-b border-neutral-100"
                 >
                   <Eye className="size-4" />
                   Voir le projet
@@ -602,7 +713,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
                     console.log("Modifier la tâche:", item);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-white flex items-center gap-2"
                 >
                   <Pencil className="size-4" />
                   Modifier la tâche
@@ -614,7 +725,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
                   console.log("Modifier le mémo:", item);
                   setMenuOpen(false);
                 }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-white flex items-center gap-2"
               >
                 <Pencil className="size-4" />
                 Éditer le mémo
@@ -659,7 +770,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
         aria-label="Première page"
-        className="size-9 flex items-center justify-center rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="size-9 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-neutral-300"
       >
         «
       </button>
@@ -667,7 +778,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="Page précédente"
-        className="size-9 flex items-center justify-center rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="size-9 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-neutral-300"
       >
         ‹
       </button>
@@ -681,10 +792,10 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           aria-label={typeof page === "number" ? `Page ${page}` : undefined}
           className={`size-9 flex items-center justify-center rounded-lg text-sm font-medium ${
             page === currentPage
-              ? "bg-gray-900 text-white"
+              ? "bg-neutral-900 text-white"
               : page === "..."
               ? "cursor-default"
-              : "border hover:bg-gray-50"
+              : "border border-neutral-200 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-300"
           }`}
         >
           {page}
@@ -695,7 +806,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         aria-label="Page suivante"
-        className="size-9 flex items-center justify-center rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="size-9 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-neutral-300"
       >
         ›
       </button>
@@ -703,7 +814,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
         aria-label="Dernière page"
-        className="size-9 flex items-center justify-center rounded-lg border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="size-9 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-neutral-300"
       >
         »
       </button>
@@ -845,7 +956,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-white text-neutral-900">
       <CreateTaskOrMemoModal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -862,13 +973,13 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
         <Topbar onNavigate={onNavigate} />
         <div className="w-full py-6 px-4 lg:px-6">
           {/* Main Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="rounded-2xl border border-[#E9E9E9] bg-white shadow-sm">
             {/* Card Header */}
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 pb-0">
               {/* First row: Title, Pill, Button */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-neutral-900">
                     Liste des tâches et mémo ({filteredTasks.length})
                   </h2>
                   {/* Status Filter Pill */}
@@ -878,7 +989,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                       className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
                         statusFilterPill === "en-cours"
                           ? "bg-gray-900 text-white"
-                          : "text-gray-700 hover:text-gray-900"
+                          : "text-neutral-700 hover:text-neutral-900"
                       }`}
                     >
                       En cours
@@ -888,7 +999,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                       className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
                         statusFilterPill === "termine"
                           ? "bg-gray-900 text-white"
-                          : "text-gray-700 hover:text-gray-900"
+                          : "text-neutral-700 hover:text-neutral-900"
                       }`}
                     >
                       Terminé
@@ -897,7 +1008,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                 </div>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
                 >
                   <PlusIcon />
                   Ajouter une tâche ou un mémo
@@ -909,25 +1020,27 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
             </div>
 
             {/* Content - Gray background container */}
-            <div className="bg-gray-50">
+            <div className="bg-white w-full" style={{ boxSizing: "border-box" }}>
               {/* Table Headers */}
-              <div className="px-6 py-4 border-b border-gray-200 grid gap-3" style={{
-                gridTemplateColumns: "50px 1.5fr 1fr 1.2fr 1fr 1fr 1fr 0.8fr 40px"
+              <div className="py-4 border-b border-[#E9E9E9] grid gap-3 w-full" style={{
+                gridTemplateColumns: "50px 1.5fr 1fr 1fr 1fr 1fr 0.5fr 1fr 40px",
+                paddingLeft: "24px",
+                paddingRight: "24px",
+                boxSizing: "border-box"
               }}>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Ordre</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Descriptif</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Type</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Statut</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Échéance</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Collaborateur.s</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Note</div>
-                <div className="text-xs font-semibold text-gray-600 uppercase">Progression</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Ordre</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Descriptif</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Statut</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Échéance</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Collaborateur.s</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Note</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase">Progression</div>
                 <div></div>
               </div>
 
               {/* Table Rows */}
               {paginatedTasks.length > 0 ? (
-                <div>
+                <div className="w-full">
                   {paginatedTasks.map((task) => (
                     <TaskRow
                       key={task.id}
@@ -942,14 +1055,21 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                   ))}
                 </div>
               ) : (
-                <div className="px-6 py-12 text-center text-gray-500">
+                <div className="w-full py-12 text-center text-neutral-500" style={{
+                  paddingLeft: "24px",
+                  paddingRight: "24px"
+                }}>
                   Aucune tâche ou mémo à afficher
                 </div>
               )}
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-white">
-                <div className="text-sm text-gray-600">
+              <div className="py-4 border-t border-[#E9E9E9] flex items-center justify-between bg-white w-full" style={{
+                paddingLeft: "24px",
+                paddingRight: "24px",
+                boxSizing: "border-box"
+              }}>
+                <div className="text-sm text-neutral-600">
                   Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)} sur{" "}
                   {filteredTasks.length} éléments
                 </div>

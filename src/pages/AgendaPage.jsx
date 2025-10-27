@@ -820,7 +820,7 @@ function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit }) {
 
 function Topbar({ onNavigate }) {
   return (
-    <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30">
+    <header className="h-16 border-b bg-[#F8F9FA] border-neutral-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center gap-4">
         <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">

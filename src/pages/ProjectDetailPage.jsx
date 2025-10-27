@@ -148,7 +148,7 @@ function ProjectHeader({ project, onBack, onEdit, onSchedule, onAddTask, onLost 
 
   return (
     <div className="bg-white border-b border-[#ECEEF5]">
-      <div className="max-w-[1400px] mx-auto px-6 py-6">
+      <div className="w-full px-4 lg:px-6 py-6">
         {/* Back button */}
         <button
           onClick={onBack}
@@ -294,10 +294,10 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   const showSubTabs = activeTab === "study";
 
   return (
-    <div className="bg-[#F2F4F7] transition-[margin] duration-300" style={{ marginRight: `${progressSidebarWidth}px` }}>
-      <div className="max-w-[1400px] mx-auto">
+    <div className="bg-[#F8F9FA] transition-[margin] duration-300" style={{ marginRight: `${progressSidebarWidth}px` }}>
+      <div className="w-full px-4 lg:px-6">
         {/* Main tabs */}
-        <div className="flex items-end justify-between px-4 pt-4">
+        <div className="flex items-end justify-between pt-4">
           <nav
             className="flex items-end gap-1"
             role="tablist"
@@ -346,9 +346,9 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
 
         {/* Sub tabs bar (only for study tab) */}
         {showSubTabs && (
-          <div className="bg-white border-t border-l border-r border-[#E5E5E5] mx-4">
+          <div className="bg-white border-t border-l border-r border-[#E5E5E5]">
             <nav
-              className="flex items-center gap-8 px-6 h-12"
+              className="flex items-center gap-8 px-4 lg:px-6 h-12"
               role="tablist"
               aria-label="Sous-onglets"
             >
@@ -437,182 +437,123 @@ function KitchenDiscoveryTabContent() {
       {activeTertiaryTab === "ambiance" && (
         <div className="space-y-6">
           {/* Section Ambiance */}
-          <div className="bg-white rounded-lg border border-[#E5E5E5] p-6 space-y-6">
-            <h3 className="text-base font-semibold text-neutral-900">Ambiance</h3>
-
-            <div className="space-y-6">
-              {/* Ambiance(s) recherchée(s) */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-[#5A5A5A]">
-                    Ambiance(s) recherchée(s)
-                  </label>
-                  <span className="text-xs text-[#8A8A8A]">(Sélection multiple)</span>
-                </div>
-                <SelectInput
-                  value={formData.ambianceTypes}
-                  onChange={(value) => updateField("ambianceTypes", value)}
-                  placeholder="Sélectionner"
-                />
-              </div>
-
-              {/* Ambiance appréciée & à éviter */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                    Ambiance appréciée
-                  </label>
-                  <textarea
-                    value={formData.ambianceAppreciated}
-                    onChange={(e) => updateField("ambianceAppreciated", e.target.value)}
-                    placeholder="Écrire un commentaire"
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                    Ambiance à éviter
-                  </label>
-                  <textarea
-                    value={formData.ambianceToAvoid}
-                    onChange={(e) => updateField("ambianceToAvoid", e.target.value)}
-                    placeholder="Écrire un commentaire"
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <FormSection title="Ambiance">
+            <FormField label="Ambiance(s) recherchée(s)" span={3}>
+              <SelectInput
+                value={formData.ambianceTypes}
+                onChange={(value) => updateField("ambianceTypes", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Ambiance appréciée">
+              <textarea
+                value={formData.ambianceAppreciated}
+                onChange={(e) => updateField("ambianceAppreciated", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Ambiance à éviter">
+              <textarea
+                value={formData.ambianceToAvoid}
+                onChange={(e) => updateField("ambianceToAvoid", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
 
           {/* Section Modèle final */}
-          <div className="bg-white rounded-lg border border-[#E5E5E5] p-6 space-y-6">
-            <h3 className="text-base font-semibold text-neutral-900">Modèle final (Présentation client)</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Mobilier
-                </label>
-                <textarea
-                  value={formData.furniture}
-                  onChange={(e) => updateField("furniture", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Poignées
-                </label>
-                <textarea
-                  value={formData.handles}
-                  onChange={(e) => updateField("handles", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Plan de travail
-                </label>
-                <textarea
-                  value={formData.worktop}
-                  onChange={(e) => updateField("worktop", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-            </div>
-          </div>
+          <FormSection title="Modèle final (Présentation client)">
+            <FormField label="Mobilier">
+              <textarea
+                value={formData.furniture}
+                onChange={(e) => updateField("furniture", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Poignées">
+              <textarea
+                value={formData.handles}
+                onChange={(e) => updateField("handles", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Plan de travail">
+              <textarea
+                value={formData.worktop}
+                onChange={(e) => updateField("worktop", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
 
           {/* Section Matériaux client conservés */}
-          <div className="bg-white rounded-lg border border-[#E5E5E5] p-6 space-y-6">
-            <h3 className="text-base font-semibold text-neutral-900">Matériaux client conservés</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Sol cuisine
-                </label>
-                <textarea
-                  value={formData.kitchenFloor}
-                  onChange={(e) => updateField("kitchenFloor", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Mur cuisine
-                </label>
-                <textarea
-                  value={formData.kitchenWall}
-                  onChange={(e) => updateField("kitchenWall", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Autre(s)
-                </label>
-                <textarea
-                  value={formData.other}
-                  onChange={(e) => updateField("other", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Sélection mobilier
-                </label>
-                <SelectInput
-                  value={formData.furnitureSelection}
-                  onChange={(value) => updateField("furnitureSelection", value)}
-                  placeholder="Sélectionner"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#5A5A5A] mb-2">
-                  Description (Sol, mur, déco, etc…)
-                </label>
-                <textarea
-                  value={formData.materialsDescription}
-                  onChange={(e) => updateField("materialsDescription", e.target.value)}
-                  placeholder="Écrire un commentaire"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-[#E5E5E5] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <button className="inline-flex items-center gap-2 rounded-lg bg-[#2C2F37] px-8 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(15,23,42,0.25)] transition-transform hover:translate-y-[-1px]">
-              Enregistrer les modifications
-            </button>
-          </div>
+          <FormSection title="Matériaux client conservés">
+            <FormField label="Sol cuisine">
+              <textarea
+                value={formData.kitchenFloor}
+                onChange={(e) => updateField("kitchenFloor", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Mur cuisine">
+              <textarea
+                value={formData.kitchenWall}
+                onChange={(e) => updateField("kitchenWall", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Autre(s)">
+              <textarea
+                value={formData.other}
+                onChange={(e) => updateField("other", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Sélection mobilier" span={2}>
+              <SelectInput
+                value={formData.furnitureSelection}
+                onChange={(value) => updateField("furnitureSelection", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Description (Sol, mur, déco, etc…)" span={2}>
+              <textarea
+                value={formData.materialsDescription}
+                onChange={(e) => updateField("materialsDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
         </div>
       )}
 
       {/* Placeholder for other tabs */}
       {activeTertiaryTab !== "ambiance" && (
-        <div className="bg-white rounded-lg border border-[#E5E5E5] p-12 text-center text-neutral-500">
-          Contenu à venir pour "{tertiaryTabs.find(t => t.id === activeTertiaryTab)?.label}"
-        </div>
+        <FormSection title={tertiaryTabs.find(t => t.id === activeTertiaryTab)?.label}>
+          <FormField label="" span={3}>
+            <div className="text-center text-neutral-500 py-8">
+              Contenu à venir
+            </div>
+          </FormField>
+        </FormSection>
       )}
     </div>
   );
@@ -1155,7 +1096,7 @@ export default function ProjectDetailPage({
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F2F4F7] text-neutral-900">
+    <div className="min-h-screen bg-[#F8F9FA] text-neutral-900">
       <Sidebar
         currentPage="project-tracking"
         onNavigate={onNavigate}
@@ -1206,7 +1147,7 @@ export default function ProjectDetailPage({
 
         {/* Content */}
         <div
-          className="bg-[#F2F4F7] transition-[margin] duration-300"
+          className="bg-[#F8F9FA] transition-[margin] duration-300"
           style={{ marginRight: `${progressSidebarWidth}px` }}
         >
           <div className="w-full pb-8 px-4 lg:px-6">

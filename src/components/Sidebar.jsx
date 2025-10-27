@@ -25,10 +25,10 @@ const navigationConfig = [
     disabled: false
   },
   {
-    id: "project-tracking",
-    label: "Projets",
-    icon: SuiviProjetsIcon,
-    route: "project-tracking",
+    id: "tasks-memo",
+    label: "Tâches et mémo",
+    icon: TachesEtMemoIcon,
+    route: "tasks-memo",
     disabled: false
   },
   {
@@ -48,17 +48,38 @@ const navigationConfig = [
     ]
   },
   {
-    id: "tasks-memo",
-    label: "Tâches & mémo",
-    icon: TachesEtMemoIcon,
-    route: "tasks-memo",
+    id: "project-tracking",
+    label: "Suivi Projets",
+    icon: SuiviProjetsIcon,
+    route: "project-tracking",
     disabled: false
   },
   {
-    id: "agenda",
-    label: "Agenda",
-    icon: AgendaIcon,
-    route: "agenda",
+    id: "quotes",
+    label: "Devis",
+    icon: DevisIcon,
+    route: "quotes",
+    disabled: true // En attente d'implémentation
+  },
+  {
+    id: "orders",
+    label: "Commandes",
+    icon: CommandesIcon,
+    route: "orders",
+    disabled: true // En attente d'implémentation
+  },
+  {
+    id: "invoices",
+    label: "Factures",
+    icon: FacturesIcon,
+    route: "invoices",
+    disabled: true // En attente d'implémentation
+  },
+  {
+    id: "after-sales",
+    label: "Suivi SAV et finitions",
+    icon: SuiviSAVIcon,
+    route: "after-sales",
     disabled: false
   },
   {
@@ -69,25 +90,25 @@ const navigationConfig = [
     disabled: false
   },
   {
-    id: "invoices",
-    label: "Factures",
-    icon: FacturesIcon,
-    route: "invoices",
-    disabled: true // Désactivé selon les guidelines
+    id: "agenda",
+    label: "Agenda",
+    icon: AgendaIcon,
+    route: "agenda",
+    disabled: false
   },
   {
-    id: "quotes",
-    label: "Devis",
-    icon: DevisIcon,
-    route: "quotes",
-    disabled: true // Désactivé selon les guidelines
+    id: "kpi",
+    label: "KPI",
+    icon: KPIIcon,
+    route: "kpi",
+    disabled: false
   },
   {
-    id: "orders",
-    label: "Commandes",
-    icon: CommandesIcon,
-    route: "orders",
-    disabled: true // Désactivé selon les guidelines
+    id: "our-company",
+    label: "Notre entreprise",
+    icon: NotreEntrepriseIcon,
+    route: "our-company",
+    disabled: false
   },
 ];
 

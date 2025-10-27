@@ -135,7 +135,7 @@ const useClientTable = (data, filters, sortConfig, pageSize = 11) => {
 // Components
 const Topbar = ({ onNavigate }) => {
   return (
-    <header className="h-16 border-b bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+    <header className="h-16 border-b bg-[#F8F9FA] border-neutral-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -576,15 +576,6 @@ export default function ArticlesPage({ onNavigate, sidebarCollapsed, onToggleSid
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
         <div className="w-full py-6 px-4 lg:px-6">
-          {/* Page Header */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 text-gray-600 mb-2">
-              <Layout className="size-4" />
-              <span className="text-sm">Articles</span>
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900">Liste des articles</h1>
-          </div>
-
           {/* Main Card */}
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
             {/* Card Header */}

@@ -14,7 +14,7 @@ export default function KPIPage({ onNavigate, sidebarCollapsed, onToggleSidebar 
         onToggleCollapse={onToggleSidebar}
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
-        <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
+        <header className="h-16 border-b bg-[#F8F9FA] border-neutral-200 px-4 lg:px-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button className="lg:hidden p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Menu">
               <Menu className="size-4" />
