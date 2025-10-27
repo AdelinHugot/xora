@@ -590,7 +590,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
       onDragStart={(e) => onDragStart(e, item.id)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, item.id)}
-      className={`w-full py-4 hover:bg-neutral-100 transition-colors grid gap-3 items-center ${
+      className={`w-full py-4 hover:bg-neutral-100 transition-colors grid gap-3 items-start ${
         isDragging ? "opacity-50 bg-neutral-100" : "bg-white"
       }`}
       style={{
@@ -608,15 +608,15 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
       </div>
 
       {/* Descriptif */}
-      <div className="min-w-0 overflow-hidden">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="min-w-0 overflow-hidden w-full">
+        <div className="flex items-start gap-2 min-w-0">
           <span className={`font-semibold truncate ${item.status === "Terminé" ? "line-through text-neutral-400" : "text-neutral-900"}`}>{item.title}</span>
         </div>
         <div className="text-xs text-neutral-500 truncate">{item.client}</div>
       </div>
 
       {/* Type/Tag */}
-      <div className="flex items-center justify-start">
+      <div className="flex items-start justify-start">
         {item.tag ? (
           <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTagStyles(item.tag).bg} ${getTagStyles(item.tag).text}`}>
             {item.tag}
@@ -634,7 +634,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
       </div>
 
       {/* Collaborateur.s */}
-      <div className="flex items-center gap-2 whitespace-nowrap">
+      <div className="flex items-start gap-2 whitespace-nowrap">
         <img
           src={`https://i.pravatar.cc/24?img=${item.assignee.charCodeAt(0)}`}
           alt={item.assignee}
@@ -651,7 +651,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
 
       {/* Progression ou Statut Badge */}
       {item.type === "Mémo" ? (
-        <div className="flex items-center justify-start">
+        <div className="flex items-start justify-start">
           <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-50 p-1">
             <button
               onClick={() => handleStatusChange("Non commencé")}
@@ -680,7 +680,7 @@ const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, is
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-start">
+        <div className="flex items-start justify-start">
           <ProgressBar value={item.progress} status={item.status} color={getTypeStyles(item.type).progressColor} />
         </div>
       )}
@@ -1022,7 +1022,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
             {/* Content - Gray background container */}
             <div className="bg-white w-full" style={{ boxSizing: "border-box" }}>
               {/* Table Headers */}
-              <div className="py-4 border-b border-[#E9E9E9] grid gap-3 w-full" style={{
+              <div className="py-4 border-b border-[#E9E9E9] grid gap-3 w-full items-start" style={{
                 gridTemplateColumns: "50px 1.5fr 1fr 1fr 1fr 1fr 0.5fr 1fr 40px",
                 paddingLeft: "24px",
                 paddingRight: "24px",
