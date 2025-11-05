@@ -431,6 +431,48 @@ function NoteModal({ title, content, onSave, onClose }) {
   );
 }
 
+// Number Spinner Component
+function NumberSpinner({ value, onChange, placeholder = "0" }) {
+  const handleIncrement = () => {
+    const newValue = parseInt(value || 0) + 1;
+    onChange(newValue.toString());
+  };
+
+  const handleDecrement = () => {
+    const newValue = Math.max(0, parseInt(value || 0) - 1);
+    onChange(newValue.toString());
+  };
+
+  return (
+    <div className="flex items-center border border-[#E1E4ED] rounded-lg bg-white overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.08)]">
+      <button
+        onClick={handleDecrement}
+        className="px-3 py-3 text-[#2B7FFF] hover:bg-[#F8F9FC] transition-colors font-semibold text-lg flex items-center justify-center"
+        aria-label="Décrementer"
+      >
+        −
+      </button>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          const numValue = e.target.value.replace(/\D/g, "");
+          onChange(numValue);
+        }}
+        placeholder={placeholder}
+        className="flex-1 px-3 py-3 text-center border-0 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-0 bg-white"
+      />
+      <button
+        onClick={handleIncrement}
+        className="px-3 py-3 text-[#2B7FFF] hover:bg-[#F8F9FC] transition-colors font-semibold text-lg flex items-center justify-center"
+        aria-label="Incrémenter"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 // Kitchen Discovery Tab Content Component
 function KitchenDiscoveryTabContent() {
   const [activeTertiaryTab, setActiveTertiaryTab] = useState("ambiance");
@@ -450,7 +492,35 @@ function KitchenDiscoveryTabContent() {
     kitchenWall: "",
     other: "",
     furnitureSelection: "",
-    materialsDescription: ""
+    materialsDescription: "",
+    // Furniture Tab
+    storageCurrentVolume: "",
+    storageDesiredVolume: "",
+    furnitureAccessories: "",
+    accessoriesComment: "",
+    lightingBrightness: "",
+    lightingTemperature: "",
+    lightingDescription: "",
+    uninstallApparatus: "",
+    uninstallLength: "",
+    uninstallDescription: "",
+    preparationLength: "",
+    preparationWasteDescription: "",
+    worktopCurrentHeight: "",
+    worktopDesiredHeight: "",
+    dailyMealAdults: "",
+    dailyMealChildren: "",
+    exceptionalMealAdults: "",
+    exceptionalMealChildren: "",
+    kitchenObjectives: "",
+    usageWasteDescription: "",
+    lowFurniture: "",
+    highFurniture: "",
+    columns: "",
+    lowFurnitureDescription: "",
+    highFurnitureDescription: "",
+    columnsDescription: "",
+    furnitureWasteManagement: ""
   });
   const [tabNotes, setTabNotes] = useState({
     ambiance: "",
@@ -641,8 +711,280 @@ function KitchenDiscoveryTabContent() {
         </div>
       )}
 
+      {/* Furniture Tab Content */}
+      {activeTertiaryTab === "furniture" && (
+        <div className="space-y-6">
+          {/* Rangements */}
+          <FormSection title="Rangements">
+            <FormField label="Volume de rangement actuel">
+              <textarea
+                value={formData.storageCurrentVolume}
+                onChange={(e) => updateField("storageCurrentVolume", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Volume de rangement souhaité">
+              <textarea
+                value={formData.storageDesiredVolume}
+                onChange={(e) => updateField("storageDesiredVolume", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Accessoires de meuble */}
+          <FormSection title="Accessoires de meuble">
+            <FormField label="Sélectionner les accessoires" span={1}>
+              <SelectInput
+                value={formData.furnitureAccessories}
+                onChange={(value) => updateField("furnitureAccessories", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Commentaire" span={2}>
+              <textarea
+                value={formData.accessoriesComment}
+                onChange={(e) => updateField("accessoriesComment", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Éclairages */}
+          <FormSection title="Éclairages">
+            <FormField label="Luminosité pièce" span={1}>
+              <SelectInput
+                value={formData.lightingBrightness}
+                onChange={(value) => updateField("lightingBrightness", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Température de l'éclairage" span={1}>
+              <SelectInput
+                value={formData.lightingTemperature}
+                onChange={(value) => updateField("lightingTemperature", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Description de l'éclairage" span={1}>
+              <textarea
+                value={formData.lightingDescription}
+                onChange={(e) => updateField("lightingDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Plan de dépose */}
+          <FormSection title="Plan de dépose">
+            <FormField label="Appareil.s à poser" span={1}>
+              <SelectInput
+                value={formData.uninstallApparatus}
+                onChange={(value) => updateField("uninstallApparatus", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Longueur à prévoir" span={1}>
+              <TextInput
+                value={formData.uninstallLength}
+                onChange={(value) => updateField("uninstallLength", value)}
+                placeholder="En mm"
+              />
+            </FormField>
+            <FormField label="Description" span={1}>
+              <textarea
+                value={formData.uninstallDescription}
+                onChange={(e) => updateField("uninstallDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Plan de préparation */}
+          <FormSection title="Plan de préparation">
+            <FormField label="Longueur à prévoir (en mm)" span={1}>
+              <TextInput
+                value={formData.preparationLength}
+                onChange={(value) => updateField("preparationLength", value)}
+                placeholder="En mm"
+              />
+            </FormField>
+            <FormField label="Description gestion des déchets" span={2}>
+              <textarea
+                value={formData.preparationWasteDescription}
+                onChange={(e) => updateField("preparationWasteDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Plan de travail */}
+          <FormSection title="Plan de travail">
+            <FormField label="Hauteur actuelle (en mm)" span={1}>
+              <TextInput
+                value={formData.worktopCurrentHeight}
+                onChange={(value) => updateField("worktopCurrentHeight", value)}
+                placeholder="En mm"
+              />
+            </FormField>
+            <FormField label="Hauteur souhaitée (en mm)" span={1}>
+              <TextInput
+                value={formData.worktopDesiredHeight}
+                onChange={(value) => updateField("worktopDesiredHeight", value)}
+                placeholder="En mm"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Usage Cuisine */}
+          <FormSection title="Usage Cuisine">
+            {/* Personnes partageant le repas - Première ligne (2 groupes côte à côte) */}
+            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Personnes partageant le repas quotidiennement */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-[#2B2E38]">Personnes partageant le repas quotidiennement</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-[#2B2E38]">Adultes</label>
+                    <NumberSpinner
+                      value={formData.dailyMealAdults}
+                      onChange={(value) => updateField("dailyMealAdults", value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-[#2B2E38]">Enfants</label>
+                    <NumberSpinner
+                      value={formData.dailyMealChildren}
+                      onChange={(value) => updateField("dailyMealChildren", value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Personnes partageant le repas exceptionnellement */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-[#2B2E38]">Personnes partageant le repas exceptionnellement</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-[#2B2E38]">Adultes</label>
+                    <NumberSpinner
+                      value={formData.exceptionalMealAdults}
+                      onChange={(value) => updateField("exceptionalMealAdults", value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-[#2B2E38]">Enfants</label>
+                    <NumberSpinner
+                      value={formData.exceptionalMealChildren}
+                      onChange={(value) => updateField("exceptionalMealChildren", value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Objectif.s nouvelle cuisine - Deuxième ligne */}
+            <FormField label="Objectif.s nouvelle cuisine" span={1}>
+              <SelectInput
+                value={formData.kitchenObjectives}
+                onChange={(value) => updateField("kitchenObjectives", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+
+            {/* Description gestion des déchets - Deuxième ligne */}
+            <FormField label="Description gestion des déchets" span={1}>
+              <textarea
+                value={formData.usageWasteDescription}
+                onChange={(e) => updateField("usageWasteDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+
+          {/* Type de rangements */}
+          <FormSection title="Type de rangements">
+            <FormField label="Meubles bas" span={1}>
+              <SelectInput
+                value={formData.lowFurniture}
+                onChange={(value) => updateField("lowFurniture", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Meubles hauts" span={1}>
+              <SelectInput
+                value={formData.highFurniture}
+                onChange={(value) => updateField("highFurniture", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Colonnes" span={1}>
+              <SelectInput
+                value={formData.columns}
+                onChange={(value) => updateField("columns", value)}
+                placeholder="Sélectionner"
+              />
+            </FormField>
+            <FormField label="Description meubles bas" span={1}>
+              <textarea
+                value={formData.lowFurnitureDescription}
+                onChange={(e) => updateField("lowFurnitureDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Description meubles hauts" span={1}>
+              <textarea
+                value={formData.highFurnitureDescription}
+                onChange={(e) => updateField("highFurnitureDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Description colonnes" span={1}>
+              <textarea
+                value={formData.columnsDescription}
+                onChange={(e) => updateField("columnsDescription", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+            <FormField label="Gestion des déchets" span={3}>
+              <textarea
+                value={formData.furnitureWasteManagement}
+                onChange={(e) => updateField("furnitureWasteManagement", e.target.value)}
+                placeholder="Écrire un commentaire"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+              />
+            </FormField>
+          </FormSection>
+        </div>
+      )}
+
       {/* Placeholder for other tabs */}
-      {activeTertiaryTab !== "ambiance" && (
+      {activeTertiaryTab !== "ambiance" && activeTertiaryTab !== "furniture" && (
         <FormSection title={tertiaryTabs.find(t => t.id === activeTertiaryTab)?.label}>
           <FormField label="" span={3}>
             <div className="text-center text-neutral-500 py-8">
