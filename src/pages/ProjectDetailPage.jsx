@@ -10,7 +10,9 @@ import {
   FileText,
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clipboard,
+  X
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
@@ -380,9 +382,60 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   );
 }
 
+// Note Modal Component
+function NoteModal({ title, content, onSave, onClose }) {
+  const [noteContent, setNoteContent] = useState(content);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: "#F5F5F5" }}>
+          <h2 className="text-lg font-semibold text-[#1F2027]">Note {title}</h2>
+          <button
+            onClick={onClose}
+            className="text-neutral-500 hover:text-neutral-700 transition-colors"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6">
+          <textarea
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            placeholder="Écrivez votre note ici..."
+            rows={8}
+            className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-neutral-50 rounded-b-lg">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-[#E1E4ED] bg-white hover:bg-neutral-50 text-sm font-medium text-[#1F2027] transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => onSave(noteContent)}
+            className="px-4 py-2 rounded-lg bg-[#1F2027] hover:bg-[#2A2D35] text-white text-sm font-medium transition-colors"
+          >
+            Sauvegarder la note
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Kitchen Discovery Tab Content Component
 function KitchenDiscoveryTabContent() {
   const [activeTertiaryTab, setActiveTertiaryTab] = useState("ambiance");
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [noteModalTab, setNoteModalTab] = useState(null);
   const [formData, setFormData] = useState({
     // Ambiance
     ambianceTypes: "",
@@ -399,9 +452,25 @@ function KitchenDiscoveryTabContent() {
     furnitureSelection: "",
     materialsDescription: ""
   });
+  const [tabNotes, setTabNotes] = useState({
+    ambiance: "",
+    furniture: "",
+    appliances: "",
+    financial: ""
+  });
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleNoteClick = (tabId, tabLabel) => {
+    setNoteModalTab({ id: tabId, label: tabLabel });
+    setNoteModalOpen(true);
+  };
+
+  const handleNoteSave = (content) => {
+    setTabNotes((prev) => ({ ...prev, [noteModalTab.id]: content }));
+    setNoteModalOpen(false);
   };
 
   const tertiaryTabs = [
@@ -414,31 +483,58 @@ function KitchenDiscoveryTabContent() {
   return (
     <div className="space-y-6">
       {/* Tertiary Navigation */}
-      <nav className="flex items-center gap-6 border-b border-[#E5E5E5] pb-4">
+      <div className="flex items-center gap-2 p-2" style={{ backgroundColor: "#F8F9FA", border: "1px solid #E4E4E7", borderRadius: "100px" }}>
         {tertiaryTabs.map((tab) => {
           const isActive = activeTertiaryTab === tab.id;
+          const hasNote = tabNotes[tab.id] && tabNotes[tab.id].trim() !== "";
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTertiaryTab(tab.id)}
-              className={`text-sm font-medium transition-colors ${
-                isActive
-                  ? "text-neutral-900 border-b-2 border-neutral-900 pb-4 -mb-4"
-                  : "text-[#8A8A8A] hover:text-neutral-700"
-              }`}
+              className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: isActive ? "#FFFFFF" : "transparent",
+                color: isActive ? "#1F2027" : "#8A8A8A",
+                border: isActive ? "1px solid #E4E4E7" : "none",
+                borderRadius: "80px"
+              }}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNoteClick(tab.id, tab.label);
+                }}
+                className="flex items-center justify-center w-6 h-6 rounded-full bg-white border border-[#E4E4E7] hover:bg-gray-50 transition-colors text-neutral-600 font-bold leading-none"
+                title={`Ajouter une note à ${tab.label}`}
+              >
+                {hasNote ? (
+                  <Clipboard className="size-4 text-[#1F2027]" />
+                ) : (
+                  "+"
+                )}
+              </button>
             </button>
           );
         })}
-      </nav>
+      </div>
+
+      {/* Note Modal */}
+      {noteModalOpen && noteModalTab && (
+        <NoteModal
+          title={noteModalTab.label}
+          content={tabNotes[noteModalTab.id]}
+          onSave={handleNoteSave}
+          onClose={() => setNoteModalOpen(false)}
+        />
+      )}
 
       {/* Ambiance Content */}
       {activeTertiaryTab === "ambiance" && (
         <div className="space-y-6">
           {/* Section Ambiance */}
           <FormSection title="Ambiance">
-            <FormField label="Ambiance(s) recherchée(s)" span={3}>
+            <FormField label="Ambiance(s) recherchée(s)" span={1}>
               <SelectInput
                 value={formData.ambianceTypes}
                 onChange={(value) => updateField("ambianceTypes", value)}
@@ -525,7 +621,7 @@ function KitchenDiscoveryTabContent() {
                 className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
               />
             </FormField>
-            <FormField label="Sélection mobilier" span={2}>
+            <FormField label="Sélection mobilier" span={1}>
               <SelectInput
                 value={formData.furnitureSelection}
                 onChange={(value) => updateField("furnitureSelection", value)}

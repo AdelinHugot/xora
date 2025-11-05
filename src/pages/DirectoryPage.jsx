@@ -598,7 +598,7 @@ function ProjectDropdownDirectory({ value, onChange, options }) {
 
 const Topbar = ({ onNavigate }) => {
   return (
-    <header className="h-16 border-b bg-[#F8F9FA] border-neutral-200 px-4 lg:px-6 flex items-center justify-between">
+    <header className="h-16 border-b bg-[#FAFAFA] border-[#E4E4E7] px-4 lg:px-6 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -701,32 +701,32 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 const ContactsTable = ({ contacts, onViewContact }) => {
   return (
-    <div className="overflow-x-auto border border-[#E4E4E7] rounded-lg" style={{ maxHeight: "calc(100vh - 420px)" }}>
+    <div className="overflow-x-auto border border-[#E4E4E7] rounded-[8px]" style={{ maxHeight: "calc(100vh - 420px)" }}>
       <table className="w-full" role="table">
         <thead>
-          <tr style={{ backgroundColor: "#E4E4E7", borderBottom: "1px solid #D4D4D8" }}>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+          <tr style={{ backgroundColor: "#FAFAFA", borderBottom: "1px solid #E4E4E7" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Nom & prénom
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Ajouté par
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Origine
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Localisation
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Projets en cours
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Statut
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Ajouté le
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Action rapide
             </th>
           </tr>
@@ -798,14 +798,14 @@ const LocationContactsModal = ({ location, contacts, onClose, onSelectContact })
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: 9999 }}>
       <div className="bg-white rounded-2xl shadow-xl w-96 max-h-96 flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-200">
+        <div className="px-6 py-4 border-b border-[#E4E4E7]">
           <h2 className="text-lg font-bold text-neutral-900">{location}</h2>
           <p className="text-sm text-neutral-500">{locationContacts.length} contact{locationContacts.length > 1 ? 's' : ''}</p>
         </div>
 
         {/* Contacts List */}
         <div className="flex-1 overflow-y-auto">
-          <div className="divide-y divide-neutral-200">
+          <div className="divide-y divide-[#E4E4E7]">
             {locationContacts.map((contact) => (
               <button
                 key={contact.id}
@@ -836,7 +836,7 @@ const LocationContactsModal = ({ location, contacts, onClose, onSelectContact })
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-neutral-200">
+        <div className="px-6 py-3 border-t border-[#E4E4E7]">
           <button
             onClick={onClose}
             className="w-full px-4 py-2 rounded-xl text-sm font-medium text-neutral-600 bg-neutral-50 hover:bg-neutral-100 transition-colors"
@@ -884,7 +884,7 @@ const ContactsMapView = ({ contacts, onViewContact }) => {
 
   return (
     <>
-      <div className="w-full rounded-lg overflow-hidden border border-[#E4E4E7]" style={{ height: "calc(100vh - 420px)" }}>
+      <div className="w-full rounded-[8px] overflow-hidden border border-[#E4E4E7]" style={{ height: "calc(100vh - 420px)" }}>
         <MapContainer
           center={[43.5, 3.5]}
           zoom={9}
@@ -1009,7 +1009,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
         onSubmit={handleCreateContact}
       />
 
-      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm">
+      <div className="bg-white rounded-[8px] border border-[#E4E4E7] shadow-sm">
       {/* Card Header */}
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
@@ -1067,7 +1067,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
               placeholder="Rechercher un contact"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-sm text-neutral-600 placeholder:text-neutral-400"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E4E4E7] bg-neutral-50 text-sm text-neutral-600 placeholder:text-neutral-400"
             />
           </div>
 

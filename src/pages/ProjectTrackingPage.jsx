@@ -334,7 +334,7 @@ function DateDropdown({ value, onChange, options }) {
 // Composant Topbar
 function Topbar({ onNavigate }) {
   return (
-    <header className="h-16 border-b bg-[#F8F9FA] border-neutral-200 px-4 lg:px-6 flex items-center justify-between">
+    <header className="h-16 border-b bg-[#FAFAFA] border-[#E4E4E7] px-4 lg:px-6 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -573,9 +573,9 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
 
         <div className="w-full py-6 px-4 lg:px-6">
           {/* Tableau */}
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4 md:p-6">
+          <div className="rounded-[8px] border border-[#E4E4E7] bg-white p-4 md:p-6">
             {/* Barre de filtres dans le bloc blanc */}
-            <div className="mb-6 pb-6 border-b border-neutral-200">
+            <div className="mb-6 pb-6 border-b border-[#E4E4E7]">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
                 {/* Searchbar */}
                 <div className="relative flex-1">
@@ -585,7 +585,7 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
                     placeholder="Rechercher un client/projet"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-sm text-neutral-600 placeholder:text-neutral-400"
+                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E4E4E7] bg-neutral-50 text-sm text-neutral-600 placeholder:text-neutral-400"
                   />
                 </div>
 
@@ -632,26 +632,26 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
             </div>
 
             {/* Tableau contenu */}
-            <div className="overflow-x-auto border border-[#E4E4E7] rounded-lg" style={{ maxHeight: "calc(100vh - 420px)" }}>
+            <div className="overflow-x-auto border border-[#E4E4E7] rounded-[8px]" style={{ maxHeight: "calc(100vh - 420px)" }}>
               <table className="w-full" role="table">
                 <thead>
-                  <tr style={{ backgroundColor: "#E4E4E7", borderBottom: "1px solid #D4D4D8" }}>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+                  <tr style={{ backgroundColor: "#FAFAFA", borderBottom: "1px solid #E4E4E7" }}>
+                    <th className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
                       Nom & prénom
                     </th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+                    <th className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
                       Agenceur.s
                     </th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+                    <th className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
                       Nom du projet
                     </th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+                    <th className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
                       Statut
                     </th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+                    <th className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
                       Ajouté le
                     </th>
-                    <th className="py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: "#A9A9A9" }}>
+                    <th className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
                       Action rapide
                     </th>
                   </tr>
