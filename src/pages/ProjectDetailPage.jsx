@@ -12,7 +12,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Clipboard,
-  X
+  X,
+  Trash2,
+  Check,
+  ChevronDown
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
@@ -382,6 +385,134 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   );
 }
 
+// Add Appliance Modal Component
+function AddApplianceModal({ isOpen, onClose, onAddNew, onAddExisting, searchValue, onSearchChange, selectedValue, onSelectionChange }) {
+  const applianceOptions = [
+    { value: "lave-vaisselle-2", label: "Lave-vaisselle intégré" },
+    { value: "four-encastre", label: "Four encastré" },
+    { value: "plaque-induction", label: "Plaque à induction" },
+    { value: "frigo-americain", label: "Frigo américain" },
+    { value: "cave-vin-2", label: "Cave à vin électrique" }
+  ];
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <Plus className="size-4 text-[#1F2027]" />
+            <h2 className="text-base font-semibold text-[#1F2027]">Ajouter un électroménager</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-neutral-600 transition-colors"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6 space-y-4">
+          {/* Search field */}
+          <div className="space-y-2">
+            <label className="block text-xs text-[#6B7280]">Rechercher un article</label>
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Rechercher un article"
+              className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+            />
+          </div>
+
+          {/* Select dropdown */}
+          <div className="space-y-2">
+            <div className="border border-[#E1E4ED] rounded-lg bg-white max-h-48 overflow-y-auto">
+              {applianceOptions.map((option) => (
+                <div
+                  key={option.value}
+                  onClick={() => onSelectionChange(option.value)}
+                  className="flex items-center justify-between px-4 py-3 border-b border-[#E1E4ED] last:border-b-0 hover:bg-[#F8F9FC] cursor-pointer transition-colors"
+                >
+                  <span className="text-sm text-[#1F2027]">{option.label}</span>
+                  {selectedValue === option.value && (
+                    <Check className="size-4 text-[#1F2027]" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-6 py-3 bg-neutral-50 rounded-b-lg border-t border-[#E5E7EB]">
+          <button
+            onClick={onAddNew}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-[#E1E4ED] bg-white hover:bg-[#F9FAFB] text-xs font-medium text-[#1F2027] transition-colors"
+          >
+            <Plus className="size-3.5" />
+            Ajouter un nouvel article
+          </button>
+          <button
+            onClick={onAddExisting}
+            disabled={!selectedValue}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-[#2C2F37] hover:bg-[#1F2027] disabled:bg-[#D1D5DB] text-white text-xs font-medium transition-colors"
+          >
+            <Check className="size-3.5" />
+            Ajouter l'article
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Confirm Delete Modal Component
+function ConfirmDeleteModal({ title, message, itemType, onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-6">
+          <h2 className="text-lg font-semibold text-[#1F2027]">{title}</h2>
+          <button
+            onClick={onCancel}
+            className="text-neutral-400 hover:text-neutral-600 transition-colors"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-2 pb-6">
+          <p className="text-sm text-[#6B7280]">{message}</p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-3 px-6 py-4 bg-neutral-50 rounded-b-lg">
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-sm font-medium text-[#374151] transition-colors"
+          >
+            <ArrowLeft className="size-4" />
+            Retour
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#EF4444] hover:bg-[#DC2626] text-white text-sm font-medium transition-colors"
+          >
+            <Check className="size-4" />
+            Supprimer {itemType.toLowerCase()}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Note Modal Component
 function NoteModal({ title, content, onSave, onClose }) {
   const [noteContent, setNoteContent] = useState(content);
@@ -478,6 +609,62 @@ function KitchenDiscoveryTabContent() {
   const [activeTertiaryTab, setActiveTertiaryTab] = useState("ambiance");
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteModalTab, setNoteModalTab] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteModalData, setDeleteModalData] = useState(null);
+  const [sanitaryPrices, setSanitaryPrices] = useState({
+    min: "35000",
+    max: "56000"
+  });
+  const [addApplianceModalOpen, setAddApplianceModalOpen] = useState(false);
+  const [applianceSearch, setApplianceSearch] = useState("");
+  const [applianceSelection, setApplianceSelection] = useState("");
+  const [expandedAppliances, setExpandedAppliances] = useState({});
+  const [expandedSanitaries, setExpandedSanitaries] = useState({});
+  const [applianceAnswers, setApplianceAnswers] = useState({});
+  const [sanitaryAnswers, setSanitaryAnswers] = useState({});
+  const [applianceSupplier, setApplianceSupplier] = useState({});
+  const [sanitarySupplier, setSanitarySupplier] = useState({});
+  const [applianceProducts, setApplianceProducts] = useState({
+    1: "four-standard",
+    6: "hotte-deco"
+  });
+  const [sanitaryProducts, setSanitaryProducts] = useState({
+    1: "evier-inox"
+  });
+
+  // Mock product data
+  const mockProducts = {
+    "four-standard": { ref: "FOUR-2024-01", description: "Four encastré 60L inox", minPrice: "450", maxPrice: "750" },
+    "four-premium": { ref: "FOUR-2024-PREMIUM", description: "Four pyrolyse premium inox", minPrice: "1200", maxPrice: "1800" },
+    "hotte-deco": { ref: "HOTTE-DECO-01", description: "Hotte décoractive 90cm verre", minPrice: "350", maxPrice: "650" },
+    "hotte-standard": { ref: "HOTTE-STD-90", description: "Hotte aspirante standard 90cm", minPrice: "200", maxPrice: "400" },
+    "evier-inox": { ref: "EVIER-INX-2024", description: "Évier inox double bac 86x50", minPrice: "180", maxPrice: "450" },
+    "evier-granit": { ref: "EVIER-GRAN-01", description: "Évier composite granit 2 bacs", minPrice: "300", maxPrice: "700" }
+  };
+  const [appliances, setAppliances] = useState([
+    { id: 1, name: "Four" },
+    { id: 2, name: "Micro-Onde" },
+    { id: 3, name: "Tiroir Chauffe-plat" },
+    { id: 4, name: "Cafetière" },
+    { id: 5, name: "Plaque de cuisson" },
+    { id: 6, name: "Hotte" },
+    { id: 7, name: "Réfrigérateur" },
+    { id: 8, name: "Congélateur" },
+    { id: 9, name: "Cave à vin" },
+    { id: 10, name: "Lave vaisselle" },
+    { id: 11, name: "Lave linge" }
+  ]);
+  const [sanitaries, setSanitaries] = useState([
+    { id: 1, name: "Évier" },
+    { id: 2, name: "Mitigeur" },
+    { id: 3, name: "Distributeur savon" },
+    { id: 4, name: "Égouttoir pliable" },
+    { id: 5, name: "Vidage automatique" },
+    { id: 6, name: "Panier égouttoir" },
+    { id: 7, name: "Planche à découper / égouttoir" },
+    { id: 8, name: "Bonde + trop-plein" },
+    { id: 9, name: "Cache bonde" }
+  ]);
   const [formData, setFormData] = useState({
     // Ambiance
     ambianceTypes: "",
@@ -543,6 +730,70 @@ function KitchenDiscoveryTabContent() {
     setNoteModalOpen(false);
   };
 
+  const handleDeleteAppliance = (appliance) => {
+    setDeleteModalData({
+      type: "appliance",
+      id: appliance.id,
+      name: appliance.name,
+      title: `Supprimer ${appliance.name}`,
+      message: `Voulez-vous vraiment supprimer le ${appliance.name} de la liste des électroménagers ?`,
+      itemType: "l'électroménager"
+    });
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteSanitary = (sanitary) => {
+    setDeleteModalData({
+      type: "sanitary",
+      id: sanitary.id,
+      name: sanitary.name,
+      title: `Supprimer ${sanitary.name}`,
+      message: `Voulez-vous vraiment supprimer le ${sanitary.name} de la liste des sanitaires ?`,
+      itemType: "le sanitaire"
+    });
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteModalData.type === "appliance") {
+      setAppliances(appliances.filter(a => a.id !== deleteModalData.id));
+    } else if (deleteModalData.type === "sanitary") {
+      setSanitaries(sanitaries.filter(s => s.id !== deleteModalData.id));
+    }
+    setDeleteModalOpen(false);
+    setDeleteModalData(null);
+  };
+
+  const handleAddApplianceClick = () => {
+    setAddApplianceModalOpen(true);
+  };
+
+  const handleAddApplianceNew = () => {
+    setAddApplianceModalOpen(false);
+    // Pour l'instant, on ouvre simplement la modale avec un champ vide
+    // Tu peux ajouter une seconde modale pour créer un nouvel article
+  };
+
+  const handleAddApplianceExisting = () => {
+    if (applianceSelection) {
+      const applianceOptions = [
+        { value: "lave-vaisselle-2", label: "Lave-vaisselle intégré" },
+        { value: "four-encastre", label: "Four encastré" },
+        { value: "plaque-induction", label: "Plaque à induction" },
+        { value: "frigo-americain", label: "Frigo américain" },
+        { value: "cave-vin-2", label: "Cave à vin électrique" }
+      ];
+      const selectedAppliance = applianceOptions.find(a => a.value === applianceSelection);
+      if (selectedAppliance) {
+        const newId = Math.max(...appliances.map(a => a.id), 0) + 1;
+        setAppliances([...appliances, { id: newId, name: selectedAppliance.label }]);
+        setAddApplianceModalOpen(false);
+        setApplianceSelection("");
+        setApplianceSearch("");
+      }
+    }
+  };
+
   const tertiaryTabs = [
     { id: "ambiance", label: "Ambiance" },
     { id: "furniture", label: "Meubles" },
@@ -588,6 +839,36 @@ function KitchenDiscoveryTabContent() {
           );
         })}
       </div>
+
+      {/* Add Appliance Modal */}
+      <AddApplianceModal
+        isOpen={addApplianceModalOpen}
+        onClose={() => {
+          setAddApplianceModalOpen(false);
+          setApplianceSelection("");
+          setApplianceSearch("");
+        }}
+        onAddNew={handleAddApplianceNew}
+        onAddExisting={handleAddApplianceExisting}
+        searchValue={applianceSearch}
+        onSearchChange={setApplianceSearch}
+        selectedValue={applianceSelection}
+        onSelectionChange={setApplianceSelection}
+      />
+
+      {/* Delete Modal */}
+      {deleteModalOpen && deleteModalData && (
+        <ConfirmDeleteModal
+          title={deleteModalData.title}
+          message={deleteModalData.message}
+          itemType={deleteModalData.itemType}
+          onCancel={() => {
+            setDeleteModalOpen(false);
+            setDeleteModalData(null);
+          }}
+          onConfirm={confirmDelete}
+        />
+      )}
 
       {/* Note Modal */}
       {noteModalOpen && noteModalTab && (
@@ -983,8 +1264,334 @@ function KitchenDiscoveryTabContent() {
         </div>
       )}
 
+      {/* Appliances Tab Content */}
+      {activeTertiaryTab === "appliances" && (
+        <div className="space-y-6">
+          {/* Appliances Section */}
+          <div className="bg-white rounded-lg border border-[#ECEEF5] shadow-[0_16px_36px_rgba(15,23,42,0.04)]">
+            {/* Header with title and add button */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[#F8F9FC]">
+              <h3 className="text-lg font-semibold text-[#1F2027]">Liste des électroménagers</h3>
+              <button
+                onClick={handleAddApplianceClick}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#1F2027] hover:bg-neutral-50 transition-colors"
+              >
+                <Plus className="size-4" />
+                Ajouter un électroménager
+              </button>
+            </div>
+
+            {/* Appliances list */}
+            <div className="px-6 pb-6 bg-[#F8F9FC] rounded-b-lg">
+              <div className="space-y-3">
+                {appliances.map((appliance) => (
+                  <div key={appliance.id} className="bg-white rounded-lg border border-[#E4E4E7]">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm font-medium text-[#1F2027]">
+                        {appliance.name || "Saisir le nom de l'électroménager"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setExpandedAppliances({ ...expandedAppliances, [appliance.id]: !expandedAppliances[appliance.id] })}
+                          className="p-1.5 text-[#9CA3AF] hover:text-[#1F2027] transition-colors"
+                          aria-label="Dérouler"
+                        >
+                          <ChevronDown className={`size-4 transition-transform ${expandedAppliances[appliance.id] ? 'rotate-180' : ''}`} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAppliance(appliance)}
+                          className="p-1.5 text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#FEE2E2] rounded transition-colors"
+                          aria-label="Supprimer cet électroménager"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded content */}
+                    {expandedAppliances[appliance.id] && (
+                      <div className="px-4 pb-4 pt-2 border-t border-[#E4E4E7] space-y-4">
+                        {/* Questions */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Quand utilisez-vous votre plaque de cuisson ?</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Préférez-vous une plaque visible ou cachée ?</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Installation en évacuation extérieure ou recyclage</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* More questions */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Au bruit de la plaque</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Aux odeurs</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">La graisse qui se dépose dans la cuisine</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Product catalog section */}
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-[#6B7280]">Qui fournit ?</label>
+                          <div className="bg-[#F3F4F6] rounded-lg p-4 space-y-3">
+                            <select
+                              value={applianceSupplier[appliance.id] || ""}
+                              onChange={(e) => setApplianceSupplier({ ...applianceSupplier, [appliance.id]: e.target.value })}
+                              className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option value="">A fournir</option>
+                              <option value="client">Le client fournit</option>
+                            </select>
+
+                            {/* Article catalog inside gray block - Only show if not "Le client fournit" */}
+                            {applianceSupplier[appliance.id] !== "client" && (
+                              <div className="space-y-3 pt-2 border-t border-[#E1E4ED]">
+                                <select
+                                  value={applianceProducts[appliance.id] || ""}
+                                  onChange={(e) => setApplianceProducts({ ...applianceProducts, [appliance.id]: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                                  <option value="">Sélectionner un article</option>
+                                  <option value="four-standard">Four encastré standard</option>
+                                  <option value="four-premium">Four pyrolyse premium</option>
+                                  <option value="hotte-standard">Hotte aspirante standard</option>
+                                  <option value="hotte-deco">Hotte décoration verre</option>
+                                </select>
+
+                                {/* Product table - Show when a product is selected */}
+                                {applianceProducts[appliance.id] && mockProducts[applianceProducts[appliance.id]] && (
+                                  <div className="rounded-lg border border-[#E1E4ED] overflow-hidden">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
+                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Référence produit</th>
+                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Description</th>
+                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix mini TTC</th>
+                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix maxi TTC</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                                          <td className="px-3 py-2 text-[#1F2027] font-medium">{mockProducts[applianceProducts[appliance.id]].ref}</td>
+                                          <td className="px-3 py-2 text-[#1F2027]">{mockProducts[applianceProducts[appliance.id]].description}</td>
+                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[applianceProducts[appliance.id]].minPrice}€</td>
+                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[applianceProducts[appliance.id]].maxPrice}€</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {appliances.length === 0 && (
+                  <div className="text-center text-neutral-500 py-8">
+                    Aucun électroménager ajouté
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sanitaries Section */}
+          <div className="bg-white rounded-lg border border-[#ECEEF5] shadow-[0_16px_36px_rgba(15,23,42,0.04)]">
+            {/* Header with title and add button */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[#F8F9FC]">
+              <h3 className="text-lg font-semibold text-[#1F2027]">Liste des sanitaires</h3>
+              <button
+                onClick={() => {
+                  const newId = Math.max(...sanitaries.map(s => s.id), 0) + 1;
+                  setSanitaries([...sanitaries, { id: newId, name: "" }]);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#1F2027] hover:bg-neutral-50 transition-colors"
+              >
+                <Plus className="size-4" />
+                Ajouter un sanitaire
+              </button>
+            </div>
+
+            {/* Total price blocks */}
+            <div className="px-6 pt-4 bg-[#F8F9FC]">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Total min */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group">
+                  <span className="text-sm text-[#6B7280]">Total min (TTC)</span>
+                  <div className="flex items-center gap-0">
+                    <input
+                      type="text"
+                      value={sanitaryPrices.min}
+                      onChange={(e) => setSanitaryPrices({ ...sanitaryPrices, min: e.target.value })}
+                      className="text-sm font-semibold text-[#1F2027] bg-transparent text-right border-0 focus:outline-none focus:ring-0 p-0 w-16"
+                    />
+                    <span className="text-sm font-semibold text-[#1F2027]">€</span>
+                  </div>
+                </div>
+                {/* Total max */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group">
+                  <span className="text-sm text-[#6B7280]">Total max (TTC)</span>
+                  <div className="flex items-center gap-0">
+                    <input
+                      type="text"
+                      value={sanitaryPrices.max}
+                      onChange={(e) => setSanitaryPrices({ ...sanitaryPrices, max: e.target.value })}
+                      className="text-sm font-semibold text-[#1F2027] bg-transparent text-right border-0 focus:outline-none focus:ring-0 p-0 w-16"
+                    />
+                    <span className="text-sm font-semibold text-[#1F2027]">€</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sanitaries list */}
+            <div className="px-6 pb-6 bg-[#F8F9FC]">
+              <div className="space-y-3">
+                {sanitaries.map((sanitary) => (
+                  <div key={sanitary.id} className="bg-white rounded-lg border border-[#E4E4E7]">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm font-medium text-[#1F2027]">
+                        {sanitary.name || "Saisir le nom du sanitaire"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setExpandedSanitaries({ ...expandedSanitaries, [sanitary.id]: !expandedSanitaries[sanitary.id] })}
+                          className="p-1.5 text-[#9CA3AF] hover:text-[#1F2027] transition-colors"
+                          aria-label="Dérouler"
+                        >
+                          <ChevronDown className={`size-4 transition-transform ${expandedSanitaries[sanitary.id] ? 'rotate-180' : ''}`} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSanitary(sanitary)}
+                          className="p-1.5 text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#FEE2E2] rounded transition-colors"
+                          aria-label="Supprimer ce sanitaire"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded content */}
+                    {expandedSanitaries[sanitary.id] && (
+                      <div className="px-4 pb-4 pt-2 border-t border-[#E4E4E7] space-y-4">
+                        {/* Questions */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Quand utilisez-vous votre évier ?</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Matière souhaitée ?</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-[#6B7280]">Nombre de bac</label>
+                            <select className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option>Sélectionner</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Product catalog section */}
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-[#6B7280]">Qui fournit ?</label>
+                          <div className="bg-[#F3F4F6] rounded-lg p-4 space-y-3">
+                            <select
+                              value={sanitarySupplier[sanitary.id] || ""}
+                              onChange={(e) => setSanitarySupplier({ ...sanitarySupplier, [sanitary.id]: e.target.value })}
+                              className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                              <option value="">A fournir</option>
+                              <option value="client">Le client fournit</option>
+                            </select>
+
+                            {/* Article catalog inside gray block - Only show if not "Le client fournit" */}
+                            {sanitarySupplier[sanitary.id] !== "client" && (
+                              <div className="space-y-3 pt-2 border-t border-[#E1E4ED]">
+                                <select
+                                  value={sanitaryProducts[sanitary.id] || ""}
+                                  onChange={(e) => setSanitaryProducts({ ...sanitaryProducts, [sanitary.id]: e.target.value })}
+                                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
+                                  <option value="">Sélectionner un article</option>
+                                  <option value="evier-inox">Évier inox double bac</option>
+                                  <option value="evier-granit">Évier composite granit</option>
+                                </select>
+
+                                {/* Product table - Show when a product is selected */}
+                                {sanitaryProducts[sanitary.id] && mockProducts[sanitaryProducts[sanitary.id]] && (
+                                  <div className="rounded-lg border border-[#E1E4ED] overflow-hidden">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
+                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Référence produit</th>
+                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Description</th>
+                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix mini TTC</th>
+                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix maxi TTC</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                                          <td className="px-3 py-2 text-[#1F2027] font-medium">{mockProducts[sanitaryProducts[sanitary.id]].ref}</td>
+                                          <td className="px-3 py-2 text-[#1F2027]">{mockProducts[sanitaryProducts[sanitary.id]].description}</td>
+                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[sanitaryProducts[sanitary.id]].minPrice}€</td>
+                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[sanitaryProducts[sanitary.id]].maxPrice}€</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {sanitaries.length === 0 && (
+                  <div className="text-center text-neutral-500 py-8">
+                    Aucun sanitaire ajouté
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Placeholder for other tabs */}
-      {activeTertiaryTab !== "ambiance" && activeTertiaryTab !== "furniture" && (
+      {activeTertiaryTab !== "ambiance" && activeTertiaryTab !== "furniture" && activeTertiaryTab !== "appliances" && (
         <FormSection title={tertiaryTabs.find(t => t.id === activeTertiaryTab)?.label}>
           <FormField label="" span={3}>
             <div className="text-center text-neutral-500 py-8">
