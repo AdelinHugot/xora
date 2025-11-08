@@ -6,7 +6,7 @@ import UserTopBar from "../components/UserTopBar";
 const startHour = 8;
 const endHour = 18;
 const intervalMinutes = 30;
-const slotHeight = 48; // px per interval
+const slotHeight = 64; // px per interval
 
 const WEEK_PRESETS = [
   {
@@ -107,67 +107,186 @@ function AgendaEvent({ event, onClick }) {
   const top = ((parseMinutes(event.start) - startHour * 60) / intervalMinutes) * slotHeight;
   const duration = (parseMinutes(event.end) - parseMinutes(event.start)) / intervalMinutes;
   const height = Math.max(duration * slotHeight - 8, slotHeight - 12);
+  const isMini = height < 60;
+
+  // Mock collaborators for display
+  const collaborators = [
+    { id: "1", avatarUrl: "https://i.pravatar.cc/40?img=12" },
+    { id: "2", avatarUrl: "https://i.pravatar.cc/40?img=8" },
+  ];
 
   return (
     <button
       onClick={() => onClick(event)}
-      className={`absolute left-2 right-2 px-3 py-2 rounded-xl border shadow-sm ${color.bg} ${color.border} ${color.text} text-sm font-medium flex flex-col gap-1 hover:shadow-md transition-shadow cursor-pointer text-left`}
+      className={`absolute left-2 right-2 px-3 py-2 rounded-lg border shadow-sm ${color.bg} ${color.border} ${color.text} text-sm font-medium flex flex-col gap-1.5 hover:shadow-md transition-shadow cursor-pointer text-left overflow-hidden`}
       style={{ top, height }}
     >
-      <span>{event.title}</span>
-      <span className="text-xs opacity-80">
-        {event.start} - {event.end}
-      </span>
+      {/* Title and time */}
+      <div className="flex items-start justify-between gap-2">
+        <span className="font-semibold text-xs leading-tight">{event.title}</span>
+        {!isMini && <span className="text-xs font-medium whitespace-nowrap flex-shrink-0">{event.start}</span>}
+      </div>
+
+      {!isMini && (
+        <>
+          {/* Collaborators with negative spacing */}
+          <div className="flex -space-x-2">
+            {collaborators.map((collab) => (
+              <img key={collab.id} src={collab.avatarUrl} alt="" className="size-5 rounded-full border border-white shadow-sm" />
+            ))}
+          </div>
+
+          {/* Time range at bottom */}
+          <div className="text-xs opacity-80 mt-auto">
+            {event.start} – {event.end}
+          </div>
+        </>
+      )}
     </button>
   );
 }
 
-function WeekGrid({ days, events, onEventClick }) {
-  const totalIntervals = useMemo(() => ((endHour - startHour) * 60) / intervalMinutes, []);
-  const gridHeight = totalIntervals * slotHeight;
+function WeeklyCalendarGrid({ days, events, onEventClick }) {
+  // ====== CONFIG (visual grid) ======
+  const HOUR_HEIGHT = 72; // px per hour (adjust to taste)
 
+  // Helper: convert "HH:MM" -> y offset in px relative to grid start
+  const timeToY = (t) => {
+    const [hh, mm] = t.split(":").map(Number);
+    return ((hh + mm / 60) - startHour) * HOUR_HEIGHT;
+  };
+
+  // Helper: compute height from start/end times
+  const durationToH = (start, end) => timeToY(end) - timeToY(start);
+
+  // Mini avatar group (purely decorative)
+  const Avatars = () => (
+    <div className="flex -space-x-2">
+      {"ABCDE".split("").map((ch, i) => (
+        <div
+          key={i}
+          className="w-6 h-6 rounded-full bg-neutral-300 ring-2 ring-white text-[10px] flex items-center justify-center font-semibold text-neutral-700"
+        >
+          {ch}
+        </div>
+      ))}
+      <span className="ml-2 text-xs text-neutral-500">+3</span>
+    </div>
+  );
+
+  // Map event colors to Tailwind classes (adapted to the design system)
+  const colorMap = {
+    emerald: { bg: "bg-emerald-100", bdr: "border-emerald-300", text: "text-emerald-800" },
+    sky: { bg: "bg-sky-100", bdr: "border-sky-300", text: "text-sky-800" },
+    indigo: { bg: "bg-indigo-100", bdr: "border-indigo-300", text: "text-indigo-800" },
+    amber: { bg: "bg-amber-100", bdr: "border-amber-300", text: "text-amber-900" },
+    rose: { bg: "bg-rose-100", bdr: "border-rose-300", text: "text-rose-900" },
+    violet: { bg: "bg-violet-100", bdr: "border-violet-300", text: "text-violet-800" },
+    gray: { bg: "bg-gray-100", bdr: "border-gray-300", text: "text-gray-700" },
+  };
+
+  // Render one event block absolutely inside its day column
+  const EventBlock = ({ evt }) => {
+    const color = colorMap[evt.color] || colorMap.gray;
+    const top = timeToY(evt.start);
+    const height = Math.max(28, durationToH(evt.start, evt.end));
+    const isMini = height < 48;
+
+    return (
+      <button
+        onClick={() => onEventClick(evt)}
+        className={`absolute left-2 right-2 rounded-lg border shadow-sm ${color.bg} ${color.bdr} ${evt.strong ? "ring-1 ring-red-300" : ""} hover:shadow-md transition-shadow cursor-pointer text-left p-2 h-full flex flex-col`}
+        style={{ top, height }}
+      >
+        <div className={`text-[11px] leading-tight font-medium ${color.text} truncate`}>
+          {evt.title}
+        </div>
+        {!isMini && (
+          <div className="mt-1 text-[10px] text-gray-500 flex items-center gap-1">
+            <span>{evt.start} – {evt.end}</span>
+            {evt.location && (
+              <span className="inline-flex items-center gap-1">
+                <span>{evt.icons?.[0] ?? "📍"}</span>
+                <span className="truncate">{evt.location}</span>
+              </span>
+            )}
+            {evt.badges?.map((b) => (
+              <span key={b} className="ml-auto px-1.5 py-0.5 text-[9px] rounded bg-white/70 border border-white/80 text-gray-700">
+                {b}
+              </span>
+            ))}
+          </div>
+        )}
+        {!isMini && (
+          <div className="mt-auto flex items-center justify-between text-[10px] text-gray-500">
+            <div className="flex -space-x-1">
+              {[0, 1].map((i) => (
+                <div key={i} className="w-4 h-4 rounded-full bg-white border border-gray-200" />
+              ))}
+            </div>
+            {evt.icons?.includes("🎥") && <span>🎥</span>}
+          </div>
+        )}
+      </button>
+    );
+  };
+
+  // ====== RENDER ======
   return (
-    <div className="mt-6 overflow-x-auto">
-      <div className="min-w-[960px]">
-        <div className="relative">
-          <div className="grid grid-cols-[120px_repeat(7,minmax(0,1fr))]">
-            <div className="relative border-r border-neutral-200 bg-white" style={{ height: gridHeight }}>
-              {Array.from({ length: endHour - startHour + 1 }).map((_, idx) => {
-                const hour = startHour + idx;
-                const top = idx * 2 * slotHeight;
-                return (
-                  <div key={hour} className="absolute right-4 text-xs font-medium text-neutral-400" style={{ top: top - 8 }}>
-                    {formatHourLabel(hour)}
+    <div className="w-full bg-white text-gray-900">
+      {/* Outer container */}
+      <div className="rounded-2xl border border-neutral-200 overflow-hidden overflow-x-auto">
+        <div className="min-w-[960px]">
+          {/* Header row: days */}
+          <div className="grid border-b border-neutral-200" style={{ gridTemplateColumns: "96px repeat(7, minmax(0, 1fr))" }}>
+            <div />
+            {days.map((d) => (
+              <div key={d.id} className="py-4 px-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-semibold text-neutral-900">{d.label.split(" ")[0]} {d.label.split(" ")[1]}</div>
+                    <div className="text-xs text-gray-500">{d.label.split(" ").slice(2).join(" ")}</div>
                   </div>
-                );
-              })}
+                  <Avatars />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Main grid */}
+          <div className="grid" style={{ gridTemplateColumns: "96px repeat(7, minmax(0, 1fr))" }}>
+            {/* Time gutter */}
+            <div className="relative bg-neutral-50">
+              {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[72px] text-xs text-gray-500 pr-3 flex items-start justify-end"
+                  style={{ height: HOUR_HEIGHT }}
+                >
+                  <div className="-translate-y-2">{formatHourLabel(startHour + i)}</div>
+                </div>
+              ))}
             </div>
 
-            {days.map((day) => {
-              const dayEvents = events.filter((evt) => evt.day === day.id);
+            {/* Day columns */}
+            {days.map((d) => {
+              const dayEvents = events.filter((evt) => evt.day === d.id);
               return (
-                <div key={day.id} className="relative border-l border-neutral-200 bg-white" style={{ height: gridHeight }}>
-                  <div className="sticky top-0 px-3 py-2 border-b border-neutral-200 bg-white text-sm font-semibold text-neutral-600">
-                    {day.label}
-                  </div>
-                  <div className="relative h-full">
-                    {dayEvents.map((event) => (
-                      <AgendaEvent key={event.id} event={event} onClick={onEventClick} />
+                <div key={d.id} className="relative border-l border-gray-200 bg-white">
+                  {/* Hour lines */}
+                  {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
+                    <div key={i} className="border-b border-gray-100" style={{ height: HOUR_HEIGHT }} />
+                  ))}
+
+                  {/* Events for this day */}
+                  <div className="absolute inset-0">
+                    {dayEvents.map((evt) => (
+                      <EventBlock key={evt.id} evt={evt} />
                     ))}
                   </div>
                 </div>
               );
             })}
-          </div>
-
-          <div className="pointer-events-none absolute inset-0">
-            {Array.from({ length: totalIntervals + 1 }).map((_, idx) => (
-              <div
-                key={idx}
-                className={`absolute inset-x-0 border-t ${idx % 2 === 0 ? "border-neutral-200" : "border-dashed border-neutral-200/80"}`}
-                style={{ top: idx * slotHeight }}
-              />
-            ))}
           </div>
         </div>
       </div>
@@ -245,74 +364,105 @@ function AgendaControls({
   searchTerm,
   onSearch,
   onAddEvent,
+  onAddTask,
 }) {
   return (
-    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-full border border-neutral-200 bg-neutral-100/70 p-1">
-          <button
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${viewMode === "list" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
-            onClick={() => onViewChange("list")}
-          >
-            Agenda
-          </button>
-          <button className="px-4 py-1.5 text-sm font-medium rounded-full text-neutral-400 cursor-not-allowed" disabled>
-            Jours
-          </button>
-          <button
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${viewMode === "week" ? "bg-neutral-900 text-white shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
-            onClick={() => onViewChange("week")}
-          >
-            Semaine
-          </button>
-          <button className="px-4 py-1.5 text-sm font-medium rounded-full text-neutral-400 cursor-not-allowed" disabled>
-            Mois
-          </button>
+    <div className="space-y-4">
+      {/* First row: Title, week number, view pills, date selector (LEFT) | Add buttons (RIGHT) */}
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <span className="text-lg font-semibold text-neutral-900">Agenda</span>
+          <span className="inline-block px-3 py-1 text-xs font-medium text-neutral-600 bg-neutral-100 rounded-full">
+            Semaine 17
+          </span>
+
+          {/* View mode pills - similar to directory filter style */}
+          <div className="inline-flex rounded-full border border-neutral-200 bg-neutral-100/70 p-1 gap-1">
+            <button
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                viewMode === "list"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-700"
+              }`}
+              onClick={() => onViewChange("list")}
+            >
+              Jours
+            </button>
+            <button
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                viewMode === "week"
+                  ? "bg-neutral-900 text-white shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-700"
+              }`}
+              onClick={() => onViewChange("week")}
+            >
+              Semaine
+            </button>
+            <button
+              className="px-4 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-700 rounded-full transition-colors"
+            >
+              Mois
+            </button>
+          </div>
+
+          {/* Date selector */}
+          <div className="relative">
+            <select
+              value={selectedRange}
+              onChange={(e) => onRangeChange(e.target.value)}
+              className="appearance-none rounded-lg border border-neutral-200 bg-white px-3 py-2 pr-8 text-sm font-medium text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+            >
+              {WEEK_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.rangeLabel}>
+                  {preset.rangeLabel}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          </div>
         </div>
-        <div className="relative">
-          <select
-            value={selectedRange}
-            onChange={(e) => onRangeChange(e.target.value)}
-            className="appearance-none rounded-xl border border-neutral-200 bg-white px-3 py-2 pr-9 text-sm font-medium text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+
+        {/* Right side: Add buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+            onClick={onAddTask}
           >
-            {WEEK_PRESETS.map((preset) => (
-              <option key={preset.id} value={preset.rangeLabel}>
-                {preset.rangeLabel}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+            <span className="flex items-center justify-center size-4 rounded-full bg-neutral-200">
+              <span className="text-xs">✓</span>
+            </span>
+            Ajouter une tâche
+          </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
+            onClick={onAddEvent}
+          >
+            <Plus className="size-4" />
+            Ajouter un rendez-vous
+          </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative">
+      {/* Second row: Search and collaborator filter */}
+      <div className="flex items-center gap-3 w-full">
+        <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
           <input
             type="search"
             value={searchTerm}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Rechercher"
-            className="w-[220px] rounded-xl border border-neutral-200 bg-white pl-10 pr-3 py-2.5 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+            className="w-full rounded-lg border border-neutral-200 bg-white pl-10 pr-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
           />
         </div>
-        <button className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700">
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-neutral-100">
-              <User className="size-4 text-neutral-500" />
-            </span>
+        <button className="flex-1 flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors">
+          <div className="flex items-center gap-2.5">
+            <img src="https://i.pravatar.cc/40?img=12" alt="" className="size-6 rounded-full flex-shrink-0" />
             <span>
               Loïc <span className="text-neutral-400">(Vous)</span>
             </span>
           </div>
-          <ChevronDown className="size-4 text-neutral-400" />
-        </button>
-        <button
-          className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800 transition-colors"
-          onClick={onAddEvent}
-        >
-          <Plus className="size-4" />
-          Ajouter un rendez-vous
+          <ChevronDown className="size-4 text-neutral-400 flex-shrink-0" />
         </button>
       </div>
     </div>
@@ -911,32 +1061,23 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         style={{ marginLeft: `${sidebarWidth}px` }}
       >
         <Topbar onNavigate={onNavigate} />
-        <div className="w-full py-8 px-4 lg:px-6">
-          <div className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold text-neutral-900">Agenda</span>
-                <span className="rounded-full border border-emerald-300 bg-emerald-200 px-3 py-1 text-xs font-medium text-emerald-800">
-                  {currentWeek?.badge}
-                </span>
-              </div>
-            </div>
-            <div className="mt-6 space-y-6">
-              <AgendaControls
-                viewMode={viewMode}
-                onViewChange={setViewMode}
-                selectedRange={selectedWeekRange}
-                onRangeChange={setSelectedWeekRange}
-                searchTerm={searchTerm}
-                onSearch={setSearchTerm}
-                onAddEvent={() => setAddModalOpen(true)}
-              />
-              {viewMode === "week" ? (
-                <WeekGrid days={currentWeek.days} events={sortedFilteredEvents} onEventClick={handleEventClick} />
-              ) : (
-                <AgendaList days={currentWeek.days} events={sortedFilteredEvents} onEventClick={handleEventClick} />
-              )}
-            </div>
+        <div className="w-full py-6 px-4 lg:px-6 bg-white">
+          <div className="space-y-6">
+            <AgendaControls
+              viewMode={viewMode}
+              onViewChange={setViewMode}
+              selectedRange={selectedWeekRange}
+              onRangeChange={setSelectedWeekRange}
+              searchTerm={searchTerm}
+              onSearch={setSearchTerm}
+              onAddEvent={() => setAddModalOpen(true)}
+              onAddTask={() => console.log("Add task clicked")}
+            />
+            {viewMode === "week" ? (
+              <WeeklyCalendarGrid days={currentWeek.days} events={sortedFilteredEvents} onEventClick={handleEventClick} />
+            ) : (
+              <AgendaList days={currentWeek.days} events={sortedFilteredEvents} onEventClick={handleEventClick} />
+            )}
           </div>
         </div>
       </main>

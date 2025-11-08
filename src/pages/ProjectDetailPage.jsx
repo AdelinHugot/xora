@@ -617,11 +617,41 @@ function KitchenDiscoveryTabContent() {
   });
   const [addApplianceModalOpen, setAddApplianceModalOpen] = useState(false);
   const [applianceSearch, setApplianceSearch] = useState("");
+  const [addArticleModalOpen, setAddArticleModalOpen] = useState(false);
+  const [addArticleModalType, setAddArticleModalType] = useState(null); // 'appliance' or 'sanitary'
+  const [addArticleModalCurrentId, setAddArticleModalCurrentId] = useState(null); // appliance or sanitary ID
+  const [addArticleModalData, setAddArticleModalData] = useState({
+    catalogOrGeneric: "generic",
+    family: "",
+    article: ""
+  });
+  const [applianceArticles, setApplianceArticles] = useState({}); // { applianceId: [{ catalogOrGeneric, family, article }, ...] }
+  const [sanitaryArticles, setSanitaryArticles] = useState({}); // { sanitaryId: [{ catalogOrGeneric, family, article }, ...] }
   const [applianceSelection, setApplianceSelection] = useState("");
   const [expandedAppliances, setExpandedAppliances] = useState({});
   const [expandedSanitaries, setExpandedSanitaries] = useState({});
   const [applianceAnswers, setApplianceAnswers] = useState({});
   const [sanitaryAnswers, setSanitaryAnswers] = useState({});
+  const [financialEstimationExpanded, setFinancialEstimationExpanded] = useState(true);
+  const [financialEstimationData, setFinancialEstimationData] = useState({
+    mobilierMin: "",
+    mobilierMax: "",
+    planTravailMin: "",
+    planTravailMax: "",
+    accessoireMeubleMin: "",
+    accessoireMeubleMax: "",
+    mainOeuvreXLMin: "",
+    mainOeuvreXLMax: "",
+    livraisonMin: "",
+    livraisonMax: "",
+    mainOeuvreArtisansMin: "",
+    mainOeuvreArtisansMax: ""
+  });
+  const [paymentSimulationExpanded, setPaymentSimulationExpanded] = useState(true);
+  const [paymentSimulationData, setPaymentSimulationData] = useState({
+    montantTotal: "",
+    pourcentageAcompte: ""
+  });
   const [applianceSupplier, setApplianceSupplier] = useState({});
   const [sanitarySupplier, setSanitarySupplier] = useState({});
   const [applianceProducts, setApplianceProducts] = useState({
@@ -634,12 +664,22 @@ function KitchenDiscoveryTabContent() {
 
   // Mock product data
   const mockProducts = {
-    "four-standard": { ref: "FOUR-2024-01", description: "Four encastré 60L inox", minPrice: "450", maxPrice: "750" },
-    "four-premium": { ref: "FOUR-2024-PREMIUM", description: "Four pyrolyse premium inox", minPrice: "1200", maxPrice: "1800" },
-    "hotte-deco": { ref: "HOTTE-DECO-01", description: "Hotte décoractive 90cm verre", minPrice: "350", maxPrice: "650" },
-    "hotte-standard": { ref: "HOTTE-STD-90", description: "Hotte aspirante standard 90cm", minPrice: "200", maxPrice: "400" },
-    "evier-inox": { ref: "EVIER-INX-2024", description: "Évier inox double bac 86x50", minPrice: "180", maxPrice: "450" },
-    "evier-granit": { ref: "EVIER-GRAN-01", description: "Évier composite granit 2 bacs", minPrice: "300", maxPrice: "700" }
+    // Four
+    "four-bas": { ref: "FOUR-BAS-2024", description: "Four encastré bas de gamme", minPrice: "320", maxPrice: "450" },
+    "four-moyen": { ref: "FOUR-MOY-2024", description: "Four encastré moyen de gamme", minPrice: "550", maxPrice: "850" },
+    "four-haut": { ref: "FOUR-HAUT-2024", description: "Four encastré haut de gamme", minPrice: "1200", maxPrice: "1800" },
+    // Hotte
+    "hotte-bas": { ref: "HOTTE-BAS-2024", description: "Hotte aspirante bas de gamme", minPrice: "150", maxPrice: "280" },
+    "hotte-moyen": { ref: "HOTTE-MOY-2024", description: "Hotte aspirante moyen de gamme", minPrice: "380", maxPrice: "650" },
+    "hotte-haut": { ref: "HOTTE-HAUT-2024", description: "Hotte décoration premium verre", minPrice: "850", maxPrice: "1400" },
+    // Évier
+    "evier-bas": { ref: "EVIER-BAS-2024", description: "Évier simple bas de gamme", minPrice: "120", maxPrice: "250" },
+    "evier-moyen": { ref: "EVIER-MOY-2024", description: "Évier inox moyen de gamme", minPrice: "380", maxPrice: "650" },
+    "evier-haut": { ref: "EVIER-HAUT-2024", description: "Évier design haut de gamme", minPrice: "950", maxPrice: "1600" },
+    // Mitigeur
+    "mitigeur-bas": { ref: "MITIGEUR-BAS-2024", description: "Mitigeur standard bas de gamme", minPrice: "80", maxPrice: "150" },
+    "mitigeur-moyen": { ref: "MITIGEUR-MOY-2024", description: "Mitigeur chromé moyen de gamme", minPrice: "220", maxPrice: "380" },
+    "mitigeur-haut": { ref: "MITIGEUR-HAUT-2024", description: "Mitigeur design premium", minPrice: "550", maxPrice: "950" }
   };
   const [appliances, setAppliances] = useState([
     { id: 1, name: "Four" },
@@ -715,6 +755,51 @@ function KitchenDiscoveryTabContent() {
     appliances: "",
     financial: ""
   });
+
+  // Calculate total prices for appliances
+  const calculateApplianceTotals = () => {
+    let minTotal = 0;
+    let maxTotal = 0;
+    appliances.forEach((appliance) => {
+      // Only count if "Le client fournit" is NOT selected
+      if (applianceSupplier[appliance.id] !== "client") {
+        if (applianceArticles[appliance.id] && applianceArticles[appliance.id].length > 0) {
+          applianceArticles[appliance.id].forEach((article) => {
+            const familyKey = `${article.family}-${article.article.split('-')[article.article.split('-').length - 1]}`;
+            if (mockProducts[familyKey]) {
+              minTotal += parseInt(mockProducts[familyKey].minPrice) || 0;
+              maxTotal += parseInt(mockProducts[familyKey].maxPrice) || 0;
+            }
+          });
+        }
+      }
+    });
+    return { min: minTotal, max: maxTotal };
+  };
+
+  // Calculate total prices for sanitaries
+  const calculateSanitaryTotals = () => {
+    let minTotal = 0;
+    let maxTotal = 0;
+    sanitaries.forEach((sanitary) => {
+      // Only count if "Le client fournit" is NOT selected
+      if (sanitarySupplier[sanitary.id] !== "client") {
+        if (sanitaryArticles[sanitary.id] && sanitaryArticles[sanitary.id].length > 0) {
+          sanitaryArticles[sanitary.id].forEach((article) => {
+            const familyKey = `${article.family}-${article.article.split('-')[article.article.split('-').length - 1]}`;
+            if (mockProducts[familyKey]) {
+              minTotal += parseInt(mockProducts[familyKey].minPrice) || 0;
+              maxTotal += parseInt(mockProducts[familyKey].maxPrice) || 0;
+            }
+          });
+        }
+      }
+    });
+    return { min: minTotal, max: maxTotal };
+  };
+
+  const applianceTotals = calculateApplianceTotals();
+  const sanitaryTotals = calculateSanitaryTotals();
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -1281,6 +1366,28 @@ function KitchenDiscoveryTabContent() {
               </button>
             </div>
 
+            {/* Total price blocks */}
+            <div className="px-6 pt-4 pb-4 bg-[#F8F9FC]">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Total min */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group">
+                  <span className="text-sm text-[#6B7280]">Total min (TTC)</span>
+                  <div className="flex items-center gap-0">
+                    <span className="text-sm font-semibold text-[#1F2027]">{applianceTotals.min}</span>
+                    <span className="text-sm font-semibold text-[#1F2027]">€</span>
+                  </div>
+                </div>
+                {/* Total max */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group">
+                  <span className="text-sm text-[#6B7280]">Total max (TTC)</span>
+                  <div className="flex items-center gap-0">
+                    <span className="text-sm font-semibold text-[#1F2027]">{applianceTotals.max}</span>
+                    <span className="text-sm font-semibold text-[#1F2027]">€</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Appliances list */}
             <div className="px-6 pb-6 bg-[#F8F9FC] rounded-b-lg">
               <div className="space-y-3">
@@ -1370,41 +1477,74 @@ function KitchenDiscoveryTabContent() {
 
                             {/* Article catalog inside gray block - Only show if not "Le client fournit" */}
                             {applianceSupplier[appliance.id] !== "client" && (
-                              <div className="space-y-3 pt-2 border-t border-[#E1E4ED]">
-                                <select
-                                  value={applianceProducts[appliance.id] || ""}
-                                  onChange={(e) => setApplianceProducts({ ...applianceProducts, [appliance.id]: e.target.value })}
-                                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
-                                  <option value="">Sélectionner un article</option>
-                                  <option value="four-standard">Four encastré standard</option>
-                                  <option value="four-premium">Four pyrolyse premium</option>
-                                  <option value="hotte-standard">Hotte aspirante standard</option>
-                                  <option value="hotte-deco">Hotte décoration verre</option>
-                                </select>
-
-                                {/* Product table - Show when a product is selected */}
-                                {applianceProducts[appliance.id] && mockProducts[applianceProducts[appliance.id]] && (
-                                  <div className="rounded-lg border border-[#E1E4ED] overflow-hidden">
-                                    <table className="w-full text-sm">
-                                      <thead>
-                                        <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
-                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Référence produit</th>
-                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Description</th>
-                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix mini TTC</th>
-                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix maxi TTC</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
-                                          <td className="px-3 py-2 text-[#1F2027] font-medium">{mockProducts[applianceProducts[appliance.id]].ref}</td>
-                                          <td className="px-3 py-2 text-[#1F2027]">{mockProducts[applianceProducts[appliance.id]].description}</td>
-                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[applianceProducts[appliance.id]].minPrice}€</td>
-                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[applianceProducts[appliance.id]].maxPrice}€</td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
+                              <div className="space-y-2 pt-2 border-t border-[#E1E4ED]">
+                                {/* White container with header and table */}
+                                <div className="bg-white rounded-lg border border-[#E1E4ED] overflow-hidden">
+                                  {/* Header with title and button */}
+                                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#E1E4ED]">
+                                    <h4 className="text-sm font-semibold text-[#1F2027]">Article produit catalogue/générique</h4>
+                                    <button
+                                      onClick={() => {
+                                        setAddArticleModalType('appliance');
+                                        setAddArticleModalCurrentId(appliance.id);
+                                        setAddArticleModalData({ catalogOrGeneric: "generic", family: "", article: "" });
+                                        setAddArticleModalOpen(true);
+                                      }}
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#F8F9FA] text-[#323130] text-xs font-medium hover:bg-[#F0F0F0] transition-colors"
+                                    >
+                                      <Plus className="size-3.5" />
+                                      Ajouter un article
+                                    </button>
                                   </div>
-                                )}
+
+                                  {/* Table */}
+                                  {applianceArticles[appliance.id] && applianceArticles[appliance.id].length > 0 ? (
+                                    <div className="overflow-hidden">
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
+                                            <th className="px-4 py-2 text-left font-semibold text-[#1F2027]">Référence produit</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-[#1F2027]">Description</th>
+                                            <th className="px-4 py-2 text-right font-semibold text-[#1F2027]">Prix mini TTC</th>
+                                            <th className="px-4 py-2 text-right font-semibold text-[#1F2027]">Prix maxi TTC</th>
+                                            <th className="px-4 py-2 text-center font-semibold text-[#1F2027]"></th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {applianceArticles[appliance.id].map((article, idx) => {
+                                            const familyKey = `${article.family}-${article.article.split('-')[article.article.split('-').length - 1]}`;
+                                            const productData = mockProducts[familyKey] || { ref: "N/A", description: article.article, minPrice: "0", maxPrice: "0" };
+                                            return (
+                                              <tr key={idx} className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                                                <td className="px-4 py-2 text-[#1F2027] font-medium">{productData.ref}</td>
+                                                <td className="px-4 py-2 text-[#1F2027]">{productData.description}</td>
+                                                <td className="px-4 py-2 text-right text-[#1F2027] font-medium">{productData.minPrice}€</td>
+                                                <td className="px-4 py-2 text-right text-[#1F2027] font-medium">{productData.maxPrice}€</td>
+                                                <td className="px-4 py-2 text-center">
+                                                  <button
+                                                    onClick={() => {
+                                                      setApplianceArticles({
+                                                        ...applianceArticles,
+                                                        [appliance.id]: applianceArticles[appliance.id].filter((_, i) => i !== idx)
+                                                      });
+                                                    }}
+                                                    className="p-1 text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#FEE2E2] rounded transition-colors"
+                                                  >
+                                                    <Trash2 className="size-4" />
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-8 text-center text-[#A1A7B6] text-sm">
+                                      Aucun article ajouté
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1440,18 +1580,13 @@ function KitchenDiscoveryTabContent() {
             </div>
 
             {/* Total price blocks */}
-            <div className="px-6 pt-4 bg-[#F8F9FC]">
-              <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="px-6 pt-4 pb-4 bg-[#F8F9FC]">
+              <div className="grid grid-cols-2 gap-4">
                 {/* Total min */}
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group">
                   <span className="text-sm text-[#6B7280]">Total min (TTC)</span>
                   <div className="flex items-center gap-0">
-                    <input
-                      type="text"
-                      value={sanitaryPrices.min}
-                      onChange={(e) => setSanitaryPrices({ ...sanitaryPrices, min: e.target.value })}
-                      className="text-sm font-semibold text-[#1F2027] bg-transparent text-right border-0 focus:outline-none focus:ring-0 p-0 w-16"
-                    />
+                    <span className="text-sm font-semibold text-[#1F2027]">{sanitaryTotals.min}</span>
                     <span className="text-sm font-semibold text-[#1F2027]">€</span>
                   </div>
                 </div>
@@ -1459,12 +1594,7 @@ function KitchenDiscoveryTabContent() {
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group">
                   <span className="text-sm text-[#6B7280]">Total max (TTC)</span>
                   <div className="flex items-center gap-0">
-                    <input
-                      type="text"
-                      value={sanitaryPrices.max}
-                      onChange={(e) => setSanitaryPrices({ ...sanitaryPrices, max: e.target.value })}
-                      className="text-sm font-semibold text-[#1F2027] bg-transparent text-right border-0 focus:outline-none focus:ring-0 p-0 w-16"
-                    />
+                    <span className="text-sm font-semibold text-[#1F2027]">{sanitaryTotals.max}</span>
                     <span className="text-sm font-semibold text-[#1F2027]">€</span>
                   </div>
                 </div>
@@ -1538,39 +1668,74 @@ function KitchenDiscoveryTabContent() {
 
                             {/* Article catalog inside gray block - Only show if not "Le client fournit" */}
                             {sanitarySupplier[sanitary.id] !== "client" && (
-                              <div className="space-y-3 pt-2 border-t border-[#E1E4ED]">
-                                <select
-                                  value={sanitaryProducts[sanitary.id] || ""}
-                                  onChange={(e) => setSanitaryProducts({ ...sanitaryProducts, [sanitary.id]: e.target.value })}
-                                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%20fill=%27none%27%3E%3Cpath%20d=%27M2%202L6%206L10%202%27%20stroke=%27%235F6470%27%20stroke-width=%271.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')] bg-no-repeat bg-[length:12px] bg-[position:calc(100%-10px)_center] pr-8">
-                                  <option value="">Sélectionner un article</option>
-                                  <option value="evier-inox">Évier inox double bac</option>
-                                  <option value="evier-granit">Évier composite granit</option>
-                                </select>
-
-                                {/* Product table - Show when a product is selected */}
-                                {sanitaryProducts[sanitary.id] && mockProducts[sanitaryProducts[sanitary.id]] && (
-                                  <div className="rounded-lg border border-[#E1E4ED] overflow-hidden">
-                                    <table className="w-full text-sm">
-                                      <thead>
-                                        <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
-                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Référence produit</th>
-                                          <th className="px-3 py-2 text-left font-semibold text-[#1F2027]">Description</th>
-                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix mini TTC</th>
-                                          <th className="px-3 py-2 text-right font-semibold text-[#1F2027]">Prix maxi TTC</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
-                                          <td className="px-3 py-2 text-[#1F2027] font-medium">{mockProducts[sanitaryProducts[sanitary.id]].ref}</td>
-                                          <td className="px-3 py-2 text-[#1F2027]">{mockProducts[sanitaryProducts[sanitary.id]].description}</td>
-                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[sanitaryProducts[sanitary.id]].minPrice}€</td>
-                                          <td className="px-3 py-2 text-right text-[#1F2027] font-medium">{mockProducts[sanitaryProducts[sanitary.id]].maxPrice}€</td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
+                              <div className="space-y-2 pt-2 border-t border-[#E1E4ED]">
+                                {/* White container with header and table */}
+                                <div className="bg-white rounded-lg border border-[#E1E4ED] overflow-hidden">
+                                  {/* Header with title and button */}
+                                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#E1E4ED]">
+                                    <h4 className="text-sm font-semibold text-[#1F2027]">Article produit catalogue/générique</h4>
+                                    <button
+                                      onClick={() => {
+                                        setAddArticleModalType('sanitary');
+                                        setAddArticleModalCurrentId(sanitary.id);
+                                        setAddArticleModalData({ catalogOrGeneric: "generic", family: "", article: "" });
+                                        setAddArticleModalOpen(true);
+                                      }}
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#F8F9FA] text-[#323130] text-xs font-medium hover:bg-[#F0F0F0] transition-colors"
+                                    >
+                                      <Plus className="size-3.5" />
+                                      Ajouter un article
+                                    </button>
                                   </div>
-                                )}
+
+                                  {/* Table */}
+                                  {sanitaryArticles[sanitary.id] && sanitaryArticles[sanitary.id].length > 0 ? (
+                                    <div className="overflow-hidden">
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
+                                            <th className="px-4 py-2 text-left font-semibold text-[#1F2027]">Référence produit</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-[#1F2027]">Description</th>
+                                            <th className="px-4 py-2 text-right font-semibold text-[#1F2027]">Prix mini TTC</th>
+                                            <th className="px-4 py-2 text-right font-semibold text-[#1F2027]">Prix maxi TTC</th>
+                                            <th className="px-4 py-2 text-center font-semibold text-[#1F2027]"></th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {sanitaryArticles[sanitary.id].map((article, idx) => {
+                                            const familyKey = `${article.family}-${article.article.split('-')[article.article.split('-').length - 1]}`;
+                                            const productData = mockProducts[familyKey] || { ref: "N/A", description: article.article, minPrice: "0", maxPrice: "0" };
+                                            return (
+                                              <tr key={idx} className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                                                <td className="px-4 py-2 text-[#1F2027] font-medium">{productData.ref}</td>
+                                                <td className="px-4 py-2 text-[#1F2027]">{productData.description}</td>
+                                                <td className="px-4 py-2 text-right text-[#1F2027] font-medium">{productData.minPrice}€</td>
+                                                <td className="px-4 py-2 text-right text-[#1F2027] font-medium">{productData.maxPrice}€</td>
+                                                <td className="px-4 py-2 text-center">
+                                                  <button
+                                                    onClick={() => {
+                                                      setSanitaryArticles({
+                                                        ...sanitaryArticles,
+                                                        [sanitary.id]: sanitaryArticles[sanitary.id].filter((_, i) => i !== idx)
+                                                      });
+                                                    }}
+                                                    className="p-1 text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#FEE2E2] rounded transition-colors"
+                                                  >
+                                                    <Trash2 className="size-4" />
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-8 text-center text-[#A1A7B6] text-sm">
+                                      Aucun article ajouté
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1590,8 +1755,383 @@ function KitchenDiscoveryTabContent() {
         </div>
       )}
 
+      {/* Financial Estimation Section */}
+      {activeTertiaryTab === "financial" && (
+        <div className="space-y-6">
+          {/* Financial Estimation Block */}
+          <div className="bg-white rounded-lg border border-[#ECEEF5] shadow-[0_16px_36px_rgba(15,23,42,0.04)]">
+            {/* Header - All elements on one line */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[#F8F9FC]">
+              {/* Title */}
+              <h3 className="text-lg font-semibold text-[#1F2027] flex-shrink-0">Estimation enveloppe financière</h3>
+
+              {/* Spacer */}
+              <div className="flex-1" />
+
+              {/* Total min block */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group min-w-[200px]">
+                <span className="text-sm text-[#6B7280]">Total min (TTC)</span>
+                <div className="flex items-center gap-0">
+                  <span className="text-sm font-semibold text-[#1F2027]">{(() => {
+                    const mobilier = parseInt(financialEstimationData.mobilierMin) || 0;
+                    const planTravail = parseInt(financialEstimationData.planTravailMin) || 0;
+                    const accessoireMeuble = parseInt(financialEstimationData.accessoireMeubleMin) || 0;
+                    const electromenager = applianceTotals.min || 0;
+                    const sanitaire = sanitaryTotals.min || 0;
+                    const mainOeuvreXL = parseInt(financialEstimationData.mainOeuvreXLMin) || 0;
+                    const livraison = parseInt(financialEstimationData.livraisonMin) || 0;
+                    const mainOeuvreArtisans = parseInt(financialEstimationData.mainOeuvreArtisansMin) || 0;
+                    return (mobilier + planTravail + accessoireMeuble + electromenager + sanitaire + mainOeuvreXL + livraison + mainOeuvreArtisans).toLocaleString('fr-FR');
+                  })()}</span>
+                  <span className="text-sm font-semibold text-[#1F2027]">€</span>
+                </div>
+              </div>
+
+              {/* Total max block */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#E4E4E7] hover:border-[#D4D4D7] transition-colors group min-w-[200px] mx-2">
+                <span className="text-sm text-[#6B7280]">Total max (TTC)</span>
+                <div className="flex items-center gap-0">
+                  <span className="text-sm font-semibold text-[#1F2027]">{(() => {
+                    const mobilier = parseInt(financialEstimationData.mobilierMax) || 0;
+                    const planTravail = parseInt(financialEstimationData.planTravailMax) || 0;
+                    const accessoireMeuble = parseInt(financialEstimationData.accessoireMeubleMax) || 0;
+                    const electromenager = applianceTotals.max || 0;
+                    const sanitaire = sanitaryTotals.max || 0;
+                    const mainOeuvreXL = parseInt(financialEstimationData.mainOeuvreXLMax) || 0;
+                    const livraison = parseInt(financialEstimationData.livraisonMax) || 0;
+                    const mainOeuvreArtisans = parseInt(financialEstimationData.mainOeuvreArtisansMax) || 0;
+                    return (mobilier + planTravail + accessoireMeuble + electromenager + sanitaire + mainOeuvreXL + livraison + mainOeuvreArtisans).toLocaleString('fr-FR');
+                  })()}</span>
+                  <span className="text-sm font-semibold text-[#1F2027]">€</span>
+                </div>
+              </div>
+
+              {/* Generate quote button */}
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#1F2027] hover:bg-neutral-50 transition-colors flex-shrink-0">
+                Générer un devis
+              </button>
+
+              {/* Collapse/Expand button */}
+              <button
+                onClick={() => setFinancialEstimationExpanded(!financialEstimationExpanded)}
+                className="p-1.5 text-[#9CA3AF] hover:text-[#1F2027] transition-colors flex-shrink-0"
+                aria-label="Replier/Dérouler"
+              >
+                <ChevronDown className={`size-4 transition-transform ${financialEstimationExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Expandable content */}
+            {financialEstimationExpanded && (
+              <div className="px-6 pb-6 bg-[#F8F9FC] rounded-b-lg">
+                {/* Financial estimation table */}
+                <div className="bg-white rounded-lg border border-[#E1E4ED] overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#F3F4F6] border-b border-[#E1E4ED]">
+                        <th className="px-4 py-2 text-left font-semibold text-[#1F2027]">Métier</th>
+                        <th className="px-4 py-2 text-right font-semibold text-[#1F2027]">Prix mini</th>
+                        <th className="px-4 py-2 text-right font-semibold text-[#1F2027]">Prix maxi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Mobilier */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Mobilier</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.mobilierMin}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, mobilierMin: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.mobilierMax}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, mobilierMax: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Plan de travail */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Plan de travail</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.planTravailMin}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, planTravailMin: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.planTravailMax}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, planTravailMax: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Accessoire meuble */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Accessoire meuble</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.accessoireMeubleMin}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, accessoireMeubleMin: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.accessoireMeubleMax}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, accessoireMeubleMax: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Électroménager (not editable) */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB] bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Électroménager</td>
+                        <td className="px-4 py-2 text-right">
+                          <span className="text-[#1F2027] font-medium">{applianceTotals.min.toLocaleString('fr-FR')}€</span>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <span className="text-[#1F2027] font-medium">{applianceTotals.max.toLocaleString('fr-FR')}€</span>
+                        </td>
+                      </tr>
+
+                      {/* Sanitaire & ses accessoires (not editable) */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB] bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Sanitaire & ses accessoires</td>
+                        <td className="px-4 py-2 text-right">
+                          <span className="text-[#1F2027] font-medium">{sanitaryTotals.min.toLocaleString('fr-FR')}€</span>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <span className="text-[#1F2027] font-medium">{sanitaryTotals.max.toLocaleString('fr-FR')}€</span>
+                        </td>
+                      </tr>
+
+                      {/* Main d'oeuvre XL */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Main d'oeuvre XL</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.mainOeuvreXLMin}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, mainOeuvreXLMin: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.mainOeuvreXLMax}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, mainOeuvreXLMax: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Livraison */}
+                      <tr className="border-b border-[#E1E4ED] hover:bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Livraison</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.livraisonMin}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, livraisonMin: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.livraisonMax}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, livraisonMax: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Main d'oeuvre artisans */}
+                      <tr className="hover:bg-[#F9FAFB]">
+                        <td className="px-4 py-2 text-[#1F2027] font-medium">Main d'oeuvre artisans</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.mainOeuvreArtisansMin}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, mainOeuvreArtisansMin: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={financialEstimationData.mainOeuvreArtisansMax}
+                              onChange={(e) => setFinancialEstimationData({ ...financialEstimationData, mainOeuvreArtisansMax: e.target.value })}
+                              placeholder="0"
+                              className="w-24 px-2 py-1 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-right"
+                            />
+                            <span className="text-[#6B7280] font-medium">€</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Payment Simulation Block */}
+      {activeTertiaryTab === "financial" && (
+        <div className="bg-white rounded-lg border border-[#ECEEF5] shadow-[0_16px_36px_rgba(15,23,42,0.04)]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[#F8F9FC]">
+            <h3 className="text-lg font-semibold text-[#1F2027] flex-shrink-0">Simulation de règlement</h3>
+
+            {/* Collapse/Expand button */}
+            <button
+              onClick={() => setPaymentSimulationExpanded(!paymentSimulationExpanded)}
+              className="p-1.5 text-[#9CA3AF] hover:text-[#1F2027] transition-colors flex-shrink-0 ml-auto"
+              aria-label="Replier/Dérouler"
+            >
+              <ChevronDown className={`size-4 transition-transform ${paymentSimulationExpanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Expandable content */}
+          {paymentSimulationExpanded && (
+            <div className="px-6 pb-6 bg-[#F8F9FC] rounded-b-lg">
+              <div className="flex gap-4">
+                {/* Montant total */}
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-semibold text-[#2B2E38]">Montant total</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={paymentSimulationData.montantTotal}
+                      onChange={(e) => setPaymentSimulationData({ ...paymentSimulationData, montantTotal: e.target.value })}
+                      placeholder="0"
+                      className="flex-1 px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                    />
+                    <span className="text-[#6B7280] font-medium">€</span>
+                  </div>
+                </div>
+
+                {/* Pourcentage acompte */}
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-semibold text-[#2B2E38]">Pourcentage acompte</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={paymentSimulationData.pourcentageAcompte}
+                      onChange={(e) => setPaymentSimulationData({ ...paymentSimulationData, pourcentageAcompte: e.target.value })}
+                      placeholder="0"
+                      className="flex-1 px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                    />
+                    <span className="text-[#6B7280] font-medium">%</span>
+                  </div>
+                </div>
+
+                {/* Montant acompte (non-editable) */}
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-semibold text-[#2B2E38]">Montant acompte</label>
+                  <div className="flex items-center gap-1">
+                    <div className="flex-1 px-4 py-3 rounded-lg bg-[#F3F4F6] text-sm text-[#1F2027]">
+                      <span className="font-medium">
+                        {(() => {
+                          const montantTotal = parseInt(paymentSimulationData.montantTotal) || 0;
+                          const pourcentage = parseInt(paymentSimulationData.pourcentageAcompte) || 0;
+                          return ((montantTotal * pourcentage) / 100).toLocaleString('fr-FR');
+                        })()}
+                      </span>
+                    </div>
+                    <span className="text-[#6B7280] font-medium">€</span>
+                  </div>
+                </div>
+
+                {/* Livraison (non-editable) */}
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-semibold text-[#2B2E38]">Livraison</label>
+                  <div className="flex items-center gap-1">
+                    <div className="flex-1 px-4 py-3 rounded-lg bg-[#F3F4F6] text-sm text-[#1F2027]">
+                      <span className="font-medium">
+                        {(() => {
+                          const montantTotal = parseInt(paymentSimulationData.montantTotal) || 0;
+                          const pourcentage = parseInt(paymentSimulationData.pourcentageAcompte) || 0;
+                          const acompte = (montantTotal * pourcentage) / 100;
+                          return (montantTotal - acompte).toLocaleString('fr-FR');
+                        })()}
+                      </span>
+                    </div>
+                    <span className="text-[#6B7280] font-medium">€</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Placeholder for other tabs */}
-      {activeTertiaryTab !== "ambiance" && activeTertiaryTab !== "furniture" && activeTertiaryTab !== "appliances" && (
+      {activeTertiaryTab !== "ambiance" && activeTertiaryTab !== "furniture" && activeTertiaryTab !== "appliances" && activeTertiaryTab !== "financial" && (
         <FormSection title={tertiaryTabs.find(t => t.id === activeTertiaryTab)?.label}>
           <FormField label="" span={3}>
             <div className="text-center text-neutral-500 py-8">
@@ -1599,6 +2139,170 @@ function KitchenDiscoveryTabContent() {
             </div>
           </FormField>
         </FormSection>
+      )}
+
+      {/* Add Article Modal */}
+      {addArticleModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white shadow-lg w-full mx-4" style={{ maxWidth: '740px', height: '577px', display: 'flex', flexDirection: 'column', borderRadius: '16px' }}>
+            {/* Modal Header - Gray background */}
+            <div className="bg-[#F8F9FA] px-6 py-4 border-b border-[#E1E4ED] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Logo in small square */}
+                <div className="w-8 h-8 rounded-lg border border-[#E4E4E7] bg-white flex items-center justify-center flex-shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.5 9.16667L10 11.6667L18.3333 3.33333M17.5 10V15C17.5 16.3807 16.3807 17.5 15 17.5H5C3.61929 17.5 2.5 16.3807 2.5 15V5C2.5 3.61929 3.61929 2.5 5 2.5H13.3333" stroke="#323130" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                {/* Title */}
+                <h3 className="text-sm font-semibold text-[#1F2027]">Ajouter un article catalogue ou générique</h3>
+              </div>
+              {/* Close button */}
+              <button
+                onClick={() => setAddArticleModalOpen(false)}
+                className="w-8 h-8 rounded-lg bg-white border border-[#E4E4E7] flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0"
+              >
+                <X className="size-4 text-[#1F2027]" />
+              </button>
+            </div>
+
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+              {/* Block 1: Article catalogue ou générique */}
+              <div className="bg-[#F3F4F6] rounded-lg p-4">
+                <div className="text-xs text-[#6B7280] font-medium mb-3">Article catalogue ou générique</div>
+                <select
+                  value={addArticleModalData.catalogOrGeneric}
+                  onChange={(e) => setAddArticleModalData({ ...addArticleModalData, catalogOrGeneric: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27 viewBox=%270%200%2012%208%27 fill=%27none%27%3E%3Cpath d=%27M2%202L6%206L10%202%27 stroke=%27%235F6470%27 stroke-width=%271.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E')`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 10px center',
+                    backgroundSize: '12px',
+                    paddingRight: '36px'
+                  }}
+                >
+                  <option value="generic">Générique</option>
+                  <option value="catalog">Catalogue</option>
+                </select>
+              </div>
+
+              {/* Block 2: Sélectionner la famille de l'article */}
+              <div className="bg-[#F3F4F6] rounded-lg p-4">
+                <div className="text-xs text-[#6B7280] font-medium mb-3">Sélectionner la famille de l'article</div>
+                <select
+                  value={addArticleModalData.family}
+                  onChange={(e) => setAddArticleModalData({ ...addArticleModalData, family: e.target.value, article: "" })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27 viewBox=%270%200%2012%208%27 fill=%27none%27%3E%3Cpath d=%27M2%202L6%206L10%202%27 stroke=%27%235F6470%27 stroke-width=%271.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E')`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 10px center',
+                    backgroundSize: '12px',
+                    paddingRight: '36px'
+                  }}
+                >
+                  <option value="">Sélectionner</option>
+                  <option value="four">Four</option>
+                  <option value="hotte">Hotte</option>
+                  <option value="evier">Évier</option>
+                  <option value="mitigeur">Mitigeur</option>
+                </select>
+              </div>
+
+              {/* Block 3: Sélectionner l'article générique/catalogue */}
+              <div className="bg-[#F3F4F6] rounded-lg p-4">
+                <div className="text-xs text-[#6B7280] font-medium mb-3">
+                  {addArticleModalData.catalogOrGeneric === "generic"
+                    ? "Sélectionner l'article générique"
+                    : "Sélectionner l'article catalogue"}
+                </div>
+                <select
+                  value={addArticleModalData.article}
+                  onChange={(e) => setAddArticleModalData({ ...addArticleModalData, article: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27 viewBox=%270%200%2012%208%27 fill=%27none%27%3E%3Cpath d=%27M2%202L6%206L10%202%27 stroke=%27%235F6470%27 stroke-width=%271.5%27 stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E')`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 10px center',
+                    backgroundSize: '12px',
+                    paddingRight: '36px'
+                  }}
+                >
+                  <option value="">Sélectionner</option>
+                  {addArticleModalData.family === "four" && (
+                    <>
+                      <option value="four-bas">Four bas de gamme</option>
+                      <option value="four-moyen">Four moyen de gamme</option>
+                      <option value="four-haut">Four haut de gamme</option>
+                    </>
+                  )}
+                  {addArticleModalData.family === "hotte" && (
+                    <>
+                      <option value="hotte-bas">Hotte bas de gamme</option>
+                      <option value="hotte-moyen">Hotte moyen de gamme</option>
+                      <option value="hotte-haut">Hotte haut de gamme</option>
+                    </>
+                  )}
+                  {addArticleModalData.family === "evier" && (
+                    <>
+                      <option value="evier-bas">Évier bas de gamme</option>
+                      <option value="evier-moyen">Évier moyen de gamme</option>
+                      <option value="evier-haut">Évier haut de gamme</option>
+                    </>
+                  )}
+                  {addArticleModalData.family === "mitigeur" && (
+                    <>
+                      <option value="mitigeur-bas">Mitigeur bas de gamme</option>
+                      <option value="mitigeur-moyen">Mitigeur moyen de gamme</option>
+                      <option value="mitigeur-haut">Mitigeur haut de gamme</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+
+            {/* Modal Footer - Separator and buttons */}
+            <div className="border-t border-[#E1E4ED] px-6 py-4 flex gap-3">
+              <button
+                onClick={() => setAddArticleModalOpen(false)}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-[#E4E4E7] bg-white text-[#323130] text-sm font-medium hover:bg-[#F8F9FA] transition-colors"
+              >
+                <Plus className="size-4" />
+                Ajouter un nouvel article
+              </button>
+              <button
+                onClick={() => {
+                  if (addArticleModalData.family && addArticleModalData.article) {
+                    if (addArticleModalType === 'appliance') {
+                      setApplianceArticles({
+                        ...applianceArticles,
+                        [addArticleModalCurrentId]: [
+                          ...(applianceArticles[addArticleModalCurrentId] || []),
+                          { ...addArticleModalData }
+                        ]
+                      });
+                    } else if (addArticleModalType === 'sanitary') {
+                      setSanitaryArticles({
+                        ...sanitaryArticles,
+                        [addArticleModalCurrentId]: [
+                          ...(sanitaryArticles[addArticleModalCurrentId] || []),
+                          { ...addArticleModalData }
+                        ]
+                      });
+                    }
+                    setAddArticleModalOpen(false);
+                  }
+                }}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#2B7FFF] text-white text-sm font-medium hover:bg-[#1E5FBF] transition-colors"
+              >
+                <Check className="size-4" />
+                Ajouter l'article
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
