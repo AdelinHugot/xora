@@ -292,19 +292,25 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-task-memo-title"
-        className="relative w-full max-w-5xl rounded-2xl bg-white shadow-xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="relative w-full bg-white shadow-xl max-h-[90vh] flex flex-col overflow-hidden"
+        style={{ maxWidth: '740px', borderRadius: '16px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <header className="px-6 py-4 border-b border-[#E9E9E9] flex-shrink-0">
+        <header className="px-6 py-4 bg-[#F8F9FA] border-b border-[#E4E4E7] flex-shrink-0 rounded-t-[16px]">
           <div className="flex items-center justify-between">
-            <h2 id="create-task-memo-title" className="flex items-center gap-2 text-lg font-semibold">
-              <CheckDocIcon /> Créer une tâche ou une mémo
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white border border-[#E4E4E7] rounded-lg">
+                <CheckDocIcon />
+              </div>
+              <h2 id="create-task-memo-title" className="text-sm font-semibold text-[#1F2027]">
+                Créer une tâche ou une mémo
+              </h2>
+            </div>
             <button
               aria-label="Fermer"
               onClick={onClose}
-              className="p-2 rounded-xl hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="p-2 rounded-lg hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 transition-colors"
             >
               <XIcon />
             </button>
@@ -315,17 +321,17 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4">
             {/* Groupe 1: Toggle Tâche/Mémo */}
-            <section className="rounded-xl bg-neutral-50 p-4 border border-[#E9E9E9]">
+            <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-neutral-900">
+                <label className="text-xs text-[#6B7280] font-medium mb-0">
                   Créer une tâche ou une mémo
                 </label>
-                <div className="inline-flex rounded-full border border-neutral-300 overflow-hidden">
+                <div className="inline-flex rounded-full border border-[#E1E4ED] overflow-hidden bg-white">
                   <button
                     type="button"
                     onClick={() => handleChange("kind", "Tâche")}
                     className={`px-3 py-1 text-sm transition-colors ${
-                      formData.kind === "Tâche" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100"
+                      formData.kind === "Tâche" ? "bg-neutral-900 text-white" : "hover:bg-[#F3F4F6]"
                     }`}
                   >
                     Tâche
@@ -334,7 +340,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                     type="button"
                     onClick={() => handleChange("kind", "Mémo")}
                     className={`px-3 py-1 text-sm transition-colors ${
-                      formData.kind === "Mémo" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100"
+                      formData.kind === "Mémo" ? "bg-neutral-900 text-white" : "hover:bg-[#F3F4F6]"
                     }`}
                   >
                     Mémo
@@ -347,11 +353,11 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
             {formData.kind === "Tâche" ? (
               <>
                 {/* Groupe 2: Salarié | Agenda */}
-                <section className="rounded-xl bg-neutral-50 p-4 border border-[#E9E9E9]">
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Salarié */}
                     <div>
-                      <label htmlFor="salarie" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="salarie" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Salarié <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
@@ -360,16 +366,16 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                           id="salarie"
                           value={formData.salarie}
                           onChange={(e) => handleChange("salarie", e.target.value)}
-                          className={`w-full rounded-xl border ${
-                            errors.salarie ? "border-red-500" : "border-neutral-200"
-                          } bg-white px-3 py-2.5.5 pr-8 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 appearance-none`}
+                          className={`w-full rounded-lg border ${
+                            errors.salarie ? "border-red-500" : "border-[#E1E4ED]"
+                          } bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none`}
                           aria-invalid={errors.salarie ? "true" : "false"}
                           aria-describedby={errors.salarie ? "salarie-error" : undefined}
                         >
                           <option value="">Sélectionner</option>
                           {SALARIES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />
                         </div>
                       </div>
@@ -382,7 +388,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
 
                     {/* Agenda du salarié */}
                     <div>
-                      <label htmlFor="agendaDatetime" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="agendaDatetime" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Date et heure dans l'emploi du temps du salarié
                       </label>
                       <input
@@ -390,18 +396,18 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                         id="agendaDatetime"
                         value={formData.agendaDatetime}
                         onChange={(e) => handleChange("agendaDatetime", e.target.value)}
-                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5.5 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                        className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
                       />
                     </div>
                   </div>
                 </section>
 
                 {/* Groupe 3: Client | Type | Projet | Échéance */}
-                <section className="rounded-xl bg-neutral-50 p-4 border border-[#E9E9E9]">
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Client */}
                     <div>
-                      <label htmlFor="client" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="client" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Client
                       </label>
                       <div className="relative">
@@ -409,12 +415,12 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                           id="client"
                           value={formData.client}
                           onChange={(e) => handleChange("client", e.target.value)}
-                          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 pr-8 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 appearance-none"
+                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
                         >
                           <option value="">Sélectionner</option>
                           {CLIENTS.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />
                         </div>
                       </div>
@@ -422,7 +428,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
 
                     {/* Type de tâche */}
                     <div>
-                      <label htmlFor="taskType" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="taskType" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Type de tâche
                       </label>
                       {formData.taskType ? (
@@ -430,12 +436,12 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                           <button
                             type="button"
                             onClick={() => handleChange("taskType", "")}
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                            className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
                           >
                             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getTaskTypeBadgeClass(formData.taskType)}`}>
                               {formData.taskType}
                             </span>
-                            <span className="text-neutral-400 text-xs">Changer</span>
+                            <span className="text-[#6B7280] text-xs">Changer</span>
                           </button>
                         </div>
                       ) : (
@@ -444,12 +450,12 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                             id="taskType"
                             value={formData.taskType}
                             onChange={(e) => handleChange("taskType", e.target.value)}
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 pr-8 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 appearance-none"
+                            className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
                           >
                             <option value="">Sélectionner</option>
                             {TASK_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                             <ChevronDownIcon />
                           </div>
                         </div>
@@ -458,7 +464,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
 
                     {/* Projet concerné */}
                     <div>
-                      <label htmlFor="project" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="project" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Projet concerné
                       </label>
                       <div className="relative">
@@ -466,12 +472,12 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                           id="project"
                           value={formData.project}
                           onChange={(e) => handleChange("project", e.target.value)}
-                          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 pr-8 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 appearance-none"
+                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
                         >
                           <option value="">Sélectionner</option>
                           {PROJECTS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />
                         </div>
                       </div>
@@ -479,7 +485,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
 
                     {/* Échéance */}
                     <div>
-                      <label htmlFor="dueDate" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="dueDate" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Échéance <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -487,9 +493,9 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                         id="dueDate"
                         value={formData.dueDate}
                         onChange={(e) => handleChange("dueDate", e.target.value)}
-                        className={`w-full rounded-xl border ${
-                          errors.dueDate ? "border-red-500" : "border-neutral-200"
-                        } bg-white px-3 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
+                        className={`w-full rounded-lg border ${
+                          errors.dueDate ? "border-red-500" : "border-[#E1E4ED]"
+                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
                         aria-invalid={errors.dueDate ? "true" : "false"}
                         aria-describedby={errors.dueDate ? "dueDate-error" : undefined}
                       />
@@ -503,9 +509,9 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                 </section>
 
                 {/* Groupe 4: Note */}
-                <section className="rounded-xl bg-neutral-50 p-4 border border-[#E9E9E9]">
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
                   <div>
-                    <label htmlFor="noteTask" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                    <label htmlFor="noteTask" className="block text-xs text-[#6B7280] font-medium mb-3">
                       Note de la tâche
                     </label>
                     <textarea
@@ -514,7 +520,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                       onChange={(e) => handleChange("noteTask", e.target.value)}
                       placeholder="Saisir une note ou une consigne..."
                       rows={5}
-                      className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 min-h-[120px] resize-y"
+                      className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 min-h-[120px] resize-y"
                     />
                   </div>
                 </section>
@@ -522,11 +528,11 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
             ) : (
               <>
                 {/* Mémo Form */}
-                <section className="rounded-xl bg-neutral-50 p-4 border border-[#E9E9E9]">
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
                   <div className="space-y-4">
                     {/* Nom de la mémo */}
                     <div>
-                      <label htmlFor="memoName" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="memoName" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Nom de la mémo <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -536,9 +542,9 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                         value={formData.memoName}
                         onChange={(e) => handleChange("memoName", e.target.value)}
                         placeholder="Titre de la mémo"
-                        className={`w-full rounded-xl border ${
-                          errors.memoName ? "border-red-500" : "border-neutral-200"
-                        } bg-white px-3 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
+                        className={`w-full rounded-lg border ${
+                          errors.memoName ? "border-red-500" : "border-[#E1E4ED]"
+                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
                         aria-invalid={errors.memoName ? "true" : "false"}
                         aria-describedby={errors.memoName ? "memoName-error" : undefined}
                       />
@@ -551,7 +557,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
 
                     {/* Échéance */}
                     <div>
-                      <label htmlFor="memoEcheance" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="memoEcheance" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Échéance <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -559,9 +565,9 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                         id="memoEcheance"
                         value={formData.memoEcheance}
                         onChange={(e) => handleChange("memoEcheance", e.target.value)}
-                        className={`w-full rounded-xl border ${
-                          errors.memoEcheance ? "border-red-500" : "border-neutral-200"
-                        } bg-white px-3 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
+                        className={`w-full rounded-lg border ${
+                          errors.memoEcheance ? "border-red-500" : "border-[#E1E4ED]"
+                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
                         aria-invalid={errors.memoEcheance ? "true" : "false"}
                         aria-describedby={errors.memoEcheance ? "memoEcheance-error" : undefined}
                       />
@@ -574,7 +580,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
 
                     {/* Note de la mémo */}
                     <div>
-                      <label htmlFor="noteMemo" className="block text-sm font-medium text-neutral-900 mb-1.5">
+                      <label htmlFor="noteMemo" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Note de la mémo
                       </label>
                       <textarea
@@ -583,7 +589,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                         onChange={(e) => handleChange("noteMemo", e.target.value)}
                         placeholder="Saisir une note..."
                         rows={5}
-                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 min-h-[120px] resize-y"
+                        className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 min-h-[120px] resize-y"
                       />
                     </div>
                   </div>
@@ -593,21 +599,28 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
           </div>
 
           {/* Footer */}
-          <footer className="px-6 pb-6 pt-2 flex justify-center flex-shrink-0">
+          <footer className="px-6 pb-6 pt-2 grid grid-cols-2 gap-3 flex-shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white bg-white text-[#6B7280] px-4 py-2.5 hover:bg-neutral-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-sm font-medium"
+            >
+              Retour
+            </button>
             <button
               type="submit"
               disabled={!isFormValid() || isSubmitting}
-              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-900 text-white px-4 py-2.5 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#2B7FFF] bg-[#2B7FFF] text-white px-4 py-2.5 hover:bg-[#1F6FE6] disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-sm font-medium"
             >
               {isSubmitting ? (
                 <>
-                  <div className="size-4 border-2 border-neutral-300 border-t-white rounded-full animate-spin" />
+                  <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   <span>Création en cours...</span>
                 </>
               ) : (
                 <>
                   <PlusIcon />
-                  <span>{formData.kind === "Tâche" ? "Créer la tâche" : "Créer la mémo"}</span>
+                  <span>Valider</span>
                 </>
               )}
             </button>

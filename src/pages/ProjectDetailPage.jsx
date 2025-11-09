@@ -15,10 +15,12 @@ import {
   X,
   Trash2,
   Check,
-  ChevronDown
+  ChevronDown,
+  MoreHorizontal
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
+import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 
 // Mock project data
 const mockProjectData = {
@@ -54,11 +56,18 @@ function ToggleSwitch({ enabled, onChange, disabled = false }) {
 }
 
 // Form Components
-function FormSection({ title, children, action }) {
+function FormSection({ title, children, action, documentCount }) {
   return (
     <section className="bg-white rounded-lg border border-[#ECEEF5] shadow-[0_16px_36px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h3 className="text-lg font-semibold text-[#1F2027]">{title}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-[#1F2027]">{title}</h3>
+          {documentCount !== undefined && (
+            <span className="px-3 py-1 rounded-full border border-[#E9E9E9] bg-white text-xs font-medium text-[#6B7280]">
+              {documentCount} document{documentCount > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
         {action}
       </div>
       <div className="px-6 pb-6">
@@ -600,6 +609,624 @@ function NumberSpinner({ value, onChange, placeholder = "0" }) {
       >
         +
       </button>
+    </div>
+  );
+}
+
+// Project Tasks Tab Content Component
+function ProjectTasksTabContent() {
+  const [taskFilter, setTaskFilter] = useState("in-progress");
+  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+
+  const mockTasks = [
+    {
+      id: 1,
+      type: "Tâche",
+      title: "Mesurer la cuisine",
+      phase: "Phase 1 - Étude",
+      status: "En cours",
+      dueDate: "28/11/25",
+      assignee: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
+      note: "Urgence",
+      progress: 65
+    },
+    {
+      id: 2,
+      type: "Tâche",
+      title: "Commander matériaux",
+      phase: "Phase 2 - Approvisionnement",
+      status: "En cours",
+      dueDate: "30/11/25",
+      assignee: { name: "Sophie", avatar: "https://i.pravatar.cc/32?img=8" },
+      note: "En attente devis",
+      progress: 40
+    },
+    {
+      id: 3,
+      type: "Mémo",
+      title: "Validation devis client",
+      phase: "Phase 1 - Étude",
+      status: "Terminé",
+      dueDate: "25/11/25",
+      assignee: { name: "Thomas", avatar: "https://i.pravatar.cc/32?img=15" },
+      note: "Validé",
+      progress: 100
+    },
+    {
+      id: 4,
+      type: "Tâche",
+      title: "Visite du chantier",
+      phase: "Phase 3 - Installation",
+      status: "Terminé",
+      dueDate: "20/11/25",
+      assignee: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
+      note: "Photos prises",
+      progress: 100
+    }
+  ];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "En cours":
+        return { bg: "#FEF3C7", text: "#92400E", progressBar: "bg-blue-500", progressText: "text-blue-600" };
+      case "Terminé":
+        return { bg: "#DCFCE7", text: "#166534", progressBar: "bg-green-500", progressText: "text-green-600" };
+      default:
+        return { bg: "#F3F4F6", text: "#1F2937", progressBar: "bg-neutral-400", progressText: "text-neutral-600" };
+    }
+  };
+
+  const filteredTasks = mockTasks.filter(task => {
+    if (taskFilter === "in-progress") {
+      return task.status === "En cours";
+    } else if (taskFilter === "completed") {
+      return task.status === "Terminé";
+    }
+    return true;
+  });
+
+  const getTypeStyles = (type) => {
+    switch (type) {
+      case "Tâche":
+        return "bg-blue-100 text-blue-700";
+      case "Mémo":
+        return "bg-neutral-900 text-white";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Title, Filter Pills, and Add Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-neutral-900">Liste des tâches</h3>
+          <div className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 p-1" role="radiogroup">
+          <button
+            onClick={() => setTaskFilter("in-progress")}
+            role="radio"
+            aria-checked={taskFilter === "in-progress"}
+            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+              taskFilter === "in-progress"
+                ? "bg-gray-900 text-white"
+                : "text-neutral-700 hover:text-neutral-900"
+            }`}
+          >
+            En cours
+          </button>
+          <button
+            onClick={() => setTaskFilter("completed")}
+            role="radio"
+            aria-checked={taskFilter === "completed"}
+            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+              taskFilter === "completed"
+                ? "bg-gray-900 text-white"
+                : "text-neutral-700 hover:text-neutral-900"
+            }`}
+          >
+            Terminées
+          </button>
+        </div>
+        </div>
+        <button
+          onClick={() => setAddTaskModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
+        >
+          <Plus className="size-4" />
+          Ajouter une tâche
+        </button>
+      </div>
+
+      {/* Gray Container for Tasks */}
+      <div className="rounded-lg border border-[#E4E4E7] overflow-hidden" style={{ backgroundColor: "#F8F9FA" }}>
+        {/* Tasks Header - Full Width */}
+        <div className="w-full border-b border-[#E4E4E7] p-4" style={{ backgroundColor: "#FAFAFA" }}>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Type</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Phase</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Statut</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Échéance</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Collaborateur</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Notes</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Progression</span>
+            <div className="flex-shrink-0 w-10"></div>
+          </div>
+        </div>
+
+        {/* Tasks Cards Container */}
+        <div className="p-4 space-y-3">
+          {filteredTasks.map((task) => {
+            const statusColor = getStatusColor(task.status);
+            return (
+              <div
+                key={task.id}
+                className="border border-[#E4E4E7] rounded-lg bg-white p-4"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeStyles(task.type)}`}>
+                      {task.type}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm text-neutral-600">{task.phase}</span>
+                  </div>
+                  <div className="flex-1">
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: statusColor.bg, color: statusColor.text }}
+                    >
+                      {task.status}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm text-neutral-600">{task.dueDate}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={task.assignee.avatar}
+                        alt={task.assignee.name}
+                        className="size-6 rounded-full"
+                      />
+                      <span className="text-sm text-neutral-600">{task.assignee.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm text-neutral-600">{task.note}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="relative h-1.5 rounded-full bg-neutral-200 flex-1">
+                        <div
+                          className={`absolute inset-y-0 left-0 rounded-full ${statusColor.progressBar}`}
+                          style={{ width: `${Math.min(100, Math.max(0, task.progress))}%` }}
+                        />
+                      </div>
+                      <span className={`text-xs font-medium ${statusColor.progressText} w-10 text-right`}>
+                        {task.progress}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <button
+                      className="p-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                      title="Options de la tâche"
+                      onClick={() => console.log('Edit task:', task.id)}
+                    >
+                      <MoreHorizontal className="size-4 text-neutral-600" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Empty State */}
+          {filteredTasks.length === 0 && (
+            <div className="p-12 text-center text-neutral-500 border border-[#E4E4E7] rounded-lg bg-white">
+              Aucune tâche {taskFilter === "in-progress" ? "en cours" : "terminée"}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Task Modal */}
+      <CreateTaskOrMemoModal
+        open={addTaskModalOpen}
+        onClose={() => setAddTaskModalOpen(false)}
+        onSubmit={(data) => {
+          console.log("Tâche ajoutée:", data);
+          setAddTaskModalOpen(false);
+        }}
+      />
+    </div>
+  );
+}
+
+// Add Document Modal Component
+function AddDocumentModal({ isOpen, onClose, onSave, sectionTitle }) {
+  const [documentName, setDocumentName] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleSave = () => {
+    if (documentName.trim() && selectedFile) {
+      onSave({ name: documentName, file: selectedFile });
+      setDocumentName("");
+      setSelectedFile(null);
+    }
+  };
+
+  const handleClose = () => {
+    setDocumentName("");
+    setSelectedFile(null);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white shadow-lg w-full mx-4" style={{ maxWidth: '740px', height: '450px', display: 'flex', flexDirection: 'column', borderRadius: '16px' }}>
+        {/* Modal Header */}
+        <div className="bg-[#F8F9FA] px-6 py-4 border-b border-[#E4E4E7] flex items-center justify-between rounded-t-lg">
+          <div className="flex items-center gap-3">
+            {/* Document icon in square */}
+            <div className="w-8 h-8 rounded-lg border border-[#E4E4E7] bg-white flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="#323130" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            {/* Title */}
+            <h3 className="text-sm font-semibold text-[#1F2027]">Ajouter un document de {sectionTitle}</h3>
+          </div>
+          {/* Close button */}
+          <button
+            onClick={handleClose}
+            className="w-8 h-8 rounded-lg bg-white border border-[#E4E4E7] flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0"
+            aria-label="Fermer"
+          >
+            <X className="size-4 text-[#1F2027]" />
+          </button>
+        </div>
+
+        {/* Modal Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          {/* Block 1: Document Name */}
+          <div className="bg-[#F3F4F6] rounded-lg p-4">
+            <div className="text-xs text-[#6B7280] font-medium mb-3">
+              Nom du document<span className="text-red-500">*</span>
+            </div>
+            <input
+              type="text"
+              value={documentName}
+              onChange={(e) => setDocumentName(e.target.value)}
+              placeholder="Saisir le nom du document"
+              className="w-full px-3 py-2 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A5A9B8] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+            />
+          </div>
+
+          {/* Block 2: File Upload */}
+          <div className="bg-[#F3F4F6] rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px]">
+            <input
+              type="file"
+              id="file-input"
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+            />
+            <label htmlFor="file-input" className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+              <div className="text-center space-y-3 flex flex-col items-center">
+                <svg className="w-8 h-8 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                <div>
+                  <p className="text-xs text-[#6B7280] font-medium">
+                    {selectedFile ? selectedFile.name : "Glissez-déposez ou"}
+                  </p>
+                  {!selectedFile && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById('file-input')?.click();
+                      }}
+                      className="text-xs text-[#2B7FFF] font-medium hover:underline mt-1"
+                    >
+                      Sélectionner un fichier
+                    </button>
+                  )}
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-4 flex items-center justify-between gap-3 border-t border-[#E4E4E7]">
+          <button
+            onClick={handleClose}
+            className="flex-1 px-4 py-2.5 rounded-lg border border-[#E1E4ED] bg-white text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors"
+          >
+            Retour
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!documentName.trim() || !selectedFile}
+            className="flex-1 px-4 py-2.5 rounded-lg border border-[#2B7FFF] bg-[#2B7FFF] text-sm font-medium text-white hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Valider l'ajout du document
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Commercial Presentation Tab Content Component
+function CommercialPresentationTabContent() {
+  const [presentationComment, setPresentationComment] = useState("");
+  const [addDocumentModalOpen, setAddDocumentModalOpen] = useState(false);
+  const [currentSection, setCurrentSection] = useState(null);
+  const [uploadedDocuments, setUploadedDocuments] = useState({
+    photos: [
+      { id: 1, name: "Photo 1 - Cuisine moderne" },
+      { id: 2, name: "Photo 2 - Détail plan" },
+      { id: 3, name: "Photo 3 - Vue d'ensemble" }
+    ],
+    trendBoard: [
+      { id: 1, name: "Planche tendance 1" },
+      { id: 2, name: "Planche tendance 2" }
+    ],
+    sitePlan: [
+      { id: 1, name: "Plan de masse - Vue aérienne" }
+    ],
+    elevations: [
+      { id: 1, name: "Élévation Façade Ouest" },
+      { id: 2, name: "Élévation Façade Nord" }
+    ],
+    perspectives: [
+      { id: 1, name: "Perspective 3D - Jour" },
+      { id: 2, name: "Perspective 3D - Nuit" }
+    ]
+  });
+
+  const handleAddDocumentClick = (section) => {
+    setCurrentSection(section);
+    setAddDocumentModalOpen(true);
+  };
+
+  const handleSaveDocument = (data) => {
+    if (currentSection) {
+      const newDoc = {
+        id: Date.now(),
+        name: data.name
+      };
+      setUploadedDocuments({
+        ...uploadedDocuments,
+        [currentSection]: [...(uploadedDocuments[currentSection] || []), newDoc]
+      });
+      setAddDocumentModalOpen(false);
+      setCurrentSection(null);
+    }
+  };
+
+  const DocumentGrid = ({ documents, onDelete, onEdit }) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {documents.map((doc) => (
+        <div key={doc.id} className="bg-white rounded-lg border border-[#ECEEF5] p-4 flex items-center justify-between hover:shadow-sm transition-shadow">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <svg className="w-6 h-6 text-[#6B7280] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-sm font-medium text-[#1F2027] truncate">{doc.name}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            <button
+              onClick={() => onEdit(doc)}
+              className="p-1.5 hover:bg-[#F3F4F6] rounded-md transition-colors"
+              title="Éditer"
+            >
+              <svg className="w-4 h-4 text-[#6B7280]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => onDelete(doc)}
+              className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
+              title="Supprimer"
+            >
+              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Présentation de l'étude */}
+      <FormSection title="Présentation de l'étude">
+        <FormField label="Commentaire" span={3}>
+          <textarea
+            value={presentationComment}
+            onChange={(e) => setPresentationComment(e.target.value)}
+            placeholder="Écrivez votre commentaire ici..."
+            rows={6}
+            className="w-full px-3.5 py-2.5 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A5A9B8] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 resize-none"
+          />
+        </FormField>
+      </FormSection>
+
+      {/* Photos & plan client */}
+      <FormSection
+        title="Photos & plan client"
+        documentCount={uploadedDocuments.photos.length}
+        action={
+          <div className="flex items-center gap-2">
+            <button className="inline-flex items-center gap-2 rounded-lg border border-[#E1E4ED] bg-white px-3.5 py-2 text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Récupérer un document
+            </button>
+            <button onClick={() => handleAddDocumentClick('photos')} className="inline-flex items-center gap-2 rounded-lg border border-[#E1E4ED] bg-white px-3.5 py-2 text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Ajouter un document
+            </button>
+          </div>
+        }
+      >
+        <FormField label="" span={3}>
+          <DocumentGrid
+            documents={uploadedDocuments.photos}
+            onDelete={(doc) => {
+              setUploadedDocuments({
+                ...uploadedDocuments,
+                photos: uploadedDocuments.photos.filter(d => d.id !== doc.id)
+              });
+            }}
+            onEdit={(doc) => console.log("Éditer", doc)}
+          />
+        </FormField>
+      </FormSection>
+
+      {/* Planche tendance */}
+      <FormSection
+        title="Planche tendance"
+        documentCount={uploadedDocuments.trendBoard.length}
+        action={
+          <button onClick={() => handleAddDocumentClick('trendBoard')} className="inline-flex items-center gap-2 rounded-lg border border-[#E1E4ED] bg-white px-3.5 py-2 text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Ajouter un document
+          </button>
+        }
+      >
+        <FormField label="" span={3}>
+          <DocumentGrid
+            documents={uploadedDocuments.trendBoard}
+            onDelete={(doc) => {
+              setUploadedDocuments({
+                ...uploadedDocuments,
+                trendBoard: uploadedDocuments.trendBoard.filter(d => d.id !== doc.id)
+              });
+            }}
+            onEdit={(doc) => console.log("Éditer", doc)}
+          />
+        </FormField>
+      </FormSection>
+
+      {/* Plan de masse */}
+      <FormSection
+        title="Plan de masse"
+        documentCount={uploadedDocuments.sitePlan.length}
+        action={
+          <button onClick={() => handleAddDocumentClick('sitePlan')} className="inline-flex items-center gap-2 rounded-lg border border-[#E1E4ED] bg-white px-3.5 py-2 text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Ajouter un document
+          </button>
+        }
+      >
+        <FormField label="" span={3}>
+          <DocumentGrid
+            documents={uploadedDocuments.sitePlan}
+            onDelete={(doc) => {
+              setUploadedDocuments({
+                ...uploadedDocuments,
+                sitePlan: uploadedDocuments.sitePlan.filter(d => d.id !== doc.id)
+              });
+            }}
+            onEdit={(doc) => console.log("Éditer", doc)}
+          />
+        </FormField>
+      </FormSection>
+
+      {/* Élévations */}
+      <FormSection
+        title="Élévations"
+        documentCount={uploadedDocuments.elevations.length}
+        action={
+          <button onClick={() => handleAddDocumentClick('elevations')} className="inline-flex items-center gap-2 rounded-lg border border-[#E1E4ED] bg-white px-3.5 py-2 text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Ajouter un document
+          </button>
+        }
+      >
+        <FormField label="" span={3}>
+          <DocumentGrid
+            documents={uploadedDocuments.elevations}
+            onDelete={(doc) => {
+              setUploadedDocuments({
+                ...uploadedDocuments,
+                elevations: uploadedDocuments.elevations.filter(d => d.id !== doc.id)
+              });
+            }}
+            onEdit={(doc) => console.log("Éditer", doc)}
+          />
+        </FormField>
+      </FormSection>
+
+      {/* Perspectives */}
+      <FormSection
+        title="Perspectives"
+        documentCount={uploadedDocuments.perspectives.length}
+        action={
+          <button onClick={() => handleAddDocumentClick('perspectives')} className="inline-flex items-center gap-2 rounded-lg border border-[#E1E4ED] bg-white px-3.5 py-2 text-sm font-medium text-[#1F2027] hover:bg-[#F8F9FA] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Ajouter un document
+          </button>
+        }
+      >
+        <FormField label="" span={3}>
+          <DocumentGrid
+            documents={uploadedDocuments.perspectives}
+            onDelete={(doc) => {
+              setUploadedDocuments({
+                ...uploadedDocuments,
+                perspectives: uploadedDocuments.perspectives.filter(d => d.id !== doc.id)
+              });
+            }}
+            onEdit={(doc) => console.log("Éditer", doc)}
+          />
+        </FormField>
+      </FormSection>
+
+      {/* Add Document Modal */}
+      <AddDocumentModal
+        isOpen={addDocumentModalOpen}
+        onClose={() => setAddDocumentModalOpen(false)}
+        onSave={handleSaveDocument}
+        sectionTitle={
+          {
+            photos: "Photos & plan client",
+            trendBoard: "Planche tendance",
+            sitePlan: "Plan de masse",
+            elevations: "Élévations",
+            perspectives: "Perspectives"
+          }[currentSection] || ""
+        }
+      />
     </div>
   );
 }
@@ -2907,12 +3534,18 @@ export default function ProjectDetailPage({
               {activeTab === "study" && activeSubTab === "kitchen" && (
                 <KitchenDiscoveryTabContent />
               )}
-              {activeTab === "study" && activeSubTab !== "discovery" && activeSubTab !== "kitchen" && (
+              {activeTab === "study" && activeSubTab === "commercial" && (
+                <CommercialPresentationTabContent />
+              )}
+              {activeTab === "study" && activeSubTab !== "discovery" && activeSubTab !== "kitchen" && activeSubTab !== "commercial" && (
                 <div className="p-12 text-center text-neutral-500">
                   Contenu à venir
                 </div>
               )}
-              {activeTab !== "study" && (
+              {activeTab === "tasks" && (
+                <ProjectTasksTabContent />
+              )}
+              {activeTab !== "study" && activeTab !== "tasks" && (
                 <div className="p-12 text-center text-neutral-500">
                   Contenu à venir
                 </div>
