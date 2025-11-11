@@ -24,13 +24,13 @@ const WEEK_PRESETS = [
     ],
     events: [
       { id: "mon-standup", title: "Daily Standup", day: "mon", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
-      { id: "mon-event", title: "Event Name", day: "mon", start: "10:30", end: "11:30", tone: "danger", color: "rose" },
+      { id: "mon-event", title: "RDV Dupont", day: "mon", start: "10:30", end: "12:30", tone: "danger", color: "rose", location: "19 rue voltaire" },
       { id: "tue-standup", title: "Daily Standup", day: "tue", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
       { id: "wed-standup", title: "Daily Standup", day: "wed", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
-      { id: "wed-event", title: "Event Name", day: "wed", start: "12:00", end: "13:00", tone: "danger", color: "amber" },
-      { id: "thu-standup", title: "Daily Standup", day: "thu", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
-      { id: "thu-event", title: "Event Name", day: "thu", start: "15:30", end: "16:30", tone: "danger", color: "violet" },
-      { id: "fri-standup", title: "Daily Standup", day: "fri", start: "09:00", end: "09:30", tone: "success", color: "sky" },
+      { id: "wed-event", title: "Réunion Client", day: "wed", start: "12:00", end: "14:00", tone: "danger", color: "amber", location: "Showroom" },
+      { id: "thu-standup", title: "Daily Standup", day: "thu", start: "09:00", end: "10:00", tone: "success", color: "emerald" },
+      { id: "thu-event", title: "Visite Chantier", day: "thu", start: "14:00", end: "16:30", tone: "danger", color: "violet", location: "Chantier" },
+      { id: "fri-standup", title: "RDV Visio", day: "fri", start: "09:00", end: "10:30", tone: "success", color: "sky", icons: ["🎥"] },
     ],
   },
   {
@@ -192,40 +192,55 @@ function WeeklyCalendarGrid({ days, events, onEventClick }) {
     const height = Math.max(28, durationToH(evt.start, evt.end));
     const isMini = height < 48;
 
+    // Mock collaborators for display
+    const collaborators = [
+      { id: "1", avatarUrl: "https://i.pravatar.cc/40?img=12" },
+      { id: "2", avatarUrl: "https://i.pravatar.cc/40?img=8" },
+    ];
+
     return (
       <button
-        onClick={() => onEventClick(evt)}
+        onClick={(e) => onEventClick(evt, e)}
         className={`absolute left-2 right-2 rounded-lg border shadow-sm ${color.bg} ${color.bdr} ${evt.strong ? "ring-1 ring-red-300" : ""} hover:shadow-md transition-shadow cursor-pointer text-left p-2 h-full flex flex-col`}
         style={{ top, height }}
       >
+        {/* Ligne 1 : Nom du RDV */}
         <div className={`text-[11px] leading-tight font-medium ${color.text} truncate`}>
           {evt.title}
         </div>
+
         {!isMini && (
-          <div className="mt-1 text-[10px] text-gray-500 flex items-center gap-1">
-            <span>{evt.start} – {evt.end}</span>
-            {evt.location && (
-              <span className="inline-flex items-center gap-1">
-                <span>{evt.icons?.[0] ?? "📍"}</span>
-                <span className="truncate">{evt.location}</span>
-              </span>
-            )}
-            {evt.badges?.map((b) => (
-              <span key={b} className="ml-auto px-1.5 py-0.5 text-[9px] rounded bg-white/70 border border-white/80 text-gray-700">
-                {b}
-              </span>
-            ))}
-          </div>
-        )}
-        {!isMini && (
-          <div className="mt-auto flex items-center justify-between text-[10px] text-gray-500">
-            <div className="flex -space-x-1">
-              {[0, 1].map((i) => (
-                <div key={i} className="w-4 h-4 rounded-full bg-white border border-gray-200" />
+          <>
+            {/* Ligne 2 : Collaborateurs */}
+            <div className="flex -space-x-2 mt-1">
+              {collaborators.slice(0, 2).map((collab) => (
+                <img
+                  key={collab.id}
+                  src={collab.avatarUrl}
+                  alt=""
+                  className="w-5 h-5 rounded-full border border-white shadow-sm flex-shrink-0"
+                />
               ))}
             </div>
-            {evt.icons?.includes("🎥") && <span>🎥</span>}
-          </div>
+
+            {/* Ligne 3 : Lieu (si adresse physique) */}
+            {evt.location && (
+              <div className="mt-1 flex items-center gap-1 text-[10px] text-gray-600">
+                <span>📍</span>
+                <span className="truncate">Extérieur</span>
+              </div>
+            )}
+
+            {/* Ligne en bas : Icône visio (gauche) + Heure (droite) */}
+            <div className="mt-auto flex items-center justify-between text-[10px] text-gray-600">
+              <div>
+                {evt.icons?.includes("🎥") && <span>📹</span>}
+              </div>
+              <span className="whitespace-nowrap font-medium">
+                {evt.start} – {evt.end}
+              </span>
+            </div>
+          </>
         )}
       </button>
     );
@@ -332,7 +347,7 @@ function AgendaList({ events, days, onEventClick }) {
                   return (
                     <button
                       key={event.id}
-                      onClick={() => onEventClick(event)}
+                      onClick={(e) => onEventClick(event, e)}
                       className={`rounded-xl border px-4 py-3 ${color.bg} ${color.border} ${color.text} flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer text-left w-full`}
                     >
                       <div>
@@ -797,174 +812,180 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
   );
 }
 
-function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit }) {
+function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit, eventPosition }) {
+  const [position, setPosition] = React.useState({ top: 0, left: 0, side: 'right' });
+
+  React.useEffect(() => {
+    if (isOpen && eventPosition) {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const modalWidth = 380; // Largeur fixe de la modale
+      const modalHeight = 500; // Hauteur approximative
+      const gap = 16; // Écart avec l'événement
+
+      let side = 'right';
+      let left = eventPosition.right + gap;
+
+      // Si pas de place à droite, afficher à gauche
+      if (left + modalWidth > viewportWidth) {
+        side = 'left';
+        left = eventPosition.left - modalWidth - gap;
+      }
+
+      // S'assurer que la modale n'est pas complètement sortie du viewport
+      if (left < 0) {
+        left = gap;
+        side = 'right';
+      }
+
+      // Positionnement vertical : centré par rapport à l'événement
+      let top = eventPosition.top + (eventPosition.height / 2) - (modalHeight / 2);
+
+      // Éviter que la modale sorte du viewport verticalement
+      if (top < 0) top = gap;
+      if (top + modalHeight > viewportHeight) top = viewportHeight - modalHeight - gap;
+
+      setPosition({ top, left, side });
+    }
+  }, [isOpen, eventPosition]);
+
+  React.useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    const handleClickOutside = (e) => {
+      if (isOpen && e.target === e.currentTarget) onClose();
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  // Mock data - dans une vraie application, ces données viendraient des props
+  // Mock data
   const appointmentData = {
-    title: "Projet Cuisine 13/05/2025 10H00",
-    createdBy: {
-      name: "Loïc",
-      avatarUrl: "https://i.pravatar.cc/40?img=12",
-      isCurrentUser: true,
-    },
-    collaborators: [
-      { id: "1", name: "Loïc", avatarUrl: "https://i.pravatar.cc/40?img=12", isCurrentUser: true },
-      { id: "2", name: "Céline", avatarUrl: "https://i.pravatar.cc/40?img=8", isCurrentUser: false },
-    ],
+    title: "RDV R1 Dupont",
     clientName: "Chloé Dubois",
-    projectName: "Projet cuisine",
-    clientAddress: "17 rue du Vieux Lion",
-    appointmentType: "Découverte",
-    comment: "Appeler ce client pour le relancer vis-à-vis de l'augmentation des matières premières pour sa cuisine.",
-  };
-
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    date: "Mardi 13 avril",
+    startTime: "11:30",
+    endTime: "13:30",
+    type: "home", // home ou visio
+    collaborators: [
+      { id: "1", avatarUrl: "https://i.pravatar.cc/40?img=12" },
+      { id: "2", avatarUrl: "https://i.pravatar.cc/40?img=8" },
+    ],
+    location: "Extérieur 19 rue voltaire, lyon, 69003",
   };
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4"
-      onClick={handleOverlayClick}
-    >
+    <>
+      {/* Overlay pour fermer */}
       <div
-        className="w-full max-w-3xl rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+        className="fixed inset-0 z-30"
+        onClick={onClose}
+        style={{ cursor: 'default' }}
+      />
+
+      {/* Modale positionnée */}
+      <div
+        className="fixed z-40 w-96 rounded-2xl border border-neutral-200 bg-white shadow-xl"
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* En-tête */}
-        <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-neutral-100">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-neutral-100">
-              <Calendar className="size-5 text-neutral-500" />
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between bg-[#F8F9FA] rounded-t-2xl">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="flex size-10 items-center justify-center rounded-lg border border-neutral-200 bg-white">
+              <Calendar className="size-5 text-neutral-600" strokeWidth={1} />
             </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-neutral-900 mb-2">
-                {appointmentData.title}
-              </h2>
-              <button className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-transparent px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors">
-                Voir la fiche clients & prospects
-                <ArrowUpRight className="size-3.5" />
-              </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-neutral-900 truncate">
+                  {appointmentData.title}
+                </h3>
+                {appointmentData.type === 'visio' && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-neutral-900 text-white text-xs font-medium flex-shrink-0">
+                    📹 Visio
+                  </span>
+                )}
+                {appointmentData.type === 'home' && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-neutral-900 text-white text-xs font-medium flex-shrink-0">
+                    🏠 Maison
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">{appointmentData.clientName}</p>
             </div>
           </div>
           <button
-            className="size-8 rounded-xl border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 transition-colors ml-4"
             onClick={onClose}
+            className="size-8 rounded-lg border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 transition-colors flex-shrink-0 ml-2"
             aria-label="Fermer"
           >
             <X className="size-4 text-neutral-500" />
           </button>
         </div>
 
-        {/* Corps de la modale */}
-        <div className="px-8 py-6 space-y-5">
-          {/* Bloc "Créé par" */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-600 mb-2">
-              Créé par
-            </label>
-            <div className="inline-flex items-center gap-2.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5">
-              <img
-                src={appointmentData.createdBy.avatarUrl}
-                alt=""
-                className="size-7 rounded-full"
-              />
-              <span className="text-sm font-medium text-neutral-900">
-                {appointmentData.createdBy.name}
-                {appointmentData.createdBy.isCurrentUser && (
-                  <span className="text-neutral-500 ml-1">(Vous)</span>
-                )}
-              </span>
-            </div>
-          </div>
-
-          {/* Bloc "Collaborateur" */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-600 mb-2">
-              Collaborateur
-            </label>
-            <div className="inline-flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5">
-              {appointmentData.collaborators.map((collab, index) => (
-                <React.Fragment key={collab.id}>
-                  {index > 0 && <span className="text-neutral-300">•</span>}
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={collab.avatarUrl}
-                      alt=""
-                      className="size-7 rounded-full"
-                    />
-                    <span className="text-sm font-medium text-neutral-900">
-                      {collab.name}
-                      {collab.isCurrentUser && (
-                        <span className="text-neutral-500 ml-1">(Vous)</span>
-                      )}
-                    </span>
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          {/* Bloc "Informations principales" */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-600 mb-2">
-              Informations principales
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5">
-                <div className="text-xs font-medium text-neutral-500 mb-1">Nom</div>
-                <div className="text-sm font-medium text-neutral-900">{appointmentData.clientName}</div>
-              </div>
-              <div className="rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5">
-                <div className="text-xs font-medium text-neutral-500 mb-1">Projet concerné</div>
-                <div className="text-sm font-medium text-neutral-900">{appointmentData.projectName}</div>
-              </div>
-              <div className="rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5">
-                <div className="text-xs font-medium text-neutral-500 mb-1">Adresse client</div>
-                <div className="text-sm font-medium text-neutral-900">{appointmentData.clientAddress}</div>
-              </div>
-              <div className="rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5">
-                <div className="text-xs font-medium text-neutral-500 mb-1">Type de rendez-vous</div>
-                <div className="text-sm font-medium text-neutral-900">{appointmentData.appointmentType}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bloc "Commentaire du rendez-vous" */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-600 mb-2">
-              Commentaire du rendez-vous
-            </label>
-            <div className="rounded-xl border border-neutral-200 bg-white px-3.5 py-3">
-              <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">
-                {appointmentData.comment}
+        {/* Corps */}
+        <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+          <div className="px-6 py-4 space-y-3">
+            {/* Informations du rendez-vous */}
+            <div className="rounded-xl bg-[#F8F9FA] border border-[#E9E9E9] px-4 py-3">
+              <p className="text-xs text-neutral-600 mb-1">Informations du rendez-vous</p>
+              <p className="text-sm font-medium text-neutral-900">
+                {appointmentData.date} {appointmentData.startTime} - {appointmentData.endTime}
               </p>
+            </div>
+
+            {/* Participants */}
+            <div className="rounded-xl bg-[#F8F9FA] border border-[#E9E9E9] px-4 py-3">
+              <p className="text-xs text-neutral-600 mb-2">Participants</p>
+              <div className="flex -space-x-2">
+                {appointmentData.collaborators.map((collab) => (
+                  <img
+                    key={collab.id}
+                    src={collab.avatarUrl}
+                    alt=""
+                    className="size-8 rounded-full border-2 border-white"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Lieu */}
+            <div className="rounded-xl bg-[#F8F9FA] border border-[#E9E9E9] px-4 py-3">
+              <p className="text-xs text-neutral-600 mb-1">Lieu du rendez-vous</p>
+              <div className="flex items-start gap-2">
+                <span className="text-lg flex-shrink-0 mt-0.5">📍</span>
+                <p className="text-sm font-medium text-neutral-900">{appointmentData.location}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Pied de la modale */}
-        <div className="px-8 pb-8 pt-4 flex items-center justify-center gap-3">
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-neutral-200 flex items-center justify-between gap-2">
           <button
             onClick={onDelete}
-            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
           >
             <Trash2 className="size-4" />
-            Supprimer le rdv
+            Supprimer
           </button>
           <button
             onClick={onEdit}
-            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
           >
             <Pencil className="size-4" />
-            Modifier le rdv
+            Modifier
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -995,6 +1016,7 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventPosition, setEventPosition] = useState(null);
 
   const currentWeek = useMemo(
     () => WEEK_PRESETS.find((preset) => preset.rangeLabel === selectedWeekRange) ?? WEEK_PRESETS[0],
@@ -1043,8 +1065,19 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
     });
   };
 
-  const handleEventClick = (event) => {
+  const handleEventClick = (event, clickEvent) => {
     setSelectedEvent(event);
+    if (clickEvent?.target) {
+      const rect = clickEvent.target.getBoundingClientRect();
+      setEventPosition({
+        top: rect.top,
+        left: rect.left,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      });
+    }
     setDetailModalOpen(true);
   };
 
@@ -1091,18 +1124,22 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         onClose={() => {
           setDetailModalOpen(false);
           setSelectedEvent(null);
+          setEventPosition(null);
         }}
         onDelete={() => {
           console.log("Supprimer le rendez-vous:", selectedEvent);
           setDetailModalOpen(false);
           setSelectedEvent(null);
+          setEventPosition(null);
         }}
         onEdit={() => {
           console.log("Modifier le rendez-vous:", selectedEvent);
           setDetailModalOpen(false);
           setSelectedEvent(null);
+          setEventPosition(null);
           // Ici vous pourriez ouvrir une modale d'édition
         }}
+        eventPosition={eventPosition}
       />
     </div>
   );
