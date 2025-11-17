@@ -23,6 +23,8 @@ import L from "leaflet";
 import Sidebar from "../components/Sidebar";
 import CreateContactModal from "../components/CreateContactModal";
 import UserTopBar from "../components/UserTopBar";
+import { useContacts } from "../hooks/useContacts";
+import { transformContactForDirectory } from "../utils/dataTransformers";
 
 // Coordonnées géographiques des villes
 const locationCoordinates = {
@@ -33,40 +35,6 @@ const locationCoordinates = {
   "Agde": [43.25, 3.50],
   "Sète": [43.40, 3.75]
 };
-
-// Mock data - 30+ contacts for filtering/pagination demo
-const mockContacts = [
-  { id: "1", name: "Chloé DUBOIS", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Relation", location: "Valras-Plage", coordinates: locationCoordinates["Valras-Plage"], projects: 2, status: "Client", addedAt: "25/05/25", type: "clients" },
-  { id: "2", name: "Pierre MARTIN", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Salon", location: "Montpellier", coordinates: locationCoordinates["Montpellier"], projects: 1, status: "Client", addedAt: "24/05/25", type: "clients" },
-  { id: "3", name: "Marie BERNARD", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Web", location: "Nîmes", coordinates: locationCoordinates["Nîmes"], projects: 0, status: "Prospect", addedAt: "23/05/25", type: "clients" },
-  { id: "4", name: "Jean DURAND", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Recommandation", location: "Béziers", coordinates: locationCoordinates["Béziers"], projects: 3, status: "Prospect", addedAt: "22/05/25", type: "clients" },
-  { id: "5", name: "Anne MOREAU", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Salon", location: "Agde", coordinates: locationCoordinates["Agde"], projects: 1, status: "Fournisseur", addedAt: "21/05/25", type: "suppliers" },
-  { id: "6", name: "Paul ROBERT", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Web", location: "Sète", coordinates: locationCoordinates["Sète"], projects: 2, status: "Fournisseur", addedAt: "20/05/25", type: "suppliers" },
-  { id: "7", name: "Claire PETIT", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Relation", location: "Valras-Plage", coordinates: locationCoordinates["Valras-Plage"], projects: 0, status: "Fournisseur", addedAt: "19/05/25", type: "suppliers" },
-  { id: "8", name: "Michel ROUX", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Salon", location: "Montpellier", coordinates: locationCoordinates["Montpellier"], projects: 4, status: "Artisan", addedAt: "18/05/25", type: "artisans" },
-  { id: "9", name: "Sylvie LEROY", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Recommandation", location: "Nîmes", coordinates: locationCoordinates["Nîmes"], projects: 1, status: "Artisan", addedAt: "17/05/25", type: "artisans" },
-  { id: "10", name: "François SIMON", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Web", location: "Béziers", coordinates: locationCoordinates["Béziers"], projects: 2, status: "Artisan", addedAt: "16/05/25", type: "artisans" },
-  { id: "11", name: "Isabelle MICHEL", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Salon", location: "Agde", coordinates: locationCoordinates["Agde"], projects: 0, status: "Leads", addedAt: "15/05/25", type: "institutional" },
-  { id: "12", name: "Laurent GARCIA", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Relation", location: "Sète", coordinates: locationCoordinates["Sète"], projects: 3, status: "Leads", addedAt: "14/05/25", type: "institutional" },
-  { id: "13", name: "Nathalie DAVID", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Web", location: "Valras-Plage", coordinates: locationCoordinates["Valras-Plage"], projects: 1, status: "Prescripteur", addedAt: "13/05/25", type: "prescriber" },
-  { id: "14", name: "Alain BERTRAND", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Recommandation", location: "Montpellier", coordinates: locationCoordinates["Montpellier"], projects: 2, status: "Prescripteur", addedAt: "12/05/25", type: "prescriber" },
-  { id: "15", name: "Valérie THOMAS", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Salon", location: "Nîmes", coordinates: locationCoordinates["Nîmes"], projects: 0, status: "Prescripteur", addedAt: "11/05/25", type: "prescriber" },
-  { id: "16", name: "Olivier RICHARD", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Web", location: "Béziers", coordinates: locationCoordinates["Béziers"], projects: 4, status: "Sous-traitant", addedAt: "10/05/25", type: "subcontractor" },
-  { id: "17", name: "Catherine PETIT", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Relation", location: "Agde", coordinates: locationCoordinates["Agde"], projects: 1, status: "Sous-traitant", addedAt: "09/05/25", type: "subcontractor" },
-  { id: "18", name: "Stéphane DURAND", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Salon", location: "Sète", coordinates: locationCoordinates["Sète"], projects: 2, status: "Sous-traitant", addedAt: "08/05/25", type: "subcontractor" },
-  { id: "19", name: "Monique MOREAU", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Recommandation", location: "Valras-Plage", coordinates: locationCoordinates["Valras-Plage"], projects: 0, status: "Client", addedAt: "07/05/25", type: "clients" },
-  { id: "20", name: "Philippe MARTIN", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Web", location: "Montpellier", coordinates: locationCoordinates["Montpellier"], projects: 3, status: "Prospect", addedAt: "06/05/25", type: "clients" },
-  { id: "21", name: "Sandrine BLANC", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Salon", location: "Nîmes", coordinates: locationCoordinates["Nîmes"], projects: 1, status: "Fournisseur", addedAt: "05/05/25", type: "suppliers" },
-  { id: "22", name: "Christophe ROUX", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Relation", location: "Béziers", coordinates: locationCoordinates["Béziers"], projects: 2, status: "Fournisseur", addedAt: "04/05/25", type: "suppliers" },
-  { id: "23", name: "Brigitte SIMON", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Recommandation", location: "Agde", coordinates: locationCoordinates["Agde"], projects: 0, status: "Artisan", addedAt: "03/05/25", type: "artisans" },
-  { id: "24", name: "Thierry LEROY", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Web", location: "Sète", coordinates: locationCoordinates["Sète"], projects: 4, status: "Artisan", addedAt: "02/05/25", type: "artisans" },
-  { id: "25", name: "Pascale GARCIA", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Salon", location: "Valras-Plage", coordinates: locationCoordinates["Valras-Plage"], projects: 1, status: "Leads", addedAt: "01/05/25", type: "institutional" },
-  { id: "26", name: "Bernard MICHEL", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Relation", location: "Montpellier", coordinates: locationCoordinates["Montpellier"], projects: 2, status: "Leads", addedAt: "30/04/25", type: "institutional" },
-  { id: "27", name: "Martine DAVID", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Recommandation", location: "Nîmes", coordinates: locationCoordinates["Nîmes"], projects: 0, status: "Prescripteur", addedAt: "29/04/25", type: "prescriber" },
-  { id: "28", name: "Gérard BERTRAND", addedBy: { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" }, origin: "Web", location: "Béziers", coordinates: locationCoordinates["Béziers"], projects: 3, status: "Prescripteur", addedAt: "28/04/25", type: "prescriber" },
-  { id: "29", name: "Nicole THOMAS", addedBy: { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" }, origin: "Salon", location: "Agde", coordinates: locationCoordinates["Agde"], projects: 1, status: "Sous-traitant", addedAt: "27/04/25", type: "subcontractor" },
-  { id: "30", name: "Daniel RICHARD", addedBy: { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }, origin: "Relation", location: "Sète", coordinates: locationCoordinates["Sète"], projects: 2, status: "Sous-traitant", addedAt: "26/04/25", type: "subcontractor" },
-];
 
 // Utility components
 const Badge = ({ variant, children }) => {
@@ -936,7 +904,7 @@ const ContactsMapView = ({ contacts, onViewContact }) => {
   );
 };
 
-const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
+const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [] }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("list");
   const [filters, setFilters] = useState({
@@ -966,15 +934,15 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
   const filterOptions = {
     addedBy: ["Jérémy", "Sophie", "Thomas"],
     origin: ["Relation", "Salon", "Web", "Recommandation"],
-    location: ["Valras-Plage", "Montpellier", "Nîmes", "Béziers", "Agde", "Sète"],
+    location: ["Valras-Plage", "Montpellier", "Nîmes", "Béziers", "Agde", "Sète", "Paris", "Lyon", "Marseille", "Toulouse", "Bordeaux"],
     project: ["En cours", "Terminé", "En attente"],
-    status: ["Client", "Prospect", "Fournisseur", "Artisan", "Institutionnel", "Prescripteur", "Sous-traitant"],
+    status: ["Client", "Prospect", "Fournisseur", "Artisan", "Institutionnel", "Prescripteur", "Sous-traitant", "Leads"],
     dateAdded: ["Aujourd'hui", "Cette semaine", "Ce mois", "Ce trimestre"]
   };
 
   // Apply filters and search
   const filteredContacts = useMemo(() => {
-    return mockContacts.filter(contact => {
+    return contacts.filter(contact => {
       const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesAddedBy = !filters.addedBy || contact.addedBy.name === filters.addedBy;
       const matchesOrigin = !filters.origin || contact.origin === filters.origin;
@@ -1035,10 +1003,10 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
               selectedStatus={filters.status}
               onStatusChange={(value) => updateFilter('status', value)}
               statusCounts={{
-                all: mockContacts.length,
-                leads: mockContacts.filter(c => c.status === "Leads").length,
-                prospects: mockContacts.filter(c => c.status === "Prospect").length,
-                clients: mockContacts.filter(c => c.status === "Client").length
+                all: contacts.length,
+                leads: contacts.filter(c => c.status === "Leads").length,
+                prospects: contacts.filter(c => c.status === "Prospect").length,
+                clients: contacts.filter(c => c.status === "Client").length
               }}
             />
           </div>
@@ -1172,6 +1140,17 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate }) => {
 export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSidebar, filter = "all" }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
 
+  // Récupérer les contacts depuis Supabase
+  const { contacts: supabaseContacts, loading, error } = useContacts();
+
+  // Transformer les contacts Supabase au format UI
+  const transformedContacts = supabaseContacts.map(contact =>
+    transformContactForDirectory(contact)
+  );
+
+  // Utiliser les contacts transformés à la place des mockContacts
+  const mockContacts = transformedContacts.length > 0 ? transformedContacts : [];
+
   // Map filter to display title
   const filterTitles = {
     all: "Tous les contacts",
@@ -1198,7 +1177,7 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
         <Topbar onNavigate={onNavigate} />
         <div className="w-full py-6 px-4 lg:px-6">
           {/* Main Content */}
-          <DirectoryContactsCard filter={filter} onNavigate={onNavigate} />
+          <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} />
         </div>
       </main>
     </div>

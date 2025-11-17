@@ -1,5 +1,5 @@
 // filename: TeamMemberPage.jsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ArrowLeft,
   Phone,
@@ -10,25 +10,147 @@ import {
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
 
-// Mock member data (in a real app, this would come from routing params or API)
-const mockMemberData = {
-  id: "mem_1",
-  civility: "Mr",
-  firstName: "Jérémy",
-  lastName: "COLOMB",
-  email: "jeremy.colomb@travauxconfort.com",
-  role: "Agenceur",
-  phonePortable: "+33601020304",
-  phoneFixe: "+33123456789",
-  avatarUrl: "https://i.pravatar.cc/128?img=12",
-  contractType: "CDI",
-  job: "Agenceur",
-  hasPhone: true,
-  hasCar: true,
-  hasLaptop: true,
-  agendaColor: "#A8A8A8",
-  xoraSubscriptionActive: true
-};
+// Mock member data
+const mockEmployees = [
+  {
+    id: 1,
+    name: "Benjamin Petit",
+    firstName: "Benjamin",
+    lastName: "Petit",
+    position: "Chef de projet",
+    role: "Chef de projet",
+    jobType: "Dirigeant",
+    email: "benjamin.petit@xora.fr",
+    phone: "06 12 34 56 78",
+    phoneFixe: "+33612345678",
+    phonePortable: "+33612345678",
+    avatar: "https://i.pravatar.cc/128?img=5",
+    avatarUrl: "https://i.pravatar.cc/128?img=5",
+    contractType: "CDI",
+    job: "Dirigeant",
+    hasPhone: true,
+    hasCar: true,
+    hasLaptop: true,
+    agendaColor: "#A8A8A8",
+    xoraSubscriptionActive: true,
+    civility: "Mr"
+  },
+  {
+    id: 2,
+    name: "Sophie Martin",
+    firstName: "Sophie",
+    lastName: "Martin",
+    position: "Directrice commerciale",
+    role: "Directrice commerciale",
+    jobType: "Commercial",
+    email: "sophie.martin@xora.fr",
+    phone: "06 23 45 67 89",
+    phoneFixe: "+33623456789",
+    phonePortable: "+33623456789",
+    avatar: "https://i.pravatar.cc/128?img=8",
+    avatarUrl: "https://i.pravatar.cc/128?img=8",
+    contractType: "CDI",
+    job: "Commercial",
+    hasPhone: true,
+    hasCar: true,
+    hasLaptop: true,
+    agendaColor: "#E8A8A8",
+    xoraSubscriptionActive: true,
+    civility: "Mme"
+  },
+  {
+    id: 3,
+    name: "Thomas Dubois",
+    firstName: "Thomas",
+    lastName: "Dubois",
+    position: "Responsable RH",
+    role: "Responsable RH",
+    jobType: "RH",
+    email: "thomas.dubois@xora.fr",
+    phone: "06 34 56 78 90",
+    phoneFixe: "+33634567890",
+    phonePortable: "+33634567890",
+    avatar: "https://i.pravatar.cc/128?img=15",
+    avatarUrl: "https://i.pravatar.cc/128?img=15",
+    contractType: "CDI",
+    job: "RH",
+    hasPhone: true,
+    hasCar: false,
+    hasLaptop: true,
+    agendaColor: "#A8D8A8",
+    xoraSubscriptionActive: true,
+    civility: "Mr"
+  },
+  {
+    id: 4,
+    name: "Claire Rousseau",
+    firstName: "Claire",
+    lastName: "Rousseau",
+    position: "Développeuse",
+    role: "Développeuse",
+    jobType: "Technicien",
+    email: "claire.rousseau@xora.fr",
+    phone: "06 45 67 89 01",
+    phoneFixe: "+33645678901",
+    phonePortable: "+33645678901",
+    avatar: "https://i.pravatar.cc/128?img=22",
+    avatarUrl: "https://i.pravatar.cc/128?img=22",
+    contractType: "CDI",
+    job: "Technicien",
+    hasPhone: true,
+    hasCar: true,
+    hasLaptop: true,
+    agendaColor: "#A8A8E8",
+    xoraSubscriptionActive: true,
+    civility: "Mme"
+  },
+  {
+    id: 5,
+    name: "Marc Lefebvre",
+    firstName: "Marc",
+    lastName: "Lefebvre",
+    position: "Responsable technique",
+    role: "Responsable technique",
+    jobType: "Agenceur",
+    email: "marc.lefebvre@xora.fr",
+    phone: "06 56 78 90 12",
+    phoneFixe: "+33656789012",
+    phonePortable: "+33656789012",
+    avatar: "https://i.pravatar.cc/128?img=10",
+    avatarUrl: "https://i.pravatar.cc/128?img=10",
+    contractType: "CDI",
+    job: "Agenceur",
+    hasPhone: true,
+    hasCar: true,
+    hasLaptop: true,
+    agendaColor: "#E8C8A8",
+    xoraSubscriptionActive: true,
+    civility: "Mr"
+  },
+  {
+    id: 6,
+    name: "Nathalie Blanc",
+    firstName: "Nathalie",
+    lastName: "Blanc",
+    position: "Comptable",
+    role: "Comptable",
+    jobType: "Administratif",
+    email: "nathalie.blanc@xora.fr",
+    phone: "06 67 89 01 23",
+    phoneFixe: "+33667890123",
+    phonePortable: "+33667890123",
+    avatar: "https://i.pravatar.cc/128?img=25",
+    avatarUrl: "https://i.pravatar.cc/128?img=25",
+    contractType: "CDI",
+    job: "Administratif",
+    hasPhone: true,
+    hasCar: false,
+    hasLaptop: true,
+    agendaColor: "#D8A8E8",
+    xoraSubscriptionActive: true,
+    civility: "Mme"
+  }
+];
 
 // Toggle Switch Component
 function ToggleSwitch({ enabled, onChange, disabled = false }) {
@@ -87,7 +209,7 @@ function MemberHeader({ member, onBack, onEdit, onContact }) {
                 </h1>
                 <img src="/logo-xora.png" alt="XORA" className="h-6" />
               </div>
-              <p className="text-neutral-500">{member.role}</p>
+              <p className="text-neutral-500">{member.job}</p>
             </div>
           </div>
 
@@ -247,9 +369,8 @@ function PhoneInput({ value, onChange, placeholder, disabled = false }) {
 
 function ToggleField({ label, enabled, onChange }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm font-medium text-neutral-700">{label}</span>
-      <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <span className="text-sm text-neutral-500">Non</span>
         <ToggleSwitch enabled={enabled} onChange={onChange} />
         <span className="text-sm text-neutral-900 font-medium">Oui</span>
@@ -276,121 +397,125 @@ function MemberInfoTab({ member, onUpdate }) {
 
       {/* Main Information Block */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Civilité */}
-          <FormField label="Civilité du membre">
-            <SelectInput
-              value={formData.civility}
-              onChange={(value) => updateField("civility", value)}
-              options={[
-                { value: "Mr", label: "M." },
-                { value: "Mme", label: "Mme" },
-                { value: "Autre", label: "Autre" }
-              ]}
-            />
-          </FormField>
+        <div className="space-y-6">
+          {/* Ligne 1: Civilité, Nom, Prénom */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormField label="Civilité du membre">
+              <SelectInput
+                value={formData.civility}
+                onChange={(value) => updateField("civility", value)}
+                options={[
+                  { value: "Mr", label: "M." },
+                  { value: "Mme", label: "Mme" },
+                  { value: "Autre", label: "Autre" }
+                ]}
+              />
+            </FormField>
 
-          {/* Nom */}
-          <FormField label="Nom du membre" required>
-            <TextInput
-              value={formData.lastName}
-              onChange={(value) => updateField("lastName", value)}
-              placeholder="COLOMB"
-            />
-          </FormField>
+            <FormField label="Nom du membre" required>
+              <TextInput
+                value={formData.lastName}
+                onChange={(value) => updateField("lastName", value)}
+                placeholder="COLOMB"
+              />
+            </FormField>
 
-          {/* Prénom */}
-          <FormField label="Prénom client" required>
-            <TextInput
-              value={formData.firstName}
-              onChange={(value) => updateField("firstName", value)}
-              placeholder="Jérémy"
-            />
-          </FormField>
+            <FormField label="Prénom client" required>
+              <TextInput
+                value={formData.firstName}
+                onChange={(value) => updateField("firstName", value)}
+                placeholder="Jérémy"
+              />
+            </FormField>
+          </div>
 
-          {/* Email */}
-          <FormField label="Email client" required>
-            <TextInput
-              value={formData.email}
-              onChange={(value) => updateField("email", value)}
-              placeholder="jeremy.colomb@travauxconfort.com"
-            />
-          </FormField>
+          {/* Ligne 2: Email, Téléphone portable, Téléphone fixe */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormField label="Email client" required>
+              <TextInput
+                value={formData.email}
+                onChange={(value) => updateField("email", value)}
+                placeholder="jeremy.colomb@travauxconfort.com"
+              />
+            </FormField>
 
-          {/* Téléphone portable */}
-          <FormField label="Téléphone portable">
-            <PhoneInput
-              value={formData.phonePortable}
-              onChange={(value) => updateField("phonePortable", value)}
-              placeholder="Entrer un numéro"
-            />
-          </FormField>
+            <FormField label="Téléphone portable">
+              <PhoneInput
+                value={formData.phonePortable}
+                onChange={(value) => updateField("phonePortable", value)}
+                placeholder="Entrer un numéro"
+              />
+            </FormField>
 
-          {/* Téléphone fixe */}
-          <FormField label="Téléphone fixe">
-            <PhoneInput
-              value={formData.phoneFixe}
-              onChange={(value) => updateField("phoneFixe", value)}
-              placeholder="Entrer un numéro"
-            />
-          </FormField>
+            <FormField label="Téléphone fixe">
+              <PhoneInput
+                value={formData.phoneFixe}
+                onChange={(value) => updateField("phoneFixe", value)}
+                placeholder="Entrer un numéro"
+              />
+            </FormField>
+          </div>
 
-          {/* Type de contrat */}
-          <FormField label="Type de contrat">
-            <SelectInput
-              value={formData.contractType}
-              onChange={(value) => updateField("contractType", value)}
-              options={[
-                { value: "CDI", label: "CDI" },
-                { value: "CDD", label: "CDD" },
-                { value: "Alternance", label: "Alternance" },
-                { value: "Stage", label: "Stage" },
-                { value: "Freelance", label: "Freelance" }
-              ]}
-            />
-          </FormField>
+          {/* Ligne 3: Type de contrat, Métier */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormField label="Type de contrat">
+              <SelectInput
+                value={formData.contractType}
+                onChange={(value) => updateField("contractType", value)}
+                options={[
+                  { value: "CDI", label: "CDI" },
+                  { value: "CDD", label: "CDD" },
+                  { value: "Alternance", label: "Alternance" },
+                  { value: "Stage", label: "Stage" },
+                  { value: "Freelance", label: "Freelance" }
+                ]}
+              />
+            </FormField>
 
-          {/* Métier */}
-          <FormField label="Métier">
-            <SelectInput
-              value={formData.job}
-              onChange={(value) => updateField("job", value)}
-              options={[
-                { value: "Agenceur", label: "Agenceur" },
-                { value: "Commercial", label: "Commercial" },
-                { value: "Technicien", label: "Technicien" },
-                { value: "Manager", label: "Manager" },
-                { value: "Administratif", label: "Administratif" }
-              ]}
-            />
-          </FormField>
+            <FormField label="Métier">
+              <SelectInput
+                value={formData.job}
+                onChange={(value) => updateField("job", value)}
+                options={[
+                  { value: "Agenceur", label: "Agenceur" },
+                  { value: "Commercial", label: "Commercial" },
+                  { value: "Technicien", label: "Technicien" },
+                  { value: "Manager", label: "Manager" },
+                  { value: "Administratif", label: "Administratif" }
+                ]}
+              />
+            </FormField>
+          </div>
 
-          {/* Téléphone mis à disposition */}
-          <FormField label="Téléphone mis à disposition">
-            <ToggleField
-              label=""
-              enabled={formData.hasPhone}
-              onChange={(value) => updateField("hasPhone", value)}
-            />
-          </FormField>
+          {/* Ligne 4: Téléphone mis à disposition, Voiture, Ordinateur portable */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-3">Téléphone mis à disposition</label>
+              <ToggleField
+                label=""
+                enabled={formData.hasPhone}
+                onChange={(value) => updateField("hasPhone", value)}
+              />
+            </div>
 
-          {/* Voiture */}
-          <FormField label="Voiture">
-            <ToggleField
-              label=""
-              enabled={formData.hasCar}
-              onChange={(value) => updateField("hasCar", value)}
-            />
-          </FormField>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-3">Voiture</label>
+              <ToggleField
+                label=""
+                enabled={formData.hasCar}
+                onChange={(value) => updateField("hasCar", value)}
+              />
+            </div>
 
-          {/* Ordinateur portable */}
-          <FormField label="Ordinateur portable">
-            <ToggleField
-              label=""
-              enabled={formData.hasLaptop}
-              onChange={(value) => updateField("hasLaptop", value)}
-            />
-          </FormField>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-3">Ordinateur portable</label>
+              <ToggleField
+                label=""
+                enabled={formData.hasLaptop}
+                onChange={(value) => updateField("hasLaptop", value)}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -399,22 +524,27 @@ function MemberInfoTab({ member, onUpdate }) {
         <h3 className="text-sm font-medium text-neutral-700 mb-4">
           Couleur collaborateur agenda
         </h3>
-        <div className="flex items-center gap-4">
-          <div
-            className="size-12 rounded-lg border border-neutral-200"
-            style={{ backgroundColor: formData.agendaColor }}
+        <div className="flex items-center gap-3 w-fit relative">
+          <input
+            type="color"
+            value={formData.agendaColor}
+            onChange={(e) => updateField("agendaColor", e.target.value)}
+            className="absolute opacity-0 w-0 h-0 cursor-pointer"
+            id="colorInput"
           />
-          <div className="flex-1">
-            <input
-              type="color"
-              value={formData.agendaColor}
-              onChange={(e) => updateField("agendaColor", e.target.value)}
-              className="w-full h-10 rounded-xl border border-neutral-200 cursor-pointer"
-            />
-          </div>
-          <span className="text-sm font-mono text-neutral-600">
-            {formData.agendaColor.toUpperCase()}
-          </span>
+          <label
+            htmlFor="colorInput"
+            className="size-12 rounded-lg border border-neutral-200 cursor-pointer block"
+            style={{ backgroundColor: formData.agendaColor }}
+            title="Cliquez pour changer la couleur"
+          />
+          <input
+            type="text"
+            value={formData.agendaColor.toUpperCase()}
+            onChange={(e) => updateField("agendaColor", e.target.value)}
+            placeholder="#000000"
+            className="w-24 px-3 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-mono text-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+          />
         </div>
       </div>
 
@@ -451,9 +581,24 @@ export default function TeamMemberPage({
 }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("info");
+  const [memberDataState, setMemberDataState] = useState(null);
+
+  // Get member data from ID
+  const baseData = useMemo(() => {
+    if (!memberId) return mockEmployees[0];
+
+    // Extract the ID number from "mem_1" format
+    const idMatch = memberId.match(/mem_(\d+)/);
+    const id = idMatch ? parseInt(idMatch[1]) : parseInt(memberId);
+
+    return mockEmployees.find(emp => emp.id === id) || mockEmployees[0];
+  }, [memberId]);
+
+  // Use state data if it exists, otherwise use base data
+  const memberData = memberDataState || baseData;
 
   const handleBack = () => {
-    onNavigate("settings-team");
+    onNavigate("our-company");
   };
 
   const handleEdit = () => {
@@ -466,6 +611,7 @@ export default function TeamMemberPage({
 
   const handleUpdate = (updatedData) => {
     console.log("Update member data:", updatedData);
+    setMemberDataState(updatedData);
     alert("Modifications enregistrées");
   };
 
@@ -495,7 +641,7 @@ export default function TeamMemberPage({
 
         {/* Member Header */}
         <MemberHeader
-          member={mockMemberData}
+          member={memberData}
           onBack={handleBack}
           onEdit={handleEdit}
           onContact={handleContact}
@@ -507,7 +653,7 @@ export default function TeamMemberPage({
         {/* Content */}
         <div className="max-w-[1400px] mx-auto p-6">
           {activeTab === "info" && (
-            <MemberInfoTab member={mockMemberData} onUpdate={handleUpdate} />
+            <MemberInfoTab member={memberData} onUpdate={handleUpdate} />
           )}
           {activeTab === "documents" && <DocumentsTab />}
         </div>

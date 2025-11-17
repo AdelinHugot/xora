@@ -80,7 +80,7 @@ const navigationConfig = [
     label: "Suivi SAV et finitions",
     icon: SuiviSAVIcon,
     route: "after-sales",
-    disabled: false
+    disabled: true
   },
   {
     id: "articles",
@@ -101,7 +101,7 @@ const navigationConfig = [
     label: "KPI",
     icon: KPIIcon,
     route: "kpi",
-    disabled: false
+    disabled: true
   },
   {
     id: "our-company",
@@ -267,7 +267,9 @@ function NavItem({ item, isActive, collapsed, onNavigate }) {
 function SidebarNav({ currentPage, collapsed, onNavigate }) {
   return (
     <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto" aria-label="Navigation latérale">
-      {navigationConfig.map((item) => {
+      {navigationConfig
+        .filter((item) => !item.disabled) // Masquer les éléments désactivés
+        .map((item) => {
         const isActive = currentPage === item.route ||
                         (item.id === "directory" && currentPage?.startsWith("directory")) ||
                         (item.id === "project-tracking" && currentPage === "project-tracking");

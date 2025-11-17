@@ -1,12 +1,452 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { CalendarDays, Search, ChevronDown, Plus, User, X, Calendar, ArrowUpRight, Pencil, Trash2, Check } from "lucide-react";
+import { DayPicker } from "react-day-picker";
+import { format, parse } from "date-fns";
+import "react-day-picker/dist/style.css";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
+import { useAppointments } from "../hooks/useAppointments";
+import { transformAppointmentForAgenda } from "../utils/dataTransformers";
+
+// Custom Select Component
+function CustomSelect({ value, onChange, options, placeholder = "Sélectionner" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const handleOpen = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleOpen}
+        className="w-full rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 text-left text-sm text-[#1F2027] flex items-center justify-between hover:bg-[#FAFAFA] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+      >
+        <span>{selectedLabel}</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+          <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div
+          className="bg-white border border-[#E4E4E7] rounded-lg shadow-lg z-[9999]"
+          style={{
+            position: 'fixed',
+            top: position.top,
+            left: position.left,
+            width: position.width
+          }}
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2.5 text-left text-sm text-[#1F2027] hover:bg-[#F9F9F9] border-b border-[#EEEEEE] last:border-b-0 transition-colors"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Custom Toggle Switch Component
+function ToggleSwitch({ value, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!value)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+        value ? "bg-[#2B7FFF]" : "bg-[#E1E4ED]"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+          value ? "translate-x-5" : "translate-x-0.5"
+        }`}
+      />
+    </button>
+  );
+}
+
+// Custom Date Picker Component
+function DatePickerField({ value, onChange, label }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target) &&
+          buttonRef.current && !buttonRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const selectedDate = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined;
+  const displayDate = value ? format(parse(value, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy') : '';
+
+  return (
+    <div>
+      <label className="block text-xs text-[#6B7280] font-medium mb-2">{label}</label>
+      <div className="relative">
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pl-9 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-left flex items-center justify-between"
+        >
+          <span>{displayDate}</span>
+          <Calendar className="size-4 text-[#A1A7B6]" />
+        </button>
+        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#A1A7B6] pointer-events-none" />
+
+        {isOpen && (
+          <div
+            ref={pickerRef}
+            className="bg-white border border-[#E1E4ED] rounded-lg shadow-lg z-[9999] p-4"
+            style={{
+              position: 'fixed',
+              top: (buttonRef.current?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 8,
+              left: buttonRef.current?.getBoundingClientRect().left ?? 0,
+              minWidth: (buttonRef.current?.getBoundingClientRect().width ?? 0) + 32
+            }}
+          >
+            <style>{`
+              .rdp {
+                --rdp-cell-size: 36px;
+                --rdp-accent-color: #2B7FFF;
+                --rdp-background-color: #E0E7FF;
+              }
+              .rdp-caption {
+                color: #1F2027;
+                font-weight: 600;
+                margin-bottom: 12px;
+              }
+              .rdp-head_cell {
+                color: #6B7280;
+                font-weight: 500;
+                font-size: 12px;
+              }
+              .rdp-day {
+                color: #1F2027;
+              }
+              .rdp-day_selected:not([disabled]) {
+                background-color: #2B7FFF;
+                color: white;
+              }
+              .rdp-day_today {
+                font-weight: 600;
+                color: #2B7FFF;
+              }
+              .rdp-day_disabled {
+                color: #D1D5DB;
+                opacity: 0.5;
+                cursor: not-allowed;
+              }
+            `}</style>
+            <DayPicker
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                if (date) {
+                  onChange(format(date, 'yyyy-MM-dd'));
+                  setIsOpen(false);
+                }
+              }}
+              disabled={(date) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return date < today;
+              }}
+              defaultMonth={selectedDate || new Date()}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Custom Time Picker Component
+function TimePickerField({ value, onChange, label }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [hours, setHours] = useState(value ? parseInt(value.split(':')[0]) : 0);
+  const [minutes, setMinutes] = useState(value ? parseInt(value.split(':')[1]) : 0);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target) &&
+          buttonRef.current && !buttonRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const displayTime = value || '';
+
+  const handleTimeSelect = (h, m) => {
+    const timeString = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    onChange(timeString);
+    setIsOpen(false);
+  };
+
+  return (
+    <div>
+      <label className="block text-xs text-[#6B7280] font-medium mb-2">{label}</label>
+      <div className="relative">
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pl-9 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 text-left flex items-center justify-between"
+        >
+          <span>{displayTime}</span>
+          <svg className="size-4 text-[#A1A7B6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+            <path strokeWidth="2" d="M12 6v6l4 2"/>
+          </svg>
+        </button>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#A1A7B6] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+          <path strokeWidth="2" d="M12 6v6l4 2"/>
+        </svg>
+
+        {isOpen && (
+          <div
+            ref={pickerRef}
+            className="bg-white border border-[#E1E4ED] rounded-lg shadow-lg z-[9999] p-3"
+            style={{
+              position: 'fixed',
+              top: (buttonRef.current?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 8,
+              left: buttonRef.current?.getBoundingClientRect().left ?? 0,
+              width: '280px'
+            }}
+          >
+            {/* Display current time */}
+            <div className="text-center mb-4 pb-3 border-b border-[#E1E4ED]">
+              <div className="text-2xl font-bold text-[#1F2027]">
+                {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
+              </div>
+            </div>
+
+            {/* Hours Grid */}
+            <div className="mb-4">
+              <label className="text-xs text-[#6B7280] font-medium block mb-2">Heures</label>
+              <div className="grid grid-cols-6 gap-1">
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setHours(i)}
+                    className={`py-1.5 px-1 rounded text-xs font-medium transition-colors ${
+                      hours === i
+                        ? "bg-[#2B7FFF] text-white"
+                        : "bg-[#F3F4F6] text-[#1F2027] hover:bg-[#E1E4ED]"
+                    }`}
+                  >
+                    {String(i).padStart(2, '0')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Minutes Grid */}
+            <div className="mb-4">
+              <label className="text-xs text-[#6B7280] font-medium block mb-2">Minutes</label>
+              <div className="grid grid-cols-4 gap-1">
+                {Array.from({ length: 4 }).map((_, i) => {
+                  const min = i * 15;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setMinutes(min)}
+                      className={`py-1.5 px-1 rounded text-xs font-medium transition-colors ${
+                        minutes === min
+                          ? "bg-[#2B7FFF] text-white"
+                          : "bg-[#F3F4F6] text-[#1F2027] hover:bg-[#E1E4ED]"
+                      }`}
+                    >
+                      {String(min).padStart(2, '0')}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Confirm button */}
+            <button
+              type="button"
+              onClick={() => handleTimeSelect(hours, minutes)}
+              className="w-full py-2 rounded-lg bg-[#2B7FFF] text-white font-medium text-xs transition-colors hover:bg-[#1E5FCC]"
+            >
+              Valider
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Custom Multi-Select Component for Collaborators
+function CustomMultiSelect({ value, onChange, options, placeholder = "Sélectionner" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const selectedItems = options.filter(opt => value.includes(opt.value));
+
+  const handleToggle = (optionValue) => {
+    onChange(
+      value.includes(optionValue)
+        ? value.filter(id => id !== optionValue)
+        : [...value, optionValue]
+    );
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 text-left text-sm text-[#1F2027] flex items-center justify-between hover:bg-[#FAFAFA] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+      >
+        <span className="truncate">
+          {selectedItems.length > 0
+            ? `${selectedItems.length} collaborateur${selectedItems.length > 1 ? 's' : ''} sélectionné${selectedItems.length > 1 ? 's' : ''}`
+            : placeholder
+          }
+        </span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>
+          <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E4E4E7] rounded-lg shadow-lg z-[9999] max-h-64 overflow-y-auto">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleToggle(option.value)}
+              className="w-full px-3 py-2.5 text-left text-sm text-[#1F2027] hover:bg-[#F9F9F9] border-b border-[#EEEEEE] last:border-b-0 transition-colors flex items-center gap-3"
+            >
+              <input
+                type="checkbox"
+                checked={value.includes(option.value)}
+                onChange={() => {}}
+                className="rounded border-[#E4E4E7]"
+              />
+              {option.avatar && (
+                <img src={option.avatar} alt={option.label} className="size-5 rounded-full flex-shrink-0" />
+              )}
+              <span className="truncate">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const startHour = 8;
 const endHour = 18;
 const intervalMinutes = 30;
 const slotHeight = 64; // px per interval
+
+// Fonction pour générer une semaine à partir d'une date
+function generateWeekFromDate(date) {
+  const startDate = new Date(date);
+  const day = startDate.getDay();
+  const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Lundi
+  startDate.setDate(diff);
+
+  const days = [];
+  const dayLabels = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  const dayIds = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+  for (let i = 0; i < 7; i++) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(startDate.getDate() + i);
+    days.push({
+      id: dayIds[i],
+      label: `${dayLabels[i]} ${currentDate.getDate()} ${currentDate.toLocaleString('fr-FR', { month: 'long' }).charAt(0).toUpperCase() + currentDate.toLocaleString('fr-FR', { month: 'long' }).slice(1)}`
+    });
+  }
+
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + 6);
+
+  return {
+    id: `week-${startDate.getTime()}`,
+    rangeLabel: `${format(startDate, 'dd/MM')} - ${format(endDate, 'dd/MM')}`,
+    badge: `Semaine ${format(startDate, 'w')}`,
+    days: days,
+    events: []
+  };
+}
 
 const WEEK_PRESETS = [
   {
@@ -162,15 +602,7 @@ function WeeklyCalendarGrid({ days, events, onEventClick }) {
   // Mini avatar group (purely decorative)
   const Avatars = () => (
     <div className="flex -space-x-2">
-      {"ABCDE".split("").map((ch, i) => (
-        <div
-          key={i}
-          className="w-6 h-6 rounded-full bg-neutral-300 ring-2 ring-white text-[10px] flex items-center justify-center font-semibold text-neutral-700"
-        >
-          {ch}
-        </div>
-      ))}
-      <span className="ml-2 text-xs text-neutral-500">+3</span>
+      {null}
     </div>
   );
 
@@ -257,8 +689,8 @@ function WeeklyCalendarGrid({ days, events, onEventClick }) {
             <div />
             {days.map((d) => (
               <div key={d.id} className="py-4 px-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="text-center">
                     <div className="text-sm font-semibold text-neutral-900">{d.label.split(" ")[0]} {d.label.split(" ")[1]}</div>
                     <div className="text-xs text-gray-500">{d.label.split(" ").slice(2).join(" ")}</div>
                   </div>
@@ -371,6 +803,103 @@ function AgendaList({ events, days, onEventClick }) {
   );
 }
 
+// Agenda Date Picker Component
+function AgendaDatePicker({ selectedRange, onRangeChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pickerRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target) &&
+          buttonRef.current && !buttonRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const handleDateSelect = (date) => {
+    if (!date) return;
+
+    setSelectedDate(date);
+
+    // Générer la semaine complète à partir de la date sélectionnée
+    const weekData = generateWeekFromDate(date);
+    onRangeChange(weekData.rangeLabel);
+
+    setIsOpen(false);
+  };
+
+  return (
+    <div>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 flex items-center gap-2"
+      >
+        <Calendar className="size-4" />
+        {selectedRange}
+      </button>
+
+      {isOpen && (
+        <div
+          ref={pickerRef}
+          className="bg-white border border-neutral-200 rounded-lg shadow-lg p-4"
+          style={{
+            position: 'fixed',
+            top: (buttonRef.current?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 8,
+            left: buttonRef.current?.getBoundingClientRect().left ?? 0,
+            minWidth: (buttonRef.current?.getBoundingClientRect().width ?? 0) + 32,
+            zIndex: 50
+          }}
+        >
+          <style>{`
+            .rdp {
+              --rdp-cell-size: 36px;
+              --rdp-accent-color: #1F2937;
+              --rdp-background-color: #E5E7EB;
+            }
+            .rdp-caption {
+              color: #1F2937;
+              font-weight: 600;
+              margin-bottom: 12px;
+            }
+            .rdp-head_cell {
+              color: #6B7280;
+              font-weight: 500;
+              font-size: 12px;
+            }
+            .rdp-day {
+              color: #1F2937;
+            }
+            .rdp-day_selected:not([disabled]) {
+              background-color: #1F2937;
+              color: white;
+            }
+            .rdp-day_today {
+              font-weight: 600;
+              color: #1F2937;
+            }
+          `}</style>
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            defaultMonth={selectedDate}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgendaControls({
   viewMode,
   onViewChange,
@@ -421,20 +950,10 @@ function AgendaControls({
           </div>
 
           {/* Date selector */}
-          <div className="relative">
-            <select
-              value={selectedRange}
-              onChange={(e) => onRangeChange(e.target.value)}
-              className="appearance-none rounded-lg border border-neutral-200 bg-white px-3 py-2 pr-8 text-sm font-medium text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-            >
-              {WEEK_PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.rangeLabel}>
-                  {preset.rangeLabel}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
-          </div>
+          <AgendaDatePicker
+            selectedRange={selectedRange}
+            onRangeChange={onRangeChange}
+          />
         </div>
 
         {/* Right side: Add buttons */}
@@ -485,33 +1004,150 @@ function AgendaControls({
 }
 
 function AddAppointmentModal({ isOpen, onClose, onSave }) {
+  const [step, setStep] = useState(1); // 1 for first modal, 2 for second modal
   const [formData, setFormData] = useState({
-    name: "",
+    directoryType: "",
+    contactType: "",
+    searchQuery: "",
+    selectedContact: "",
+    selectedContactId: "",
+    selectedProject: "",
+    eventType: "",
+    // Step 2 fields
+    title: "",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
     isRecurrent: false,
-    repeatEvery: 1,
-    repeatUnit: "semaine",
-    repeatOn: "lundi",
-    endsOn: "",
-    collaborators: ["loic"],
-    appointmentType: "",
-    directory: "",
+    collaborators: [],
     isPrivate: false,
-    address: "",
+    locationType: "", // showroom, adresse-client, autre-adresse, rdv-tel
+    clientAddress: "", // pour adresse-client
+    otherAddress: "", // pour autre-adresse
+    otherAddressSearch: "", // pour la recherche d'adresse API
+    createVideoLink: false,
     comment: "",
+    additionalInfo: "",
   });
 
-  const maxNameLength = 25;
+  const [searchResults, setSearchResults] = useState([]);
+  const [addressSearchResults, setAddressSearchResults] = useState([]);
+  const addressSearchTimeoutRef = useRef(null);
 
-  const collaboratorsList = [
-    { id: "loic", name: "Loïc", avatarUrl: "https://i.pravatar.cc/40?img=12", isCurrentUser: true },
-    { id: "guillaume", name: "Guillaume", avatarUrl: "https://i.pravatar.cc/40?img=15", isCurrentUser: false },
-    { id: "celine", name: "Céline", avatarUrl: "https://i.pravatar.cc/40?img=8", isCurrentUser: false },
+  // Mock contacts data by type
+  const mockContacts = {
+    client: [
+      { id: "c1", name: "Dupont Chloé" },
+      { id: "c2", name: "Martinez Lucas" },
+      { id: "c3", name: "Bernard Amélie" },
+      { id: "c4", name: "Farget Coline" },
+      { id: "c5", name: "Durand Jean" },
+    ],
+    fournisseur: [
+      { id: "f1", name: "APPROSINE" },
+      { id: "f2", name: "HYDROPLUS" },
+      { id: "f3", name: "SANIFIX" },
+      { id: "f4", name: "BATHPRO" },
+      { id: "f5", name: "AQUATECH" },
+    ],
+    salarie: [
+      { id: "s1", name: "Jérémy Colomb" },
+      { id: "s2", name: "Sophie Martin" },
+      { id: "s3", name: "Thomas Dubois" },
+      { id: "s4", name: "Claire Rousseau" },
+      { id: "s5", name: "Marc Lefebvre" },
+      { id: "s6", name: "Nathalie Blanc" },
+    ],
+    prescripteur: [
+      { id: "pr1", name: "Architecte Lambert" },
+      { id: "pr2", name: "Designer Lefevre" },
+      { id: "pr3", name: "Décorateur Moreau" },
+    ],
+  };
+
+  // Mock projects data by client
+  const mockProjectsByClient = {
+    c1: [
+      { id: "p1", name: "Cuisine étage 2" },
+      { id: "p2", name: "Salle de bain étage" },
+    ],
+    c2: [
+      { id: "p3", name: "Terrasse" },
+      { id: "p4", name: "Rénovation cuisine" },
+    ],
+    c3: [
+      { id: "p5", name: "Installation douche" },
+      { id: "p6", name: "Aménagement sdb" },
+      { id: "p7", name: "Pose robinetterie" },
+    ],
+    c4: [
+      { id: "p8", name: "Projet client 4" },
+    ],
+    c5: [
+      { id: "p9", name: "Cuisine moderne" },
+      { id: "p10", name: "Rénovation salle d'eau" },
+    ],
+  };
+
+  // Mock addresses by client
+  const mockAddressesByClient = {
+    c1: [
+      { id: "a1", address: "12 rue de Paris, 75001 Paris" },
+      { id: "a2", address: "45 avenue des Champs, 75008 Paris" },
+    ],
+    c2: [
+      { id: "a3", address: "8 rue Montmartre, 75002 Paris" },
+    ],
+    c3: [
+      { id: "a4", address: "15 boulevard Saint-Germain, 75005 Paris" },
+      { id: "a5", address: "20 rue de Rivoli, 75004 Paris" },
+    ],
+    c4: [
+      { id: "a6", address: "5 avenue Foch, 75016 Paris" },
+    ],
+    c5: [
+      { id: "a7", address: "100 rue de Turenne, 75003 Paris" },
+    ],
+  };
+
+  // Mock collaborators
+  const mockCollaborators = [
+    { id: "s1", name: "Jérémy Colomb", avatar: "https://i.pravatar.cc/32?img=1" },
+    { id: "s2", name: "Sophie Martin", avatar: "https://i.pravatar.cc/32?img=2" },
+    { id: "s3", name: "Thomas Dubois", avatar: "https://i.pravatar.cc/32?img=3" },
+    { id: "s4", name: "Claire Rousseau", avatar: "https://i.pravatar.cc/32?img=4" },
   ];
-
-  if (!isOpen) return null;
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // Si c'est la recherche, filtrer les contacts
+    if (field === "searchQuery") {
+      const contactList = mockContacts[formData.contactType] || [];
+      const filtered = contactList.filter((contact) =>
+        contact.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setSearchResults(filtered);
+    }
+
+    // Si c'est le type de contact, réinitialiser la recherche
+    if (field === "contactType") {
+      setFormData((prev) => ({ ...prev, searchQuery: "", selectedContact: "" }));
+      setSearchResults([]);
+    }
+  };
+
+  const handleSelectContact = (contact) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedContact: contact.id,
+      selectedContactId: contact.id,
+      searchQuery: contact.name,
+      selectedProject: "",
+      eventType: ""
+    }));
+    setSearchResults([]);
   };
 
   const toggleCollaborator = (collaboratorId) => {
@@ -523,10 +1159,59 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
     }));
   };
 
+  // Determine if form is valid based on current step
+  const isFormValid = () => {
+    if (step === 1) {
+      // Step 1: Recherche annuaire must be selected
+      if (!formData.directoryType) return false;
+
+      // If Hors Annuaire is selected, form is valid with just that
+      if (formData.directoryType === "hors-annuaire") return true;
+
+      // If Annuaire is selected, need Type de contact
+      if (!formData.contactType) return false;
+
+      // If Client is selected, need a contact to be selected
+      if (formData.contactType === "client") {
+        if (!formData.selectedContactId) return false;
+        // If client is selected, need project and event type
+        if (!formData.selectedProject || !formData.eventType) return false;
+      }
+
+      return true;
+    } else {
+      // Step 2: Check all required fields
+      if (!formData.title) return false;
+      if (!formData.startDate || !formData.startTime) return false;
+      if (!formData.endDate || !formData.endTime) return false;
+      return true;
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
-    onClose();
+
+    if (step === 1) {
+      // Initialize title with default value
+      setFormData((prev) => ({
+        ...prev,
+        title: `${prev.eventType} - ${prev.searchQuery}`
+      }));
+      setStep(2);
+    } else {
+      // Save and close
+      onSave(formData);
+      setStep(1);
+      onClose();
+    }
+  };
+
+  const handleBack = () => {
+    if (step === 2) {
+      setStep(1);
+    } else {
+      onClose();
+    }
   };
 
   const handleOverlayClick = (e) => {
@@ -535,25 +1220,28 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4"
       onClick={handleOverlayClick}
     >
       <div
-        className="w-full max-w-4xl rounded-2xl border border-neutral-200 bg-white shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="w-full rounded-2xl border border-neutral-200 bg-white shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '935px', width: '935px', maxHeight: 'calc(100vh - 48px)' }}
       >
         {/* En-tête */}
-        <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-neutral-100 sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between px-6 py-4 bg-[#F8F9FA] border-b border-[#E4E4E7] rounded-t-2xl flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-neutral-100">
-              <Calendar className="size-5 text-neutral-500" />
+            <div className="p-2 bg-white border border-[#E4E4E7] rounded-lg">
+              <Calendar className="size-4 text-neutral-500" />
             </div>
-            <h2 className="text-lg font-semibold text-neutral-900">Ajouter un rendez-vous</h2>
+            <h2 className="text-sm font-semibold text-[#1F2027]">Créer un rendez-vous</h2>
           </div>
           <button
-            className="size-8 rounded-xl border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 transition-colors"
+            className="size-8 rounded-lg border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 transition-colors"
             onClick={onClose}
             aria-label="Fermer"
           >
@@ -562,248 +1250,413 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
         </div>
 
         {/* Corps de la modale */}
-        <form onSubmit={handleSubmit}>
-          <div className="px-8 py-6 space-y-5">
-            {/* Bloc "Nom du rdv" */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-2">Nom du rdv</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => {
-                    if (e.target.value.length <= maxNameLength) {
-                      handleChange("name", e.target.value);
-                    }
-                  }}
-                  placeholder="Saisir"
-                  className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 pr-16 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="px-6 py-6 space-y-4 flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
+            {step === 1 ? (
+              // Step 1 content
+              <>
+            {/* Recherche Annuaire - Dropdown */}
+            <div style={{ overflow: 'visible', position: 'relative', zIndex: 9999 }}>
+              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">Recherche annuaire</label>
+                <CustomSelect
+                  value={formData.directoryType}
+                  onChange={(value) => handleChange("directoryType", value)}
+                  options={[
+                    { value: "annuaire", label: "Rendez-vous annuaire" },
+                    { value: "hors-annuaire", label: "Rendez-vous hors annuaire" }
+                  ]}
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-neutral-400">
-                  {formData.name.length}/{maxNameLength}
-                </span>
-              </div>
+              </section>
             </div>
 
-            {/* Bloc "Rendez-vous récurrent" */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-2">Rendez-vous récurrent</label>
-              <div className="space-y-4">
-                {/* Toggle Oui/Non */}
-                <div className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-1">
-                  <button
-                    type="button"
-                    onClick={() => handleChange("isRecurrent", false)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      !formData.isRecurrent
-                        ? "bg-white text-neutral-900 shadow-sm"
-                        : "text-neutral-500 hover:text-neutral-700"
-                    }`}
-                  >
-                    Non
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChange("isRecurrent", true)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      formData.isRecurrent
-                        ? "bg-white text-neutral-900 shadow-sm"
-                        : "text-neutral-500 hover:text-neutral-700"
-                    }`}
-                  >
-                    Oui
-                  </button>
-                </div>
+            {/* Type d'événement - Conditionnel pour Hors Annuaire */}
+            {formData.directoryType === "hors-annuaire" && (
+              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">Type d'événement</label>
+                <CustomSelect
+                  value=""
+                  onChange={() => {}}
+                  options={[
+                    { value: "reunion", label: "Réunion" },
+                    { value: "appel", label: "Appel" },
+                    { value: "visite", label: "Visite" },
+                    { value: "autre", label: "Autre" }
+                  ]}
+                />
+              </section>
+            )}
 
-                {/* Champs conditionnels */}
-                {formData.isRecurrent && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-xl bg-neutral-50 p-4">
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <label className="block text-xs font-medium text-neutral-600 mb-1.5">
-                          Répéter tout(s)/s les
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={formData.repeatEvery}
-                          onChange={(e) => handleChange("repeatEvery", parseInt(e.target.value) || 1)}
-                          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-xs font-medium text-neutral-600 mb-1.5">De</label>
-                        <select
-                          value={formData.repeatUnit}
-                          onChange={(e) => handleChange("repeatUnit", e.target.value)}
-                          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-                        >
-                          <option value="jour">Jour</option>
-                          <option value="semaine">Semaine</option>
-                          <option value="mois">Mois</option>
-                        </select>
-                      </div>
-                    </div>
+            {/* Type de contact - Conditionnel pour Annuaire */}
+            {formData.directoryType === "annuaire" && (
+              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">Type de contact</label>
+                <CustomSelect
+                  value={formData.contactType}
+                  onChange={(value) => handleChange("contactType", value)}
+                  options={[
+                    { value: "client", label: "Client" },
+                    { value: "fournisseur", label: "Fournisseur" },
+                    { value: "salarie", label: "Salarié" },
+                    { value: "prescripteur", label: "Prescripteur" }
+                  ]}
+                />
+              </section>
+            )}
 
-                    <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1.5">Répéter le</label>
-                      <select
-                        value={formData.repeatOn}
-                        onChange={(e) => handleChange("repeatOn", e.target.value)}
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+            {/* Rechercher un contact - Conditionnel pour Annuaire avec type sélectionné */}
+            {formData.directoryType === "annuaire" && formData.contactType && (
+              <div style={{ overflow: 'visible', position: 'relative', zIndex: 9999 }}>
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <label className="block text-xs text-[#6B7280] font-medium mb-3">
+                    Rechercher un {formData.contactType === "sous-traitant" ? "sous-traitant" : formData.contactType}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.searchQuery}
+                      onChange={(e) => handleChange("searchQuery", e.target.value)}
+                      placeholder={`Saisir le nom d'un ${formData.contactType}`}
+                      className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+                      id="search-input"
+                    />
+
+                    {/* Résultats de recherche */}
+                    {searchResults.length > 0 && (
+                      <div
+                        className="bg-white border border-[#E1E4ED] rounded-lg shadow-lg z-[9999]"
+                        style={{
+                          position: 'fixed',
+                          top: (document.getElementById('search-input')?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 8,
+                          left: document.getElementById('search-input')?.getBoundingClientRect().left ?? 0,
+                          width: document.getElementById('search-input')?.getBoundingClientRect().width ?? 'auto'
+                        }}
                       >
-                        <option value="lundi">Lundi</option>
-                        <option value="mardi">Mardi</option>
-                        <option value="mercredi">Mercredi</option>
-                        <option value="jeudi">Jeudi</option>
-                        <option value="vendredi">Vendredi</option>
-                        <option value="samedi">Samedi</option>
-                        <option value="dimanche">Dimanche</option>
-                      </select>
-                    </div>
+                        {searchResults.map((contact) => (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            onClick={() => handleSelectContact(contact)}
+                            className="w-full px-3 py-2.5 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 transition-colors"
+                          >
+                            {contact.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            )}
 
-                    <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1.5">Se termine le</label>
-                      <input
-                        type="date"
-                        value={formData.endsOn}
-                        onChange={(e) => handleChange("endsOn", e.target.value)}
-                        placeholder="Sélectionner une date"
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+            {/* Sélectionner un projet client - Conditionnel pour Client avec contact sélectionné */}
+            {formData.directoryType === "annuaire" && formData.contactType === "client" && formData.selectedContactId && (
+              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">Sélectionner un projet client</label>
+                <CustomSelect
+                  value={formData.selectedProject}
+                  onChange={(value) => handleChange("selectedProject", value)}
+                  options={(mockProjectsByClient[formData.selectedContactId] || []).map((project) => ({
+                    value: project.id,
+                    label: project.name
+                  }))}
+                />
+              </section>
+            )}
+
+            {/* Type d'événement - Conditionnel pour Client avec contact sélectionné */}
+            {formData.directoryType === "annuaire" && formData.contactType === "client" && formData.selectedContactId && (
+              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">Type d'événement</label>
+                <CustomSelect
+                  value={formData.eventType}
+                  onChange={(value) => handleChange("eventType", value)}
+                  options={[
+                    { value: "R1", label: "R1" },
+                    { value: "R2", label: "R2" },
+                    { value: "R3", label: "R3" },
+                    { value: "R4", label: "R4" },
+                    { value: "R5", label: "R5" }
+                  ]}
+                />
+              </section>
+            )}
+              </>
+            ) : (
+              // Step 2 content
+              <>
+                {/* 1. Titre du rendez-vous */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <label className="block text-xs text-[#6B7280] font-medium mb-3">Titre du rendez-vous</label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => handleChange("title", e.target.value)}
+                    placeholder="Titre du rendez-vous"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+                  />
+                </section>
+
+                {/* 2. Dates et heures */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="block text-xs text-[#6B7280] font-medium">Dates et heures du rendez-vous</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[#6B7280] font-medium">Récurrent</span>
+                      <ToggleSwitch
+                        value={formData.isRecurrent}
+                        onChange={(value) => handleChange("isRecurrent", value)}
                       />
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <DatePickerField
+                        value={formData.startDate}
+                        onChange={(value) => handleChange("startDate", value)}
+                        label="Date de début"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <TimePickerField
+                        value={formData.startTime}
+                        onChange={(value) => handleChange("startTime", value)}
+                        label="Heure de début"
+                      />
+                    </div>
+                    <div className="w-px bg-[#E1E4ED]"></div>
+                    <div className="flex-1">
+                      <DatePickerField
+                        value={formData.endDate}
+                        onChange={(value) => handleChange("endDate", value)}
+                        label="Date de fin"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <TimePickerField
+                        value={formData.endTime}
+                        onChange={(value) => handleChange("endTime", value)}
+                        label="Heure de fin"
+                      />
+                    </div>
+                  </div>
+                </section>
 
-            {/* Bloc "Collaborateur / Type / Annuaire / Privé" */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Collaborateur */}
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-neutral-600 mb-2">
-                  Collaborateur (choix multiple possible)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {collaboratorsList.map((collab) => (
-                    <button
-                      key={collab.id}
-                      type="button"
-                      onClick={() => toggleCollaborator(collab.id)}
-                      className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-all ${
-                        formData.collaborators.includes(collab.id)
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      <img src={collab.avatarUrl} alt="" className="size-6 rounded-full" />
-                      <span>
-                        {collab.name}
-                        {collab.isCurrentUser && " (Vous)"}
-                      </span>
-                      {formData.collaborators.includes(collab.id) && (
-                        <Check className="size-4" />
+                {/* 3. Collaborateurs et Privé */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <div className="flex items-end gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs text-[#6B7280] font-medium mb-3">Collaborateurs (choix multiple)</label>
+                      <CustomMultiSelect
+                        value={formData.collaborators}
+                        onChange={(value) => handleChange("collaborators", value)}
+                        options={mockCollaborators.map((collab) => ({
+                          value: collab.id,
+                          label: collab.name,
+                          avatar: collab.avatar
+                        }))}
+                        placeholder="Sélectionner des collaborateurs"
+                      />
+                    </div>
+
+                    <div className="w-[15%] flex-shrink-0">
+                      <label className="block text-xs text-[#6B7280] font-medium mb-3">Privé</label>
+                      <ToggleSwitch
+                        value={formData.isPrivate}
+                        onChange={(value) => handleChange("isPrivate", value)}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 4. Lieu et Lien visio */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <div className="flex items-end gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs text-[#6B7280] font-medium mb-3">Lieu du rendez-vous</label>
+                      <CustomSelect
+                        value={formData.locationType}
+                        onChange={(value) => {
+                          handleChange("locationType", value);
+                          // Reset related fields when type changes
+                          handleChange("clientAddress", "");
+                          handleChange("otherAddress", "");
+                          handleChange("otherAddressSearch", "");
+                          setAddressSearchResults([]);
+                        }}
+                        options={[
+                          { value: "showroom", label: "Showroom" },
+                          { value: "adresse-client", label: "Adresse client" },
+                          { value: "autre-adresse", label: "Autre adresse" },
+                          { value: "rdv-tel", label: "RDV tel" }
+                        ]}
+                      />
+
+                      {/* Dropdown pour adresse client */}
+                      {formData.locationType === "adresse-client" && (
+                        <div className="mt-3">
+                          <CustomSelect
+                            value={formData.clientAddress}
+                            onChange={(value) => handleChange("clientAddress", value)}
+                            options={
+                              formData.selectedContactId && mockAddressesByClient[formData.selectedContactId]
+                                ? mockAddressesByClient[formData.selectedContactId].map((addr) => ({
+                                    value: addr.id,
+                                    label: addr.address
+                                  }))
+                                : []
+                            }
+                            placeholder="Sélectionner une adresse"
+                          />
+                        </div>
                       )}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-              {/* Type de rendez-vous */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-600 mb-2">Type de rendez-vous</label>
-                <select
-                  value={formData.appointmentType}
-                  onChange={(e) => handleChange("appointmentType", e.target.value)}
-                  className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-                >
-                  <option value="">Sélectionner</option>
-                  <option value="decouverte">Découverte</option>
-                  <option value="suivi">Suivi</option>
-                  <option value="signature">Signature</option>
-                </select>
-              </div>
+                      {/* Champ de recherche pour autre adresse */}
+                      {formData.locationType === "autre-adresse" && (
+                        <div className="mt-3">
+                          <div style={{ overflow: 'visible', position: 'relative', zIndex: 'auto' }}>
+                            <input
+                              type="text"
+                              value={formData.otherAddressSearch}
+                              onChange={(e) => {
+                                handleChange("otherAddressSearch", e.target.value);
 
-              {/* Annuaire */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-600 mb-2">Annuaire</label>
-                <select
-                  value={formData.directory}
-                  onChange={(e) => handleChange("directory", e.target.value)}
-                  className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-                >
-                  <option value="">Sélectionner</option>
-                  <option value="clients">Clients</option>
-                  <option value="prospects">Prospects</option>
-                  <option value="partenaires">Partenaires</option>
-                </select>
-              </div>
+                                // Annuler le timer précédent
+                                if (addressSearchTimeoutRef.current) {
+                                  clearTimeout(addressSearchTimeoutRef.current);
+                                }
 
-              {/* Privé */}
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-neutral-600 mb-2">Privé</label>
-                <div className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-1">
-                  <button
-                    type="button"
-                    onClick={() => handleChange("isPrivate", false)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      !formData.isPrivate
-                        ? "bg-white text-neutral-900 shadow-sm"
-                        : "text-neutral-500 hover:text-neutral-700"
-                    }`}
-                  >
-                    Non
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChange("isPrivate", true)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      formData.isPrivate
-                        ? "bg-white text-neutral-900 shadow-sm"
-                        : "text-neutral-500 hover:text-neutral-700"
-                    }`}
-                  >
-                    Oui
-                  </button>
-                </div>
-              </div>
-            </div>
+                                // Recherche API avec Nominatim avec debounce
+                                if (e.target.value.length > 2) {
+                                  addressSearchTimeoutRef.current = setTimeout(() => {
+                                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(e.target.value)}&countrycodes=fr&limit=5&addressdetails=1`)
+                                      .then(response => response.json())
+                                      .then(data => {
+                                        const results = data.map((item) => {
+                                          const address = item.address;
+                                          // Extraire les infos essentielles
+                                          const voie = address.road || '';
+                                          const numero = address.house_number || '';
+                                          const codePostal = address.postcode || '';
+                                          const ville = address.city || address.town || address.village || '';
 
-            {/* Bloc "Adresse" */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-2">Adresse</label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => handleChange("address", e.target.value)}
-                placeholder="Saisir une adresse"
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-              />
-            </div>
+                                          // Construire l'adresse formatée
+                                          const adresseFormatee = [
+                                            numero && voie ? `${numero} ${voie}` : voie,
+                                            codePostal,
+                                            ville
+                                          ].filter(Boolean).join(', ');
 
-            {/* Bloc "Commentaire du rendez-vous" */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-2">
-                Commentaire du rendez-vous
-              </label>
-              <textarea
-                value={formData.comment}
-                onChange={(e) => handleChange("comment", e.target.value)}
-                placeholder="Appeler ce client pour le relancer vis-à-vis de l'augmentation des matières premières pour sa cuisine."
-                rows={4}
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none"
-              />
-            </div>
+                                          return {
+                                            id: item.place_id,
+                                            address: adresseFormatee || item.display_name
+                                          };
+                                        });
+                                        setAddressSearchResults(results);
+                                      })
+                                      .catch(error => {
+                                        console.error('Erreur lors de la recherche:', error);
+                                        setAddressSearchResults([]);
+                                      });
+                                  }, 500); // Attendre 500ms après que l'utilisateur arrête de taper
+                                } else {
+                                  setAddressSearchResults([]);
+                                }
+                              }}
+                              placeholder="Rechercher une adresse..."
+                              id="address-search-input"
+                              className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+                            />
+                            {addressSearchResults.length > 0 && (
+                              <div
+                                className="bg-white border border-[#E1E4ED] rounded-lg shadow-lg"
+                                style={{
+                                  position: 'fixed',
+                                  top: (document.getElementById('address-search-input')?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 8,
+                                  left: document.getElementById('address-search-input')?.getBoundingClientRect().left ?? 0,
+                                  width: document.getElementById('address-search-input')?.getBoundingClientRect().width ?? 'auto',
+                                  maxHeight: '200px',
+                                  overflowY: 'auto',
+                                  zIndex: 50
+                                }}
+                              >
+                                {addressSearchResults.map((result) => (
+                                  <button
+                                    key={result.id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleChange("otherAddress", result.address);
+                                      handleChange("otherAddressSearch", result.address);
+                                      setAddressSearchResults([]);
+                                    }}
+                                    className="w-full px-3 py-2.5 text-left text-sm text-[#1F2027] hover:bg-[#F9F9F9] border-b border-[#EEEEEE] last:border-b-0 transition-colors"
+                                  >
+                                    {result.address}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="w-[15%] flex-shrink-0">
+                      <label className="block text-xs text-[#6B7280] font-medium mb-3">Créer un lien visio</label>
+                      <ToggleSwitch
+                        value={formData.createVideoLink}
+                        onChange={(value) => handleChange("createVideoLink", value)}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 5. Commentaire */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <label className="block text-xs text-[#6B7280] font-medium mb-3">Commentaire de l'événement</label>
+                  <textarea
+                    value={formData.comment}
+                    onChange={(e) => handleChange("comment", e.target.value)}
+                    placeholder="Saisir un commentaire..."
+                    rows={3}
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 resize-none"
+                  />
+                </section>
+
+                {/* 6. Informations supplémentaires */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <label className="block text-xs text-[#6B7280] font-medium mb-3">Informations supplémentaires</label>
+                  <textarea
+                    value={formData.additionalInfo}
+                    onChange={(e) => handleChange("additionalInfo", e.target.value)}
+                    placeholder="Ajouter des informations supplémentaires..."
+                    rows={3}
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 resize-none"
+                  />
+                </section>
+              </>
+            )}
           </div>
 
           {/* Pied de la modale */}
-          <div className="px-8 pb-8 pt-4 flex items-center justify-center sticky bottom-0 bg-white border-t border-neutral-100">
+          <div className="px-6 pb-6 pt-2 flex items-center gap-3 border-t border-[#E4E4E7] flex-shrink-0 bg-white relative z-10">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white bg-white text-[#6B7280] text-sm font-medium hover:bg-neutral-50 transition-colors"
+            >
+              {step === 1 ? "Fermer" : "Retour"}
+            </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors shadow-sm"
+              disabled={!isFormValid()}
+              className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                isFormValid()
+                  ? "border-[#2B7FFF] bg-[#2B7FFF] text-white hover:bg-[#1F6FE6]"
+                  : "border-[#D1D5DB] bg-[#F3F4F6] text-[#9CA3AF] cursor-not-allowed"
+              }`}
             >
-              <Plus className="size-4" />
-              Créer le rendez-vous
+              {step === 1 ? "Suivant" : "Créer l'événement"}
             </button>
           </div>
         </form>
@@ -1006,6 +1859,14 @@ function Topbar({ onNavigate }) {
 }
 
 export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+  // Récupérer les rendez-vous depuis Supabase
+  const { appointments: supabaseAppointments, loading, error } = useAppointments();
+
+  // Transformer les rendez-vous Supabase au format UI
+  const transformedAppointments = supabaseAppointments.map(appointment =>
+    transformAppointmentForAgenda(appointment)
+  );
+
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [viewMode, setViewMode] = useState("week");
   const [selectedWeekRange, setSelectedWeekRange] = useState(WEEK_PRESETS[0].rangeLabel);
@@ -1018,10 +1879,23 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventPosition, setEventPosition] = useState(null);
 
-  const currentWeek = useMemo(
-    () => WEEK_PRESETS.find((preset) => preset.rangeLabel === selectedWeekRange) ?? WEEK_PRESETS[0],
-    [selectedWeekRange]
-  );
+  const currentWeek = useMemo(() => {
+    // D'abord, chercher dans WEEK_PRESETS
+    const preset = WEEK_PRESETS.find((preset) => preset.rangeLabel === selectedWeekRange);
+    if (preset) return preset;
+
+    // Si pas trouvé, générer dynamiquement la semaine à partir de la plage
+    // Parser la plage pour extraire la date de début
+    const [startStr] = selectedWeekRange.split(' - ');
+    if (!startStr) return WEEK_PRESETS[0];
+
+    const [day, month] = startStr.split('/');
+    const date = new Date();
+    date.setMonth(parseInt(month) - 1);
+    date.setDate(parseInt(day));
+
+    return generateWeekFromDate(date);
+  }, [selectedWeekRange]);
 
   const mergedEvents = useMemo(() => {
     const base = currentWeek?.events ?? [];

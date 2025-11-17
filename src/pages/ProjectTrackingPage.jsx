@@ -16,100 +16,8 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
-
-// Mock data pour les projets
-const mockProjects = [
-  {
-    id: 1,
-    clientName: "Chloé DUBOIS",
-    agent: { name: "Jérémy", avatar: "https://i.pravatar.cc/24?img=1" },
-    projectName: "Cuisine étage 2",
-    status: "Prospect",
-    progress: 45,
-    dateAdded: "25/05/25"
-  },
-  {
-    id: 2,
-    clientName: "Lucas MARTINEZ",
-    agent: { name: "Jérémy", avatar: "https://i.pravatar.cc/24?img=2" },
-    projectName: "Salle de bain étage",
-    status: "Étude client",
-    progress: 45,
-    dateAdded: "15/06/25"
-  },
-  {
-    id: 3,
-    clientName: "Chloé DUBOIS",
-    agent: { name: "Jérémy", avatar: "https://i.pravatar.cc/24?img=1" },
-    projectName: "Terrasse",
-    status: "Prospect",
-    progress: 45,
-    dateAdded: "25/05/25"
-  },
-  {
-    id: 4,
-    clientName: "Chloé DUBOIS",
-    agent: { name: "Jérémy", avatar: "https://i.pravatar.cc/24?img=1" },
-    projectName: "Salle de bain étage",
-    status: "Prospect",
-    progress: 45,
-    dateAdded: "25/05/25"
-  },
-  {
-    id: 5,
-    clientName: "Chloé DUBOIS",
-    agent: { name: "Jérémy", avatar: "https://i.pravatar.cc/24?img=1" },
-    projectName: "Salle de bain étage",
-    status: "SAV",
-    progress: 45,
-    dateAdded: "25/05/25"
-  },
-  {
-    id: 6,
-    clientName: "Amélie BERNARD",
-    agent: { name: "Sophie", avatar: "https://i.pravatar.cc/24?img=3" },
-    projectName: "Salle de bain étage",
-    status: "Dossier technique",
-    progress: 45,
-    dateAdded: "20/09/25"
-  },
-  {
-    id: 7,
-    clientName: "Amélie BERNARD",
-    agent: { name: "Sophie", avatar: "https://i.pravatar.cc/24?img=3" },
-    projectName: "Salle de bain étage",
-    status: "Dossier technique",
-    progress: 45,
-    dateAdded: "20/09/25"
-  },
-  {
-    id: 8,
-    clientName: "Sophie LEROY",
-    agent: { name: "Marie", avatar: "https://i.pravatar.cc/24?img=4" },
-    projectName: "Salle de bain étage",
-    status: "Installation",
-    progress: 45,
-    dateAdded: "01/07/25"
-  },
-  {
-    id: 9,
-    clientName: "Amélie BERNARD",
-    agent: { name: "Sophie", avatar: "https://i.pravatar.cc/24?img=3" },
-    projectName: "Salle de bain étage",
-    status: "Dossier technique",
-    progress: 45,
-    dateAdded: "20/09/25"
-  },
-  {
-    id: 10,
-    clientName: "Sophie LEROY",
-    agent: { name: "Marie", avatar: "https://i.pravatar.cc/24?img=4" },
-    projectName: "Salle de bain étage",
-    status: "Installation",
-    progress: 45,
-    dateAdded: "01/07/25"
-  }
-];
+import { useProjects } from "../hooks/useProjects";
+import { transformProjectForTracking } from "../utils/dataTransformers";
 
 // Fonction pour obtenir les couleurs du statut avec les couleurs exactes demandées
 function getStatusColors(status) {
@@ -546,6 +454,17 @@ function Pagination() {
 }
 
 export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+  // Récupérer les projets depuis Supabase
+  const { projects: supabaseProjects, loading, error } = useProjects();
+
+  // Transformer les projets Supabase au format UI
+  const transformedProjects = supabaseProjects.map(project =>
+    transformProjectForTracking(project)
+  );
+
+  // Utiliser les projets transformés à la place des mockProjects
+  const mockProjects = transformedProjects.length > 0 ? transformedProjects : [];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAgent, setSelectedAgent] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");

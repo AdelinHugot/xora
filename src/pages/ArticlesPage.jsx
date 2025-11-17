@@ -13,7 +13,8 @@ import {
   List,
   Layout,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ArrowUpRight
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import CreateArticleModal from "../components/CreateArticleModal";
@@ -318,99 +319,109 @@ const ArticlesTable = ({ articles, sortConfig, onSort }) => {
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <th scope="col" className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
               Branche
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <th scope="col" className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
               Famille
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <th scope="col" className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
               Gamme
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <th scope="col" className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
               Nom fournisseur
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
+              className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('reference')}
             >
               Référence <SortIcon columnKey="reference" />
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
+              className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('pp_ht')}
             >
               Prix public HT <SortIcon columnKey="pp_ht" />
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
+              className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('pv_ttc')}
             >
               Prix de vente TTC <SortIcon columnKey="pv_ttc" />
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <th scope="col" className="py-3 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wide">
               Action rapide
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
-          {articles.map((article, idx) => (
-            <tr key={article.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}>
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 max-w-[220px] truncate" title={article.branche}>
-                  {article.branche}
+        <tbody>
+          {articles.map((article) => (
+            <tr
+              key={article.id}
+              onClick={() => console.log("Voir article", article)}
+              className="hover:bg-neutral-50 transition-colors cursor-pointer"
+              style={{ borderBottom: "1px solid #E4E4E7" }}
+              role="row"
+            >
+              {/* Branche */}
+              <td className="py-4 px-3" role="cell">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-neutral-900">{article.branche}</span>
+                  <ArrowUpRight className="size-4 text-neutral-400 flex-shrink-0" />
                 </div>
               </td>
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 max-w-[220px] truncate" title={article.famille}>
-                  {article.famille}
-                </div>
+
+              {/* Famille */}
+              <td className="py-4 px-3" role="cell">
+                <span className="text-sm text-neutral-700">{article.famille}</span>
               </td>
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 max-w-[220px] truncate" title={article.gamme}>
-                  {article.gamme}
-                </div>
+
+              {/* Gamme */}
+              <td className="py-4 px-3" role="cell">
+                <span className="text-sm text-neutral-700">{article.gamme}</span>
               </td>
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 max-w-[220px] truncate" title={article.fournisseur}>
-                  {article.fournisseur}
-                </div>
+
+              {/* Fournisseur */}
+              <td className="py-4 px-3" role="cell">
+                <span className="text-sm text-neutral-700">{article.fournisseur}</span>
               </td>
-              <td className="px-4 py-3">
-                <div className="text-sm text-gray-900 font-mono">
-                  {article.reference}
-                </div>
+
+              {/* Référence */}
+              <td className="py-4 px-3" role="cell">
+                <span className="text-sm text-neutral-700 font-mono">{article.reference}</span>
               </td>
-              <td className="px-4 py-3 text-right">
-                <div className="text-sm text-gray-900 tabular-nums">
-                  {formatPrice(article.pp_ht)} €
-                </div>
+
+              {/* Prix public HT */}
+              <td className="py-4 px-3" role="cell">
+                <span className="text-sm text-neutral-700">{formatPrice(article.pp_ht)} €</span>
               </td>
-              <td className="px-4 py-3 text-right">
-                <div className="text-sm text-gray-900 tabular-nums">
-                  {formatPrice(article.pv_ttc)} €
-                </div>
+
+              {/* Prix de vente TTC */}
+              <td className="py-4 px-3" role="cell">
+                <span className="text-sm text-neutral-700">{formatPrice(article.pv_ttc)} €</span>
               </td>
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-1 relative">
+
+              {/* Action rapide */}
+              <td className="py-4 px-3" role="cell">
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                   <button
+                    className="p-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors"
+                    aria-label="Voir article"
+                    title="Voir article"
                     onClick={() => console.log("Voir", article)}
-                    aria-label={`Voir ${article.reference}`}
-                    className="p-2 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   >
-                    <Eye className="size-4" />
+                    <Eye className="size-4 text-neutral-600" />
                   </button>
                   <button
+                    className="p-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors"
+                    aria-label="Plus d'options"
+                    title="Plus d'options"
                     onClick={() => setOpenMenuId(openMenuId === article.id ? null : article.id)}
-                    aria-label={`Plus d'options pour ${article.reference}`}
-                    aria-haspopup="menu"
-                    aria-expanded={openMenuId === article.id}
-                    className="p-2 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   >
-                    <MoreHorizontal className="size-4" />
+                    <MoreHorizontal className="size-4 text-neutral-600" />
                   </button>
                   {openMenuId === article.id && (
                     <RowActionsMenu
