@@ -1177,7 +1177,23 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
         <Topbar onNavigate={onNavigate} />
         <div className="w-full py-6 px-4 lg:px-6">
           {/* Main Content */}
-          <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} />
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900 mb-4"></div>
+                <p className="text-neutral-600">Chargement des contacts...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <p className="text-red-600 font-semibold">Erreur lors du chargement</p>
+                <p className="text-neutral-600 text-sm mt-2">{error}</p>
+              </div>
+            </div>
+          ) : (
+            <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} />
+          )}
         </div>
       </main>
     </div>

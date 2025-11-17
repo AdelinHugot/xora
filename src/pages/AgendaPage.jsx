@@ -1968,6 +1968,21 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         style={{ marginLeft: `${sidebarWidth}px` }}
       >
         <Topbar onNavigate={onNavigate} />
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900 mb-4"></div>
+              <p className="text-neutral-600">Chargement des rendez-vous...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <p className="text-red-600 font-semibold">Erreur lors du chargement</p>
+              <p className="text-neutral-600 text-sm mt-2">{error}</p>
+            </div>
+          </div>
+        ) : (
         <div className="w-full py-6 px-4 lg:px-6 bg-white">
           <div className="space-y-6">
             <AgendaControls
@@ -1987,6 +2002,7 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
             )}
           </div>
         </div>
+        )}
       </main>
       <AddAppointmentModal
         isOpen={isAddModalOpen}

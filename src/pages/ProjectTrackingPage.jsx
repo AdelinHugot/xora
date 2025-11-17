@@ -490,6 +490,21 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
 
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900 mb-4"></div>
+              <p className="text-neutral-600">Chargement des projets...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <p className="text-red-600 font-semibold">Erreur lors du chargement</p>
+              <p className="text-neutral-600 text-sm mt-2">{error}</p>
+            </div>
+          </div>
+        ) : (
         <div className="w-full py-6 px-4 lg:px-6">
           {/* Tableau */}
           <div className="rounded-[8px] border border-[#E4E4E7] bg-white p-4 md:p-6">
@@ -590,6 +605,7 @@ export default function ProjectTrackingPage({ onNavigate, sidebarCollapsed, onTo
             <Pagination />
           </div>
         </div>
+        )}
       </main>
     </div>
   );
