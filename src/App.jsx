@@ -15,6 +15,7 @@ import KPIPage from "./pages/KPIPage";
 import OurCompanyPage from "./pages/OurCompanyPage";
 import AfterSalesPage from "./pages/AfterSalesPage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import KpiCaGenereSvg from "../SVG Menu/KPI - CA Généré.svg";
 import KpiMargeGenereSvg from "../SVG Menu/KPI - Marge générée.svg";
 import KpiTauxMargeSvg from "../SVG Menu/KPI - Taux de marge.svg";
@@ -735,6 +736,7 @@ export default function App() {
   const [currentRoute, setCurrentRoute] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
 
   const navigateToRoute = (route) => {
     setCurrentRoute(route);
@@ -751,6 +753,20 @@ export default function App() {
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+  };
+
+  const handleShowSignup = () => {
+    setShowSignup(true);
+  };
+
+  const handleBackToLogin = () => {
+    setShowSignup(false);
+  };
+
+  const handleSignupSuccess = () => {
+    setShowSignup(false);
+    // L'utilisateur est automatiquement connecté après l'inscription
+    // On pourrait aussi rediriger vers login si on préfère
   };
 
   // Simple routing logic (you can replace with React Router later)
@@ -916,9 +932,17 @@ export default function App() {
     }
   }, [currentRoute]);
 
-  // Si l'utilisateur n'est pas connecté, afficher la page de login
+  // Si l'utilisateur n'est pas connecté, afficher la page de login ou signup
   if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />;
+    if (showSignup) {
+      return (
+        <SignupPage
+          onSignupSuccess={handleSignupSuccess}
+          onBackToLogin={handleBackToLogin}
+        />
+      );
+    }
+    return <LoginPage onLogin={handleLogin} onShowSignup={handleShowSignup} />;
   }
 
   return renderPage();

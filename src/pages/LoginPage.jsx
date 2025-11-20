@@ -1,24 +1,34 @@
 import React, { useState } from "react";
 import { LogIn, AlertCircle } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, onShowSignup }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
-  const VALID_EMAIL = "contact@xora.fr";
-  const VALID_PASSWORD = "Xora123@.";
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    // Valider les identifiants
-    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
-      onLogin();
-    } else {
-      setError("Identifiants incorrects. Veuillez vérifier votre email et mot de passe.");
+    try {
+      const { data, error: signInError } = await signIn(email, password);
+
+      if (signInError) {
+        setError("Identifiants incorrects. Veuillez vérifier votre email et mot de passe.");
+        setPassword("");
+      } else {
+        // Successful login
+        onLogin();
+      }
+    } catch (err) {
+      setError("Une erreur est survenue lors de la connexion. Veuillez réessayer.");
       setPassword("");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,10 +121,20 @@ export default function LoginPage({ onLogin }) {
             {/* Bouton de connexion */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/30"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <LogIn className="size-5" />
-              Se connecter
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Connexion en cours...
+                </>
+              ) : (
+                <>
+                  <LogIn className="size-5" />
+                  Se connecter
+                </>
+              )}
             </button>
           </form>
 
@@ -133,6 +153,7 @@ export default function LoginPage({ onLogin }) {
           {/* Lien d'inscription */}
           <button
             type="button"
+            onClick={onShowSignup}
             className="w-full border border-neutral-200 text-neutral-700 font-semibold py-3 px-6 rounded-xl hover:bg-neutral-50 transition-all duration-200"
           >
             Créer un compte

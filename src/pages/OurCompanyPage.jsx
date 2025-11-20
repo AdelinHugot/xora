@@ -2,64 +2,8 @@ import React, { useState } from "react";
 import { MoreHorizontal, Plus, Eye } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
-
-// Mock employee data
-const mockEmployees = [
-  {
-    id: 1,
-    name: "Benjamin Petit",
-    position: "Chef de projet",
-    jobType: "Dirigeant",
-    email: "benjamin.petit@xora.fr",
-    phone: "06 12 34 56 78",
-    avatar: "https://i.pravatar.cc/32?img=5"
-  },
-  {
-    id: 2,
-    name: "Sophie Martin",
-    position: "Directrice commerciale",
-    jobType: "Commercial",
-    email: "sophie.martin@xora.fr",
-    phone: "06 23 45 67 89",
-    avatar: "https://i.pravatar.cc/32?img=8"
-  },
-  {
-    id: 3,
-    name: "Thomas Dubois",
-    position: "Responsable RH",
-    jobType: "RH",
-    email: "thomas.dubois@xora.fr",
-    phone: "06 34 56 78 90",
-    avatar: "https://i.pravatar.cc/32?img=15"
-  },
-  {
-    id: 4,
-    name: "Claire Rousseau",
-    position: "Développeuse",
-    jobType: "Technicien",
-    email: "claire.rousseau@xora.fr",
-    phone: "06 45 67 89 01",
-    avatar: "https://i.pravatar.cc/32?img=22"
-  },
-  {
-    id: 5,
-    name: "Marc Lefebvre",
-    position: "Responsable technique",
-    jobType: "Agenceur",
-    email: "marc.lefebvre@xora.fr",
-    phone: "06 56 78 90 12",
-    avatar: "https://i.pravatar.cc/32?img=10"
-  },
-  {
-    id: 6,
-    name: "Nathalie Blanc",
-    position: "Comptable",
-    jobType: "Administratif",
-    email: "nathalie.blanc@xora.fr",
-    phone: "06 67 89 01 23",
-    avatar: "https://i.pravatar.cc/32?img=25"
-  }
-];
+import { useTeamMembers } from "../hooks/useTeamMembers";
+import { useOrganization } from "../hooks/useOrganization";
 
 // Tab Navigation Component
 function TabNavigation({ activeTab, onTabChange }) {
@@ -103,19 +47,21 @@ function TabNavigation({ activeTab, onTabChange }) {
 function TeamsTabContent({ onNavigate }) {
   const [searchValue, setSearchValue] = useState("");
   const [filterJobType, setFilterJobType] = useState("");
+  const { teamMembers, loading, error } = useTeamMembers();
 
   // Get unique job types for the filter
-  const uniqueJobTypes = [...new Set(mockEmployees.map(emp => emp.jobType))].sort();
+  const uniqueJobTypes = [...new Set(teamMembers.map(member => member.roles?.nom).filter(Boolean))].sort();
 
   // Filter employees based on search and job type
-  const filteredEmployees = mockEmployees.filter((employee) => {
+  const filteredEmployees = teamMembers.filter((member) => {
+    const fullName = `${member.prenom} ${member.nom}`;
     const searchLower = searchValue.toLowerCase();
     const matchesSearch =
-      employee.name.toLowerCase().includes(searchLower) ||
-      employee.email.toLowerCase().includes(searchLower) ||
-      employee.phone.toLowerCase().includes(searchLower);
+      fullName.toLowerCase().includes(searchLower) ||
+      member.email.toLowerCase().includes(searchLower) ||
+      (member.telephone && member.telephone.toLowerCase().includes(searchLower));
 
-    const matchesJobType = filterJobType === "" || employee.jobType === filterJobType;
+    const matchesJobType = filterJobType === "" || member.roles?.nom === filterJobType;
 
     return matchesSearch && matchesJobType;
   });
@@ -180,48 +126,63 @@ function TeamsTabContent({ onNavigate }) {
 
         {/* Employee Cards */}
         <div className="p-4 space-y-3">
-          {filteredEmployees.length > 0 ? (
-            filteredEmployees.map((employee) => (
-              <div
-                key={employee.id}
-                className="border border-[#E4E4E7] rounded-lg bg-white p-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 flex items-center gap-3">
-                    <img
-                      src={employee.avatar}
-                      alt={employee.name}
-                      className="size-8 rounded-full flex-shrink-0"
-                    />
-                    <span className="text-sm font-medium text-neutral-900">{employee.name}</span>
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{employee.jobType}</span>
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{employee.email}</span>
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{employee.phone}</span>
-                  </div>
-                  <div className="flex-shrink-0 w-20 flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => onNavigate(`team-member-mem_${employee.id}`)}
-                      className="p-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
-                      title="Voir le détail"
-                    >
-                      <Eye className="size-4 text-neutral-600" />
-                    </button>
-                    <button
-                      className="p-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
-                      title="Options du salarié"
-                    >
-                      <MoreHorizontal className="size-4 text-neutral-600" />
-                    </button>
+          {loading ? (
+            <div className="p-12 text-center text-neutral-500 border border-[#E4E4E7] rounded-lg bg-white">
+              Chargement des salariés...
+            </div>
+          ) : error ? (
+            <div className="p-12 text-center text-red-500 border border-[#E4E4E7] rounded-lg bg-white">
+              Erreur: {error}
+            </div>
+          ) : filteredEmployees.length > 0 ? (
+            filteredEmployees.map((member) => {
+              const fullName = `${member.prenom} ${member.nom}`;
+              const phone = member.telephone || '-';
+              const avatarSeed = member.id.substring(0, 8);
+              const avatar = `https://i.pravatar.cc/32?u=${avatarSeed}`;
+
+              return (
+                <div
+                  key={member.id}
+                  className="border border-[#E4E4E7] rounded-lg bg-white p-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 flex items-center gap-3">
+                      <img
+                        src={avatar}
+                        alt={fullName}
+                        className="size-8 rounded-full flex-shrink-0"
+                      />
+                      <span className="text-sm font-medium text-neutral-900">{fullName}</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm text-neutral-600">{member.roles?.nom || '-'}</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm text-neutral-600">{member.email}</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm text-neutral-600">{phone}</span>
+                    </div>
+                    <div className="flex-shrink-0 w-20 flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => onNavigate(`team-member-mem_${member.id}`)}
+                        className="p-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                        title="Voir le détail"
+                      >
+                        <Eye className="size-4 text-neutral-600" />
+                      </button>
+                      <button
+                        className="p-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                        title="Options du salarié"
+                      >
+                        <MoreHorizontal className="size-4 text-neutral-600" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="p-12 text-center text-neutral-500 border border-[#E4E4E7] rounded-lg bg-white">
               Aucun salarié trouvé
@@ -235,20 +196,14 @@ function TeamsTabContent({ onNavigate }) {
 
 // Company Info Tab Content Component
 function CompanyTabContent() {
-  const [companyInfo, setCompanyInfo] = useState({
-    commercialName: "XORA SARL",
-    address: "123 Rue de la Paix, 75000 Paris",
-    phone: "01 23 45 67 89",
-    website: "www.xora.fr",
-    siret: "12345678901234",
-    tva: "FR12345678901"
-  });
+  const { organization, loading, error, updateOrganization } = useOrganization();
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleCompanyInfoChange = (field, value) => {
-    setCompanyInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleCompanyInfoChange = async (field, value) => {
+    setIsSaving(true);
+    const updates = { [field]: value };
+    await updateOrganization(updates);
+    setIsSaving(false);
   };
 
   const documents = [
@@ -256,6 +211,22 @@ function CompanyTabContent() {
     { id: 2, name: "KBIS", value: "Document disponible" },
     { id: 3, name: "Assurance décennale", value: "Document disponible" }
   ];
+
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-neutral-500">
+        Chargement des informations de l'organisation...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-12 text-center text-red-500">
+        Erreur: {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -271,18 +242,20 @@ function CompanyTabContent() {
               <label className="block text-xs font-semibold text-neutral-600">Nom commercial</label>
               <input
                 type="text"
-                value={companyInfo.commercialName}
-                onChange={(e) => handleCompanyInfoChange("commercialName", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                value={organization?.nom || ''}
+                onChange={(e) => handleCompanyInfoChange("nom", e.target.value)}
+                disabled={isSaving}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 disabled:opacity-50"
               />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-neutral-600">Adresse du siège social</label>
               <input
                 type="text"
-                value={companyInfo.address}
-                onChange={(e) => handleCompanyInfoChange("address", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                value={organization?.adresse || ''}
+                onChange={(e) => handleCompanyInfoChange("adresse", e.target.value)}
+                disabled={isSaving}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 disabled:opacity-50"
               />
             </div>
           </div>
@@ -293,18 +266,20 @@ function CompanyTabContent() {
               <label className="block text-xs font-semibold text-neutral-600">Téléphone fixe</label>
               <input
                 type="text"
-                value={companyInfo.phone}
-                onChange={(e) => handleCompanyInfoChange("phone", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                value={organization?.telephone || ''}
+                onChange={(e) => handleCompanyInfoChange("telephone", e.target.value)}
+                disabled={isSaving}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 disabled:opacity-50"
               />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-neutral-600">Site internet</label>
               <input
                 type="text"
-                value={companyInfo.website}
-                onChange={(e) => handleCompanyInfoChange("website", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                value={organization?.site_web || ''}
+                onChange={(e) => handleCompanyInfoChange("site_web", e.target.value)}
+                disabled={isSaving}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 disabled:opacity-50"
               />
             </div>
           </div>
@@ -315,18 +290,20 @@ function CompanyTabContent() {
               <label className="block text-xs font-semibold text-neutral-600">SIRET</label>
               <input
                 type="text"
-                value={companyInfo.siret}
+                value={organization?.siret || ''}
                 onChange={(e) => handleCompanyInfoChange("siret", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                disabled={isSaving}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 disabled:opacity-50"
               />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-neutral-600">N° de TVA</label>
               <input
                 type="text"
-                value={companyInfo.tva}
-                onChange={(e) => handleCompanyInfoChange("tva", e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10"
+                value={organization?.numero_tva || ''}
+                onChange={(e) => handleCompanyInfoChange("numero_tva", e.target.value)}
+                disabled={isSaving}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 disabled:opacity-50"
               />
             </div>
           </div>
