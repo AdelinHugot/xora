@@ -20,19 +20,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
-
-// Mock contact data
-const mockContactData = {
-  id: "contact_1",
-  civility: "Mme",
-  lastName: "DUBOIS",
-  firstName: "Chloé",
-  email: "chloe.dubois@gmail.com",
-  mobilePhone: "",
-  landlinePhone: "",
-  status: "Leads - À qualifier",
-  createdAt: "01/01/2025"
-};
+import { useContact } from "../hooks/useContact";
+import { supabase } from "../lib/supabase";
 
 // Contact Header Component
 function ContactHeader({ contact, onBack, onContact, onCall, onSchedule, onAddTask }) {
@@ -271,22 +260,122 @@ function TextInput({ value, onChange, placeholder, type = "text" }) {
 }
 
 // Client Info Tab Content Component
-function ClientInfoTabContent() {
+function ClientInfoTabContent({ contact }) {
   const [formData, setFormData] = useState({
-    civility: "Mme",
-    lastName: "DUBOIS",
-    firstName: "Chloé",
-    email: "chloe.dubois@gmail.com",
-    mobilePhone: "",
+    civility: contact?.civilite || "",
+    lastName: contact?.nom || "",
+    firstName: contact?.prenom || "",
+    email: contact?.email || "",
+    mobilePhone: contact?.telephone || "",
     landlinePhone: "",
-    origin: "",
-    subOrigin: "",
-    companyName: "",
-    referent: "benjamin",
+    origin: contact?.origine || "",
+    subOrigin: contact?.sous_origine || "",
+    companyName: contact?.societe || "",
+    referent: contact?.agenceur_referent || "",
     clientAccessAccount: "",
-    address: "",
-    addressComplement: ""
+    address: contact?.adresse || "",
+    addressComplement: contact?.complement_adresse || ""
   });
+
+  const [agenceurs, setAgenceurs] = useState([]);
+  const [agenceurName, setAgenceurName] = useState("");
+
+  const origines = ["Relation", "Salon", "Web", "Recommandation", "Démarchage"];
+  const sousOrigines = {
+    "Relation": ["Client existant", "Bouche à oreille", "Partenaire"],
+    "Salon": ["Salon de l'habitat", "Salon du luxe", "Autre"],
+    "Web": ["Google", "Site web", "Réseaux sociaux", "Autre"],
+    "Recommandation": ["Client", "Architecte", "Autre professionnel"],
+    "Démarchage": ["Porte à porte", "Appel téléphonique", "Email"]
+  };
+
+  // Update form when contact data changes
+  useEffect(() => {
+    if (contact) {
+      setFormData({
+        civility: contact.civilite || "",
+        lastName: contact.nom || "",
+        firstName: contact.prenom || "",
+        email: contact.email || "",
+        mobilePhone: contact.telephone || "",
+        landlinePhone: "",
+        origin: contact.origine || "",
+        subOrigin: contact.sous_origine || "",
+        companyName: contact.societe || "",
+        referent: contact.agenceur_referent || "",
+        clientAccessAccount: "",
+        address: contact.adresse || "",
+        addressComplement: contact.complement_adresse || ""
+      });
+    }
+  }, [contact]);
+
+  // Fetch agenceurs for the dropdown
+  useEffect(() => {
+    const fetchAgenceurs = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: authData, error: authError } = await supabase
+          .from('utilisateurs_auth')
+          .select('id_organisation')
+          .eq('id_auth_user', user.id)
+          .single();
+
+        if (authError) {
+          console.error('Erreur lors de la récupération de l\'organisation:', authError);
+          return;
+        }
+
+        // Get role IDs for Administrateur and Agenceur
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('roles')
+          .select('id')
+          .in('nom', ['Administrateur', 'Agenceur']);
+
+        if (rolesError) {
+          console.error('Erreur lors de la récupération des rôles:', rolesError);
+          return;
+        }
+
+        const roleIds = rolesData.map(r => r.id);
+
+        if (roleIds.length === 0) {
+          console.warn('Aucun rôle Administrateur ou Agenceur trouvé');
+          return;
+        }
+
+        // Fetch users with these roles
+        const { data: users, error: usersError } = await supabase
+          .from('utilisateurs')
+          .select('id, prenom, nom, id_role')
+          .eq('id_organisation', authData.id_organisation)
+          .in('id_role', roleIds);
+
+        if (usersError) {
+          console.error('Erreur lors de la récupération des agenceurs:', usersError);
+          return;
+        }
+
+        setAgenceurs(users || []);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des agenceurs:', error);
+      }
+    };
+
+    fetchAgenceurs();
+  }, []);
+
+  // Fetch agenceur name when referent changes
+  useEffect(() => {
+    if (formData.referent && agenceurs.length > 0) {
+      const agenceur = agenceurs.find(a => a.id === formData.referent);
+      if (agenceur) {
+        setAgenceurName(`${agenceur.prenom} ${agenceur.nom}`);
+      }
+    }
+  }, [formData.referent, agenceurs]);
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -382,6 +471,7 @@ function ClientInfoTabContent() {
           <SelectInput
             value={formData.origin}
             onChange={(value) => updateField("origin", value)}
+            options={origines.map(o => ({ value: o, label: o }))}
             placeholder="Sélectionner"
           />
         </FormField>
@@ -389,6 +479,10 @@ function ClientInfoTabContent() {
           <SelectInput
             value={formData.subOrigin}
             onChange={(value) => updateField("subOrigin", value)}
+            options={formData.origin && sousOrigines[formData.origin]
+              ? sousOrigines[formData.origin].map(s => ({ value: s, label: s }))
+              : []
+            }
             placeholder="Sélectionner"
           />
         </FormField>
@@ -410,19 +504,20 @@ function ClientInfoTabContent() {
               <SelectInput
                 value={formData.referent}
                 onChange={(value) => updateField("referent", value)}
-                options={[
-                  { value: "benjamin", label: "Benjamin" }
-                ]}
+                options={agenceurs.map(a => ({
+                  value: a.id,
+                  label: `${a.prenom} ${a.nom}`
+                }))}
                 placeholder="Sélectionner"
               />
-              {formData.referent === "benjamin" && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+              {formData.referent && agenceurName && (
+                <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
                   <img
-                    src="https://i.pravatar.cc/32?img=5"
-                    alt="Benjamin"
+                    src={`https://i.pravatar.cc/32?u=${formData.referent}`}
+                    alt={agenceurName}
                     className="size-6 rounded-full"
                   />
-                  <span className="text-sm text-neutral-900">Benjamin</span>
+                  <span className="text-sm text-neutral-900">{agenceurName}</span>
                 </div>
               )}
             </div>
@@ -633,12 +728,12 @@ function AddressBlockComponent({ address, complement, onAddressChange, onComplem
 }
 
 // Property Info Tab Content Component
-function PropertyInfoTabContent() {
+function PropertyInfoTabContent({ contact }) {
   const [properties, setProperties] = useState([
     {
       id: 1,
-      address: "123 Rue de la Paix",
-      complement: "Apt 4B",
+      address: contact?.adresse || "",
+      complement: contact?.complement_adresse || "",
       type: "Bien principal",
       isExpanded: true,
       owner: "",
@@ -1879,7 +1974,7 @@ function AppointmentsTabContent() {
 }
 
 // External Contact Tab Content Component
-function ExternalContactTabContent() {
+function ExternalContactTabContent({ contact }) {
   const [externalContacts, setExternalContacts] = useState([]);
   const [directoryContacts, setDirectoryContacts] = useState([]);
 
@@ -1945,9 +2040,80 @@ export default function ContactDetailPage({
   const [activeTab, setActiveTab] = useState("contact-info");
   const [activeSubTab, setActiveSubTab] = useState("client-info");
 
+  // Extract the actual contact identifier from contactId (remove "contact-" prefix)
+  const actualContactId = contactId ? contactId.replace(/^contact-/, '') : null;
+
+  // Fetch contact data from Supabase
+  const { contact: dbContact, loading, error } = useContact(actualContactId);
+
+  // Format contact data for display
+  const contactData = dbContact ? {
+    id: dbContact.id,
+    civility: dbContact.civilite || "",
+    lastName: dbContact.nom || "",
+    firstName: dbContact.prenom || "",
+    email: dbContact.email || "",
+    mobilePhone: dbContact.telephone || "",
+    landlinePhone: "",
+    status: dbContact.statut || "Leads",
+    createdAt: dbContact.cree_le ? new Date(dbContact.cree_le).toLocaleDateString('fr-FR') : ""
+  } : {
+    id: "",
+    civility: "",
+    lastName: "",
+    firstName: "",
+    email: "",
+    mobilePhone: "",
+    landlinePhone: "",
+    status: "Leads",
+    createdAt: ""
+  };
+
   const handleBack = () => {
     onNavigate("directory-all");
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F7F8] text-neutral-900">
+        <Sidebar
+          currentPage="directory"
+          onNavigate={onNavigate}
+          initialCollapsed={sidebarCollapsed}
+          onToggleCollapse={onToggleSidebar}
+        />
+        <main
+          className="lg:transition-[margin] lg:duration-200 min-h-screen flex items-center justify-center"
+          style={{ marginLeft: `${sidebarWidth}px` }}
+        >
+          <div className="text-neutral-600">Chargement...</div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !dbContact) {
+    return (
+      <div className="min-h-screen bg-[#F7F7F8] text-neutral-900">
+        <Sidebar
+          currentPage="directory"
+          onNavigate={onNavigate}
+          initialCollapsed={sidebarCollapsed}
+          onToggleCollapse={onToggleSidebar}
+        />
+        <main
+          className="lg:transition-[margin] lg:duration-200 min-h-screen flex items-center justify-center"
+          style={{ marginLeft: `${sidebarWidth}px` }}
+        >
+          <div className="text-red-600">
+            {error ? `Erreur: ${error}` : "Contact non trouvé"}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F7F8] text-neutral-900">
@@ -1972,7 +2138,7 @@ export default function ContactDetailPage({
 
         {/* Contact Header */}
         <ContactHeader
-          contact={mockContactData}
+          contact={contactData}
           onBack={handleBack}
           onContact={() => console.log("Contact")}
           onCall={() => console.log("Call")}
@@ -1992,13 +2158,13 @@ export default function ContactDetailPage({
         <div className="w-full pb-6 px-4 lg:px-6 bg-[#F7F7F8]">
           <div className="bg-white border border-[#E9E9E9] rounded-b-xl p-8">
             {activeTab === "contact-info" && activeSubTab === "client-info" && (
-              <ClientInfoTabContent />
+              <ClientInfoTabContent contact={dbContact} />
             )}
             {activeTab === "contact-info" && activeSubTab === "external-contact" && (
-              <ExternalContactTabContent />
+              <ExternalContactTabContent contact={dbContact} />
             )}
             {activeTab === "contact-info" && activeSubTab === "property-info" && (
-              <PropertyInfoTabContent />
+              <PropertyInfoTabContent contact={dbContact} />
             )}
             {activeTab === "projects" && (
               <ProjectListTabContent />

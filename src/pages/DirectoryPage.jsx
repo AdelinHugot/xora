@@ -904,7 +904,7 @@ const ContactsMapView = ({ contacts, onViewContact }) => {
   );
 };
 
-const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [] }) => {
+const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAddContact }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("list");
   const [filters, setFilters] = useState({
@@ -977,10 +977,50 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [] }) =>
   };
 
   const handleCreateContact = async (formData) => {
-    console.log("Creating contact:", formData);
-    // Here you would typically make an API call
-    // For now, we'll just log the data
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    try {
+      console.log('FormData reçue:', formData);
+
+      // Mapper les données de la modale au format de la BDD
+      const contactData = {
+        civilite: formData.civilite,
+        prenom: formData.prenom,
+        nom: formData.nom,
+        email: formData.email,
+        telephone: formData.telephone,
+        adresse: formData.adresse,
+        complement_adresse: formData.complementAdresse,
+        latitude: formData.adresseCoordinates ? formData.adresseCoordinates[0] : null,
+        longitude: formData.adresseCoordinates ? formData.adresseCoordinates[1] : null,
+        origine: formData.origine,
+        sous_origine: formData.sousOrigine,
+        societe: formData.societe,
+        agenceur_referent: formData.agenceurReferent,
+        rgpd: formData.rgpd,
+        statut: 'Leads', // Par défaut, nouveau contact = Leads
+        cree_le: new Date().toISOString()
+      };
+
+      console.log('ContactData envoyée à la BDD:', contactData);
+
+      // Utiliser le hook pour ajouter le contact
+      const result = await onAddContact(contactData);
+
+      console.log('Résultat de l\'ajout:', result);
+
+      if (!result.success) {
+        console.error('Erreur lors de la création du contact:', result.error);
+        alert('Erreur lors de la création du contact: ' + result.error);
+      } else {
+        // Fermer la modale
+        setIsModalOpen(false);
+        // Naviguer vers la page de détail du contact nouvellement créé (utiliser le numéro si disponible)
+        const contactIdentifier = result.data.numero || result.data.id;
+        onNavigate(`contact-${contactIdentifier}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création du contact (catch):', error);
+      alert('Erreur lors de la création du contact: ' + error.message);
+    }
   };
 
   return (
@@ -1141,7 +1181,7 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
 
   // Récupérer les contacts depuis Supabase
-  const { contacts: supabaseContacts, loading, error } = useContacts();
+  const { contacts: supabaseContacts, loading, error, addContact, refetch } = useContacts();
 
   // Transformer les contacts Supabase au format UI
   const transformedContacts = supabaseContacts.map(contact =>
@@ -1192,7 +1232,7 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
               </div>
             </div>
           ) : (
-            <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} />
+            <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} onAddContact={addContact} />
           )}
         </div>
       </main>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
+import { supabase } from "../lib/supabase";
 
 // SVG Icons
 const XIcon = () => (
@@ -9,9 +10,9 @@ const XIcon = () => (
   </svg>
 );
 
-const DocIcon = () => (
+const UserIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M11.667 2.5H5a1.667 1.667 0 00-1.667 1.667v11.666A1.667 1.667 0 005 17.5h10a1.667 1.667 0 001.667-1.667V7.5m-5-5l5 5m-5-5v5h5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16.667 17.5v-1.667a3.333 3.333 0 00-3.334-3.333H6.667a3.333 3.333 0 00-3.334 3.333V17.5M10 9.167A3.333 3.333 0 1010 2.5a3.333 3.333 0 000 6.667z" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -41,7 +42,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
-  const selectedAgenceur = options.find(opt => opt.name === value);
+  const selectedAgenceur = options.find(opt => opt.id === value);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -68,7 +69,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
           setIsOpen(true);
           setFocusedIndex(0);
         } else if (focusedIndex >= 0) {
-          onChange(options[focusedIndex].name);
+          onChange(options[focusedIndex].id);
           setIsOpen(false);
           setFocusedIndex(-1);
         }
@@ -103,8 +104,8 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
     }
   };
 
-  const handleOptionClick = (optionName) => {
-    onChange(optionName);
+  const handleOptionClick = (optionId) => {
+    onChange(optionId);
     setIsOpen(false);
     setFocusedIndex(-1);
     buttonRef.current?.focus();
@@ -121,7 +122,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
-        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed text-sm"
       >
         <span className="flex items-center gap-2">
           {selectedAgenceur ? (
@@ -131,10 +132,10 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
                 alt=""
                 className="size-6 rounded-full"
               />
-              <span className="text-neutral-900">{selectedAgenceur.name}</span>
+              <span>{selectedAgenceur.name}</span>
             </>
           ) : (
-            <span className="text-neutral-400">Choisir un agenceur</span>
+            <span className="text-[#A1A7B6]">Choisir un agenceur</span>
           )}
         </span>
         <ChevronDownIcon />
@@ -143,19 +144,19 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
       {isOpen && (
         <div
           role="listbox"
-          className="absolute z-10 mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg"
+          className="absolute z-10 mt-1 w-full rounded-lg border border-[#E1E4ED] bg-white shadow-lg"
         >
           {options.map((option, index) => (
             <div
               key={option.id}
               role="option"
-              aria-selected={value === option.name}
+              aria-selected={value === option.id}
               tabIndex={-1}
-              onClick={() => handleOptionClick(option.name)}
+              onClick={() => handleOptionClick(option.id)}
               onMouseEnter={() => setFocusedIndex(index)}
-              className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors ${
-                focusedIndex === index ? "bg-neutral-100" : ""
-              } ${value === option.name ? "bg-neutral-50" : ""} ${
+              className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors text-sm ${
+                focusedIndex === index ? "bg-[#F3F4F6]" : ""
+              } ${value === option.id ? "bg-[#F8F9FA]" : ""} ${
                 index === 0 ? "rounded-t-lg" : ""
               } ${index === options.length - 1 ? "rounded-b-lg" : ""}`}
             >
@@ -164,7 +165,7 @@ const AgenceurSelect = ({ value, onChange, options, disabled }) => {
                 alt=""
                 className="size-6 rounded-full"
               />
-              <span className="text-neutral-900">{option.name}</span>
+              <span>{option.name}</span>
             </div>
           ))}
         </div>
@@ -201,12 +202,8 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
   const lastFocusedElement = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  // Mock data for select options
-  const agenceurs = [
-    { id: "1", name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" },
-    { id: "2", name: "Amélie", avatarUrl: "https://i.pravatar.cc/24?img=8" },
-    { id: "3", name: "Lucas", avatarUrl: "https://i.pravatar.cc/24?img=15" }
-  ];
+  // State for agenceurs from database
+  const [agenceurs, setAgenceurs] = useState([]);
 
   const origines = ["Relation", "Salon", "Web", "Recommandation", "Démarchage"];
 
@@ -217,6 +214,79 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
     "Recommandation": ["Client", "Architecte", "Autre professionnel"],
     "Démarchage": ["Porte à porte", "Appel téléphonique", "Email"]
   };
+
+  // Fetch agenceurs when modal opens
+  useEffect(() => {
+    const fetchAgenceurs = async () => {
+      if (!open) return;
+
+      try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Get user's organization
+        const { data: authData, error: authError } = await supabase
+          .from('utilisateurs_auth')
+          .select('id_organisation')
+          .eq('id_auth_user', user.id)
+          .single();
+
+        if (authError) {
+          console.error('Erreur lors de la récupération de l\'organisation:', authError);
+          return;
+        }
+
+        // First, get the role IDs for Administrateur and Agenceur
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('roles')
+          .select('id')
+          .in('nom', ['Administrateur', 'Agenceur']);
+
+        if (rolesError) {
+          console.error('Erreur lors de la récupération des rôles:', rolesError);
+          return;
+        }
+
+        const roleIds = rolesData.map(r => r.id);
+
+        if (roleIds.length === 0) {
+          console.warn('Aucun rôle Administrateur ou Agenceur trouvé');
+          return;
+        }
+
+        // Then fetch users with these roles from the same organization
+        const { data: users, error: usersError } = await supabase
+          .from('utilisateurs')
+          .select(`
+            id,
+            prenom,
+            nom,
+            id_role
+          `)
+          .eq('id_organisation', authData.id_organisation)
+          .in('id_role', roleIds);
+
+        if (usersError) {
+          console.error('Erreur lors de la récupération des agenceurs:', usersError);
+          return;
+        }
+
+        // Transform data for the select component
+        const agenceursData = users.map(u => ({
+          id: u.id,
+          name: `${u.prenom} ${u.nom}`,
+          avatarUrl: `https://i.pravatar.cc/24?u=${u.id}`
+        }));
+
+        setAgenceurs(agenceursData);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des agenceurs:', error);
+      }
+    };
+
+    fetchAgenceurs();
+  }, [open]);
 
   // Save last focused element when modal opens
   useEffect(() => {
@@ -283,7 +353,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
     try {
       setIsSearching(true);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=fr&limit=5`,
@@ -321,7 +391,6 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
       return;
     }
 
-    // Debounce: wait 500ms before searching
     searchTimeoutRef.current = setTimeout(() => {
       searchAddress(query);
     }, 500);
@@ -351,14 +420,12 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    // Special handling for adresse field - search for addresses with debounce
     if (field === "adresse") {
       setAdresseValidated(false);
       setShowAddressMap(false);
       handleAddressSearch(value);
     }
 
-    // Reset sous-origine when origine changes
     if (field === "origine") {
       setFormData(prev => ({ ...prev, sousOrigine: "" }));
     }
@@ -435,7 +502,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={handleOverlayClick}
     >
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
@@ -445,32 +512,42 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-contact-title"
-        className="relative w-full max-w-4xl rounded-2xl bg-white shadow-xl my-8"
+        className="relative w-full bg-white shadow-xl max-h-[90vh] flex flex-col overflow-hidden"
+        style={{ maxWidth: '740px', borderRadius: '16px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 id="create-contact-title" className="flex items-center gap-2 text-lg font-semibold">
-            <DocIcon /> Créer une fiche contact
-          </h2>
-          <button
-            aria-label="Fermer"
-            onClick={onClose}
-            className="p-2 rounded-md hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-300"
-          >
-            <XIcon />
-          </button>
+        <header className="px-6 py-4 bg-[#F8F9FA] border-b border-[#E4E4E7] flex-shrink-0 rounded-t-[16px]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white border border-[#E4E4E7] rounded-lg">
+                <UserIcon />
+              </div>
+              <h2 id="create-contact-title" className="text-sm font-semibold text-[#1F2027]">
+                Créer une fiche contact
+              </h2>
+            </div>
+            <button
+              aria-label="Fermer"
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 transition-colors"
+            >
+              <XIcon />
+            </button>
+          </div>
         </header>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-4">
 
-            {/* BLOC 1: Civilité | Prénom | Nom | Email | Téléphone */}
-            <div className="rounded-xl bg-neutral-50 p-4 space-y-4 border border-[#E9E9E9]">
+            {/* Section 1: Informations personnelles */}
+            <section className="rounded-lg bg-[#F3F4F6] p-4 space-y-4 border border-[#E1E4ED]">
+              <h3 className="text-xs text-[#6B7280] font-medium">Informations personnelles</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="civilite" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="civilite" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Civilité
                   </label>
                   <select
@@ -478,7 +555,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     id="civilite"
                     value={formData.civilite}
                     onChange={(e) => handleChange("civilite", e.target.value)}
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
                   >
                     <option value="">Sélectionner</option>
                     <option value="Mme">Mme</option>
@@ -488,7 +565,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                 </div>
 
                 <div>
-                  <label htmlFor="prenom" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="prenom" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Prénom <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -497,15 +574,15 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.prenom}
                     onChange={(e) => handleChange("prenom", e.target.value)}
                     placeholder="Chloé"
-                    className={`w-full rounded-xl border ${
-                      errors.prenom ? "border-red-500" : "border-neutral-200"
-                    } bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
+                    className={`w-full rounded-lg border ${
+                      errors.prenom ? "border-red-500" : "border-[#E1E4ED]"
+                    } bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]`}
                   />
-                  {errors.prenom && <p className="mt-1 text-sm text-red-600">{errors.prenom}</p>}
+                  {errors.prenom && <p className="mt-1 text-xs text-red-600">{errors.prenom}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="nom" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Nom <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -514,17 +591,17 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.nom}
                     onChange={(e) => handleChange("nom", e.target.value)}
                     placeholder="DUBOIS"
-                    className={`w-full rounded-xl border ${
-                      errors.nom ? "border-red-500" : "border-neutral-200"
-                    } bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300`}
+                    className={`w-full rounded-lg border ${
+                      errors.nom ? "border-red-500" : "border-[#E1E4ED]"
+                    } bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]`}
                   />
-                  {errors.nom && <p className="mt-1 text-sm text-red-600">{errors.nom}</p>}
+                  {errors.nom && <p className="mt-1 text-xs text-red-600">{errors.nom}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="email" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Email
                   </label>
                   <input
@@ -533,12 +610,12 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     placeholder="chloe@example.com"
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="telephone" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="telephone" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Téléphone
                   </label>
                   <input
@@ -547,17 +624,19 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.telephone}
                     onChange={(e) => handleChange("telephone", e.target.value)}
                     placeholder="+33 6 XX XX XX XX"
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]"
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* BLOC 2: Adresse avec recherche et Leaflet */}
-            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+            {/* Section 2: Adresse */}
+            <section className="rounded-lg bg-[#F3F4F6] p-4 space-y-3 border border-[#E1E4ED]">
+              <h3 className="text-xs text-[#6B7280] font-medium">Adresse</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="adresse" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="adresse" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Adresse
                   </label>
                   <input
@@ -566,28 +645,27 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.adresse}
                     onChange={(e) => handleChange("adresse", e.target.value)}
                     placeholder="Tapez une adresse..."
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]"
                   />
 
-                  {/* Address search results or loading indicator */}
                   {formData.adresse.trim().length > 3 && !adresseValidated && (
                     <>
                       {isSearching && (
-                        <div className="mt-2 rounded-lg border border-neutral-200 bg-white shadow-sm p-3">
+                        <div className="mt-2 rounded-lg border border-[#E1E4ED] bg-white shadow-sm p-3">
                           <div className="flex items-center gap-2">
                             <Spinner />
-                            <span className="text-sm text-neutral-600">Recherche en cours...</span>
+                            <span className="text-sm text-[#6B7280]">Recherche en cours...</span>
                           </div>
                         </div>
                       )}
                       {!isSearching && adresseSearchResults.length > 0 && (
-                        <div className="mt-2 rounded-lg border border-neutral-200 bg-white shadow-sm max-h-48 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-[#E1E4ED] bg-white shadow-sm max-h-48 overflow-y-auto">
                           {adresseSearchResults.map((result, idx) => (
                             <button
                               key={idx}
                               type="button"
                               onClick={() => handleSelectAddress(result)}
-                              className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 border-b border-neutral-200 last:border-b-0"
+                              className="w-full px-3 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0"
                             >
                               {result.display_name}
                             </button>
@@ -596,11 +674,10 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                       )}
                     </>
                   )}
-
                 </div>
 
                 <div>
-                  <label htmlFor="complementAdresse" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="complementAdresse" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Complément d'adresse
                   </label>
                   <input
@@ -609,14 +686,13 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.complementAdresse}
                     onChange={(e) => handleChange("complementAdresse", e.target.value)}
                     placeholder="Appartement, bâtiment..."
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]"
                   />
                 </div>
               </div>
 
-              {/* Leaflet Map */}
               {showAddressMap && formData.adresseCoordinates && (
-                <div className="rounded-lg overflow-hidden border border-neutral-200 h-48">
+                <div className="rounded-lg overflow-hidden border border-[#E1E4ED] h-48">
                   <MapContainer
                     center={formData.adresseCoordinates}
                     zoom={13}
@@ -630,20 +706,22 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   </MapContainer>
                 </div>
               )}
-            </div>
+            </section>
 
-            {/* BLOC 3: Origine et Sous-Origine */}
-            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+            {/* Section 3: Origine */}
+            <section className="rounded-lg bg-[#F3F4F6] p-4 space-y-3 border border-[#E1E4ED]">
+              <h3 className="text-xs text-[#6B7280] font-medium">Origine du contact</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="origine" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="origine" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Origine
                   </label>
                   <select
                     id="origine"
                     value={formData.origine}
                     onChange={(e) => handleChange("origine", e.target.value)}
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
                   >
                     <option value="">Sélectionner une origine</option>
                     {origines.map(origine => (
@@ -653,7 +731,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                 </div>
 
                 <div>
-                  <label htmlFor="sousOrigine" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="sousOrigine" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Sous-Origine
                   </label>
                   <select
@@ -661,7 +739,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.sousOrigine}
                     onChange={(e) => handleChange("sousOrigine", e.target.value)}
                     disabled={!formData.origine}
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Sélectionner une sous-origine</option>
                     {formData.origine && sousOrigines[formData.origine]?.map(sous => (
@@ -670,13 +748,15 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   </select>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* BLOC 4: Société et Agenceur référent */}
-            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+            {/* Section 4: Société et Agenceur */}
+            <section className="rounded-lg bg-[#F3F4F6] p-4 space-y-3 border border-[#E1E4ED]">
+              <h3 className="text-xs text-[#6B7280] font-medium">Informations complémentaires</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="societe" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="societe" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Nom de la société
                   </label>
                   <input
@@ -685,12 +765,12 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     value={formData.societe}
                     onChange={(e) => handleChange("societe", e.target.value)}
                     placeholder="Nom de la société"
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="agenceurReferent" className="block text-sm font-medium text-neutral-900 mb-2">
+                  <label htmlFor="agenceurReferent" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                     Agenceur référent
                   </label>
                   <AgenceurSelect
@@ -701,10 +781,12 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* BLOC 5: RGPD */}
-            <div className="rounded-xl bg-neutral-50 p-4 space-y-3 border border-[#E9E9E9]">
+            {/* Section 5: RGPD */}
+            <section className="rounded-lg bg-[#F3F4F6] p-4 space-y-3 border border-[#E1E4ED]">
+              <h3 className="text-xs text-[#6B7280] font-medium">Consentement RGPD</h3>
+
               <div className="flex items-center gap-3">
                 <div className="relative inline-block w-12 h-6">
                   <input
@@ -718,7 +800,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   <label
                     htmlFor="rgpd"
                     className={`block w-full h-full rounded-full transition cursor-pointer ${
-                      formData.rgpd ? "bg-neutral-900" : "bg-neutral-300"
+                      formData.rgpd ? "bg-neutral-900" : "bg-[#D1D5DB]"
                     }`}
                   >
                     <div
@@ -729,34 +811,31 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                   </label>
                 </div>
                 <div>
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium text-[#1F2027]">
                     {formData.rgpd ? "Oui" : "Non"}
                   </span>
-                  <button type="button" className="text-sm text-neutral-600 hover:underline ml-2">
-                    Voir les informations RGPD
-                  </button>
+                  <p className="text-xs text-[#6B7280] mt-1">
+                    Mes données ne seront utilisées qu'à cette fin et je pourrai retirer mon consentement à tout moment
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-neutral-600">
-                Mes données ne seront utilisées qu'à cette fin et je pourrai retirer mon consentement à tout moment sur mon accès portail ou sur demande à contact@xora.fr
-              </p>
-            </div>
+            </section>
 
           </div>
 
           {/* Footer */}
-          <footer className="px-6 py-4 border-t border-neutral-200 flex justify-end gap-3">
+          <footer className="px-6 py-4 border-t border-[#E4E4E7] bg-white flex justify-end gap-3 flex-shrink-0 rounded-b-[16px]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-neutral-200 bg-white text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="px-4 py-2.5 rounded-lg border border-[#E1E4ED] bg-white text-sm font-medium text-[#4B5563] hover:bg-[#F3F4F6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={!isFormValid || isSubmitting}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
             >
               {isSubmitting ? <Spinner /> : <PlusIcon />}
               <span>Créer la fiche contact</span>

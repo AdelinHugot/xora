@@ -31,17 +31,39 @@ export function useContacts() {
 
   const addContact = async (contactData) => {
     try {
+      // Récupérer l'utilisateur connecté
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Récupérer l'ID de l'organisation de l'utilisateur
+      const { data: authData, error: authError } = await supabase
+        .from('utilisateurs_auth')
+        .select('id_organisation')
+        .eq('id_auth_user', user.id)
+        .single();
+
+      if (authError) throw authError;
+
+      // Ajouter l'id_organisation aux données du contact
+      const contactWithOrg = {
+        ...contactData,
+        id_organisation: authData.id_organisation
+      };
+
       const { data, error } = await supabase
         .from('contacts')
-        .insert([contactData])
+        .insert([contactWithOrg])
         .select();
 
       if (error) throw error;
       setContacts([data[0], ...contacts]);
-      return data[0];
+      return { success: true, data: data[0] };
     } catch (err) {
       console.error('Erreur lors de l\'ajout du contact:', err);
-      throw err;
+      return { success: false, error: err.message };
     }
   };
 
