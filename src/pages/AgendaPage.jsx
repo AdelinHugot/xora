@@ -5,8 +5,8 @@ import { format, parse } from "date-fns";
 import "react-day-picker/dist/style.css";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
-import { useAppointments } from "../hooks/useAppointments";
-import { transformAppointmentForAgenda } from "../utils/dataTransformers";
+import { useAllAppointments } from "../hooks/useAllAppointments";
+import { transformAppointmentForAgenda, simplifyAddress } from "../utils/dataTransformers";
 
 // Custom Select Component
 function CustomSelect({ value, onChange, options, placeholder = "Sélectionner" }) {
@@ -1814,7 +1814,7 @@ function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit, eventPositi
               <p className="text-xs text-neutral-600 mb-1">Lieu du rendez-vous</p>
               <div className="flex items-start gap-2">
                 <span className="text-lg flex-shrink-0 mt-0.5">📍</span>
-                <p className="text-sm font-medium text-neutral-900">{appointmentData.location}</p>
+                <p className="text-sm font-medium text-neutral-900">{simplifyAddress(appointmentData.location)}</p>
               </div>
             </div>
           </div>
@@ -1859,13 +1859,20 @@ function Topbar({ onNavigate }) {
 }
 
 export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
-  // Récupérer les rendez-vous depuis Supabase
-  const { appointments: supabaseAppointments, loading, error } = useAppointments();
+  // Récupérer tous les rendez-vous depuis Supabase
+  const { appointments: supabaseAppointments, loading, error } = useAllAppointments();
 
-  // Transformer les rendez-vous Supabase au format UI
-  const transformedAppointments = supabaseAppointments.map(appointment =>
-    transformAppointmentForAgenda(appointment)
-  );
+  // Transformer les rendez-vous Supabase au format UI avec contact info
+  const transformedAppointments = supabaseAppointments.map(appointment => {
+    const contact = appointment.contacts;
+    const appointmentForAgenda = transformAppointmentForAgenda(appointment, contact);
+    // Ajouter le contact info au rendez-vous transformé pour affichage
+    return {
+      ...appointmentForAgenda,
+      contactName: contact ? `${contact.prenom} ${contact.nom}` : 'Contact inconnu',
+      contactId: appointment.id_contact
+    };
+  });
 
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [viewMode, setViewMode] = useState("week");
@@ -1897,11 +1904,60 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
     return generateWeekFromDate(date);
   }, [selectedWeekRange]);
 
+  const dayIdMap = {
+    0: 'mon',
+    1: 'tue',
+    2: 'wed',
+    3: 'thu',
+    4: 'fri',
+    5: 'sat',
+    6: 'sun'
+  };
+
   const mergedEvents = useMemo(() => {
     const base = currentWeek?.events ?? [];
     const added = userCreatedEvents[currentWeek?.id] ?? [];
-    return [...base, ...added];
-  }, [currentWeek, userCreatedEvents]);
+
+    // Ajouter les rendez-vous Supabase formatés pour la semaine
+    const supabaseEvents = transformedAppointments
+      .filter(apt => {
+        if (!currentWeek?.days || currentWeek.days.length === 0) return false;
+
+        // Créer une date pour le rendez-vous
+        const aptDate = new Date(apt.date);
+        aptDate.setHours(0, 0, 0, 0);
+
+        // Vérifier si la date du rendez-vous tombe dans la semaine actuelle
+        // En utilisant le jour de la semaine (0 = lundi à 6 = dimanche)
+        const dayOfWeek = aptDate.getDay();
+        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert JS day (0=Sun) to our day (0=Mon)
+
+        // Vérifier si c'est un jour de la semaine actuelle
+        return adjustedDay >= 0 && adjustedDay < currentWeek.days.length;
+      })
+      .map(apt => {
+        // Déterminer le jour de la semaine
+        const aptDate = new Date(apt.date);
+        const dayOfWeek = aptDate.getDay();
+        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert JS day (0=Sun) to our day (0=Mon)
+        const dayId = dayIdMap[adjustedDay] || 'mon';
+
+        return {
+          id: apt.id || `apt-${apt.id}`,
+          title: apt.title || apt.contact || apt.contactName || 'Rendez-vous',
+          day: dayId,
+          start: apt.startTime || '09:00',
+          end: apt.endTime || '10:00',
+          tone: 'success',
+          color: 'sky',
+          location: apt.location,
+          comments: apt.comments,
+          contactName: apt.contactName
+        };
+      });
+
+    return [...base, ...added, ...supabaseEvents];
+  }, [currentWeek, userCreatedEvents, transformedAppointments]);
 
   const filteredEvents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
+import { useTeamMember } from "../hooks/useTeamMember";
 
 // Mock member data
 const mockEmployees = [
@@ -581,21 +582,30 @@ export default function TeamMemberPage({
 }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("info");
-  const [memberDataState, setMemberDataState] = useState(null);
 
-  // Get member data from ID
-  const baseData = useMemo(() => {
-    if (!memberId) return mockEmployees[0];
+  // Extract utilisateur ID from memberId (format: "team-member-{uuid}" or "mem_{id}")
+  const utilisateurId = useMemo(() => {
+    if (!memberId) return null;
 
-    // Extract the ID number from "mem_1" format
+    // Try team-member- format first (UUID)
+    if (memberId.startsWith('team-member-')) {
+      return memberId.replace('team-member-', '');
+    }
+
+    // Try mem_ format
     const idMatch = memberId.match(/mem_(\d+)/);
-    const id = idMatch ? parseInt(idMatch[1]) : parseInt(memberId);
+    if (idMatch) {
+      return parseInt(idMatch[1]);
+    }
 
-    return mockEmployees.find(emp => emp.id === id) || mockEmployees[0];
+    return memberId;
   }, [memberId]);
 
-  // Use state data if it exists, otherwise use base data
-  const memberData = memberDataState || baseData;
+  // Fetch member data from Supabase
+  const { member: memberData, loading, error, updateMember } = useTeamMember(utilisateurId);
+
+  // Fallback to mock data if member not found
+  const displayData = memberData || mockEmployees[0];
 
   const handleBack = () => {
     onNavigate("our-company");
@@ -609,10 +619,32 @@ export default function TeamMemberPage({
     console.log("Contact member");
   };
 
-  const handleUpdate = (updatedData) => {
+  const handleUpdate = async (updatedData) => {
     console.log("Update member data:", updatedData);
-    setMemberDataState(updatedData);
-    alert("Modifications enregistrées");
+
+    // Map UI field names to database column names
+    const dbUpdates = {
+      prenom: updatedData.firstName,
+      nom: updatedData.lastName,
+      email: updatedData.email,
+      telephone_mobile: updatedData.phonePortable,
+      telephone: updatedData.phoneFixe,
+      poste: updatedData.position,
+      type_contrat: updatedData.contractType,
+      civilite: updatedData.civility,
+      telephone_disponible: updatedData.hasPhone,
+      voiture_disponible: updatedData.hasCar,
+      ordinateur_disponible: updatedData.hasLaptop,
+      couleur_agenda: updatedData.agendaColor,
+      abonnement_xora_actif: updatedData.xoraSubscriptionActive
+    };
+
+    const result = await updateMember(dbUpdates);
+    if (result.success) {
+      alert("Modifications enregistrées");
+    } else {
+      alert("Erreur lors de la sauvegarde: " + result.error);
+    }
   };
 
   return (
@@ -639,24 +671,49 @@ export default function TeamMemberPage({
           />
         </header>
 
-        {/* Member Header */}
-        <MemberHeader
-          member={memberData}
-          onBack={handleBack}
-          onEdit={handleEdit}
-          onContact={handleContact}
-        />
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900 mb-4"></div>
+              <p className="text-neutral-600">Chargement du profil...</p>
+            </div>
+          </div>
+        )}
 
-        {/* Tab Navigation */}
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* Error State */}
+        {error && !loading && (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <p className="text-red-600 font-semibold">Erreur lors du chargement</p>
+              <p className="text-neutral-600 text-sm mt-2">{error}</p>
+            </div>
+          </div>
+        )}
 
-        {/* Content */}
-        <div className="max-w-[1400px] mx-auto p-6">
-          {activeTab === "info" && (
-            <MemberInfoTab member={memberData} onUpdate={handleUpdate} />
-          )}
-          {activeTab === "documents" && <DocumentsTab />}
-        </div>
+        {/* Member Content */}
+        {!loading && !error && (
+          <>
+            {/* Member Header */}
+            <MemberHeader
+              member={displayData}
+              onBack={handleBack}
+              onEdit={handleEdit}
+              onContact={handleContact}
+            />
+
+            {/* Tab Navigation */}
+            <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+            {/* Content */}
+            <div className="max-w-[1400px] mx-auto p-6">
+              {activeTab === "info" && (
+                <MemberInfoTab member={displayData} onUpdate={handleUpdate} />
+              )}
+              {activeTab === "documents" && <DocumentsTab />}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

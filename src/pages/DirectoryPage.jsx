@@ -940,6 +940,30 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
     dateAdded: ["Aujourd'hui", "Cette semaine", "Ce mois", "Ce trimestre"]
   };
 
+  // Extract unique agent names and origins from contacts
+  const uniqueAgents = useMemo(() => {
+    const agentMap = {};
+    contacts.forEach(contact => {
+      if (contact.addedBy?.name && !agentMap[contact.addedBy.name]) {
+        agentMap[contact.addedBy.name] = {
+          name: contact.addedBy.name,
+          avatarUrl: contact.addedBy.avatarUrl
+        };
+      }
+    });
+    return Object.values(agentMap);
+  }, [contacts]);
+
+  const uniqueOrigins = useMemo(() => {
+    const origins = {};
+    contacts.forEach(contact => {
+      if (contact.origin) {
+        origins[contact.origin] = true;
+      }
+    });
+    return Object.keys(origins).sort();
+  }, [contacts]);
+
   // Apply filters and search
   const filteredContacts = useMemo(() => {
     return contacts.filter(contact => {
@@ -954,7 +978,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
 
       return matchesSearch && matchesAddedBy && matchesOrigin && matchesLocation && matchesStatus && matchesType;
     });
-  }, [searchTerm, filters, filter]);
+  }, [searchTerm, filters, filter, contacts]);
 
   // Pagination
   const totalPages = Math.ceil(filteredContacts.length / pageSize);
@@ -1098,11 +1122,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
             <AgentDropdownDirectory
               value={filters.addedBy}
               onChange={(value) => updateFilter('addedBy', value)}
-              agents={[
-                { name: "Jérémy", avatarUrl: "https://i.pravatar.cc/24?img=12" },
-                { name: "Sophie", avatarUrl: "https://i.pravatar.cc/24?img=8" },
-                { name: "Thomas", avatarUrl: "https://i.pravatar.cc/24?img=15" }
-              ]}
+              agents={uniqueAgents}
             />
           </div>
 
@@ -1111,7 +1131,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
             <OriginDropdownDirectory
               value={filters.origin}
               onChange={(value) => updateFilter('origin', value)}
-              options={filterOptions.origin}
+              options={uniqueOrigins}
             />
           </div>
 

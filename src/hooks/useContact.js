@@ -13,6 +13,31 @@ export function useContact(contactId) {
     }
 
     fetchContact();
+
+    // Setup real-time subscription for this contact using new API
+    const subscription = supabase
+      .channel(`contact-${contactId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contacts',
+          filter: `id=eq.${contactId}`
+        },
+        (payload) => {
+          // Update contact data when changes occur in real-time
+          if (payload.new) {
+            setContact(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount or when contactId changes
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [contactId]);
 
   const fetchContact = async () => {

@@ -18,13 +18,18 @@ export default function LoginPage({ onLogin, onShowSignup }) {
       const { data, error: signInError } = await signIn(email, password);
 
       if (signInError) {
-        setError("Identifiants incorrects. Veuillez vérifier votre email et mot de passe.");
+        console.error("Erreur de connexion détaillée:", signInError);
+        console.error("Message d'erreur:", signInError.message);
+        console.error("Statut:", signInError.status);
+        setError(`Erreur: ${signInError.message || 'Identifiants incorrects. Veuillez vérifier votre email et mot de passe.'}`);
         setPassword("");
       } else {
+        console.log("Connexion réussie:", data);
         // Successful login
         onLogin();
       }
     } catch (err) {
+      console.error("Erreur catch:", err);
       setError("Une erreur est survenue lors de la connexion. Veuillez réessayer.");
       setPassword("");
     } finally {

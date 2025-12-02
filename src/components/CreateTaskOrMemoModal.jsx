@@ -79,15 +79,23 @@ const getTaskTypeBadgeClass = (type) => {
   return classes[type] || "bg-neutral-100 text-neutral-900";
 };
 
-const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
+const CreateTaskOrMemoModal = ({
+  open,
+  onClose,
+  onSubmit,
+  preFilledClient = "",
+  preFilledProject = "",
+  employees = [],
+  projects = []
+}) => {
   const [formData, setFormData] = useState({
     kind: "Tâche",
     // Fields for Tâche
     salarie: "",
     agendaDatetime: "",
-    client: "",
+    client: preFilledClient,
     taskType: "",
-    project: "",
+    project: preFilledProject,
     dueDate: "",
     noteTask: "",
     // Fields for Mémo
@@ -130,16 +138,16 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
     }
   }, [open]);
 
-  // Reset form when modal closes
+  // Reset form when modal closes or opens with new pre-filled data
   useEffect(() => {
     if (!open) {
       setFormData({
         kind: "Tâche",
         salarie: "",
         agendaDatetime: "",
-        client: "",
+        client: preFilledClient || "",
         taskType: "",
-        project: "",
+        project: preFilledProject || "",
         dueDate: "",
         noteTask: "",
         memoName: "",
@@ -149,7 +157,7 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
       setErrors({});
       setIsSubmitting(false);
     }
-  }, [open]);
+  }, [open, preFilledClient, preFilledProject]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -373,7 +381,11 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                           aria-describedby={errors.salarie ? "salarie-error" : undefined}
                         >
                           <option value="">Sélectionner</option>
-                          {SALARIES.map(s => <option key={s} value={s}>{s}</option>)}
+                          {employees.map(e => (
+                            <option key={e.id} value={e.id}>
+                              {e.prenom} {e.nom}
+                            </option>
+                          ))}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />
@@ -410,20 +422,14 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                       <label htmlFor="client" className="block text-xs text-[#6B7280] font-medium mb-3">
                         Client
                       </label>
-                      <div className="relative">
-                        <select
-                          id="client"
-                          value={formData.client}
-                          onChange={(e) => handleChange("client", e.target.value)}
-                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
-                        >
-                          <option value="">Sélectionner</option>
-                          {CLIENTS.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
-                          <ChevronDownIcon />
-                        </div>
-                      </div>
+                      <input
+                        id="client"
+                        type="text"
+                        value={formData.client}
+                        readOnly
+                        className="w-full rounded-lg border border-[#E1E4ED] bg-gray-50 px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none"
+                        placeholder="—"
+                      />
                     </div>
 
                     {/* Type de tâche */}
@@ -475,7 +481,11 @@ const CreateTaskOrMemoModal = ({ open, onClose, onSubmit }) => {
                           className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
                         >
                           <option value="">Sélectionner</option>
-                          {PROJECTS.map(p => <option key={p} value={p}>{p}</option>)}
+                          {projects.map(p => (
+                            <option key={p.id} value={p.nom_projet}>
+                              {p.nom_projet}
+                            </option>
+                          ))}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />

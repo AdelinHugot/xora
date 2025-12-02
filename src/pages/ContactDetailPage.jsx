@@ -20,8 +20,14 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
+import CreateProjectModal from "../components/CreateProjectModal";
+import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import { useContact } from "../hooks/useContact";
+import { useProjects } from "../hooks/useProjects";
+import { useAppointments } from "../hooks/useAppointments";
+import { useTaches } from "../hooks/useTaches";
 import { supabase } from "../lib/supabase";
+import { simplifyAddress } from "../utils/dataTransformers";
 
 // Contact Header Component
 function ContactHeader({ contact, onBack, onContact, onCall, onSchedule, onAddTask }) {
@@ -119,10 +125,10 @@ function ContactHeader({ contact, onBack, onContact, onCall, onSchedule, onAddTa
 }
 
 // Tab Navigation Component
-function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange }) {
+function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, projectsCount = 0 }) {
   const tabs = [
     { id: "contact-info", label: "Informations contact" },
-    { id: "projects", label: "Projet", count: 0 },
+    { id: "projects", label: "Projet", count: projectsCount },
     { id: "tasks", label: "Tâches", count: 1 },
     { id: "appointments", label: "Rendez-vous", count: 0 },
     { id: "loyalty", label: "Fidélisation" },
@@ -230,11 +236,12 @@ function FormField({ label, children, span = 1 }) {
   );
 }
 
-function SelectInput({ value, onChange, options, placeholder }) {
+function SelectInput({ value, onChange, options, placeholder, onBlur }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       className="w-full px-3 py-2 rounded-xl border border-[#E5E5E5] bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
     >
       <option value="">{placeholder || "Sélectionner"}</option>
@@ -247,15 +254,107 @@ function SelectInput({ value, onChange, options, placeholder }) {
   );
 }
 
-function TextInput({ value, onChange, placeholder, type = "text" }) {
+function TextInput({ value, onChange, placeholder, type = "text", onBlur }) {
   return (
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       placeholder={placeholder}
       className="w-full px-3 py-2 rounded-xl border border-[#E5E5E5] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
     />
+  );
+}
+
+// Address Input with Autocomplete Component
+function AddressInputWithAutocomplete({ value, onChange, placeholder, onBlur }) {
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  const searchAddress = async (addressQuery) => {
+    if (!addressQuery.trim() || addressQuery.trim().length <= 3) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=fr&limit=5`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+      const results = await response.json();
+      setSearchResults(results.slice(0, 5));
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error("Error searching address:", error);
+      }
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddressSearch = (query) => {
+    onChange(query);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAddress(query);
+    }, 500);
+  };
+
+  const handleSelectAddress = (result) => {
+    onChange(result.display_name);
+    setSearchResults([]);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => handleAddressSearch(e.target.value)}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-xl border border-[#E5E5E5] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+      />
+
+      {value.trim().length > 3 && !isSearching && searchResults.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E5E5] rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+          {searchResults.map((result, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSelectAddress(result)}
+              className="w-full px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 border-b border-[#E5E5E5] last:border-b-0"
+            >
+              {result.display_name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isSearching && value.trim().length > 3 && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E5E5] rounded-xl shadow-lg z-10 p-3">
+          <div className="flex items-center gap-2">
+            <div className="inline-flex items-center justify-center w-4 h-4 border-2 border-neutral-300 border-t-neutral-900 rounded-full animate-spin"></div>
+            <span className="text-sm text-neutral-600">Recherche en cours...</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -377,8 +476,51 @@ function ClientInfoTabContent({ contact }) {
     }
   }, [formData.referent, agenceurs]);
 
+  // Save single field to Supabase on blur
+  const saveField = async (field, value) => {
+    if (!contact?.id) return;
+
+    const fieldMap = {
+      civility: 'civilite',
+      lastName: 'nom',
+      firstName: 'prenom',
+      email: 'email',
+      mobilePhone: 'telephone',
+      origin: 'origine',
+      subOrigin: 'sous_origine',
+      companyName: 'societe',
+      referent: 'agenceur_referent',
+      address: 'adresse',
+      addressComplement: 'complement_adresse'
+    };
+
+    try {
+      const updateData = {
+        [fieldMap[field]]: value,
+        modifie_le: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('contacts')
+        .update(updateData)
+        .eq('id', contact.id);
+
+      if (error) {
+        console.error(`Erreur lors de la sauvegarde du champ ${field}:`, error);
+      } else {
+        console.log(`${field} sauvegardé avec succès`);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la sauvegarde:', err);
+    }
+  };
+
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFieldBlur = (field, value) => {
+    saveField(field, value);
   };
 
   return (
@@ -403,6 +545,7 @@ function ClientInfoTabContent({ contact }) {
               <SelectInput
                 value={formData.civility}
                 onChange={(value) => updateField("civility", value)}
+                onBlur={() => handleFieldBlur("civility", formData.civility)}
                 options={[
                   { value: "M", label: "M." },
                   { value: "Mme", label: "Mme" },
@@ -415,6 +558,7 @@ function ClientInfoTabContent({ contact }) {
               <TextInput
                 value={formData.lastName}
                 onChange={(value) => updateField("lastName", value)}
+                onBlur={() => handleFieldBlur("lastName", formData.lastName)}
                 placeholder="Nom"
               />
             </FormField>
@@ -422,6 +566,7 @@ function ClientInfoTabContent({ contact }) {
               <TextInput
                 value={formData.firstName}
                 onChange={(value) => updateField("firstName", value)}
+                onBlur={() => handleFieldBlur("firstName", formData.firstName)}
                 placeholder="Prénom"
               />
             </FormField>
@@ -430,6 +575,7 @@ function ClientInfoTabContent({ contact }) {
                 type="email"
                 value={formData.email}
                 onChange={(value) => updateField("email", value)}
+                onBlur={() => handleFieldBlur("email", formData.email)}
                 placeholder="Email"
               />
             </FormField>
@@ -438,6 +584,7 @@ function ClientInfoTabContent({ contact }) {
                 type="tel"
                 value={formData.mobilePhone}
                 onChange={(value) => updateField("mobilePhone", value)}
+                onBlur={() => handleFieldBlur("mobilePhone", formData.mobilePhone)}
                 placeholder="Entrer un numéro"
               />
             </FormField>
@@ -446,6 +593,7 @@ function ClientInfoTabContent({ contact }) {
                 type="tel"
                 value={formData.landlinePhone}
                 onChange={(value) => updateField("landlinePhone", value)}
+                onBlur={() => handleFieldBlur("landlinePhone", formData.landlinePhone)}
                 placeholder="Entrer un numéro"
               />
             </FormField>
@@ -461,6 +609,8 @@ function ClientInfoTabContent({ contact }) {
           complement={formData.addressComplement}
           onAddressChange={(value) => updateField("address", value)}
           onComplementChange={(value) => updateField("addressComplement", value)}
+          onAddressBlur={() => handleFieldBlur("address", formData.address)}
+          onComplementBlur={() => handleFieldBlur("addressComplement", formData.addressComplement)}
           statusColor="leads"
         />
       </div>
@@ -471,6 +621,7 @@ function ClientInfoTabContent({ contact }) {
           <SelectInput
             value={formData.origin}
             onChange={(value) => updateField("origin", value)}
+            onBlur={() => handleFieldBlur("origin", formData.origin)}
             options={origines.map(o => ({ value: o, label: o }))}
             placeholder="Sélectionner"
           />
@@ -479,6 +630,7 @@ function ClientInfoTabContent({ contact }) {
           <SelectInput
             value={formData.subOrigin}
             onChange={(value) => updateField("subOrigin", value)}
+            onBlur={() => handleFieldBlur("subOrigin", formData.subOrigin)}
             options={formData.origin && sousOrigines[formData.origin]
               ? sousOrigines[formData.origin].map(s => ({ value: s, label: s }))
               : []
@@ -496,6 +648,7 @@ function ClientInfoTabContent({ contact }) {
             <TextInput
               value={formData.companyName}
               onChange={(value) => updateField("companyName", value)}
+              onBlur={() => handleFieldBlur("companyName", formData.companyName)}
               placeholder="Nom de la société"
             />
           </FormField>
@@ -504,6 +657,7 @@ function ClientInfoTabContent({ contact }) {
               <SelectInput
                 value={formData.referent}
                 onChange={(value) => updateField("referent", value)}
+                onBlur={() => handleFieldBlur("referent", formData.referent)}
                 options={agenceurs.map(a => ({
                   value: a.id,
                   label: `${a.prenom} ${a.nom}`
@@ -526,18 +680,13 @@ function ClientInfoTabContent({ contact }) {
             <TextInput
               value={formData.clientAccessAccount}
               onChange={(value) => updateField("clientAccessAccount", value)}
+              onBlur={() => handleFieldBlur("clientAccessAccount", formData.clientAccessAccount)}
               placeholder="Compte accès client"
             />
           </FormField>
         </div>
       </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button className="px-6 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 transition-colors text-sm font-medium">
-          Enregistrer les modifications
-        </button>
-      </div>
     </div>
   );
 }
@@ -546,11 +695,135 @@ function ClientInfoTabContent({ contact }) {
 function AddressModal({ isOpen, onClose, onSave, initialAddress, initialComplement }) {
   const [tempAddress, setTempAddress] = useState(initialAddress);
   const [tempComplement, setTempComplement] = useState(initialComplement);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     setTempAddress(initialAddress);
     setTempComplement(initialComplement);
   }, [isOpen, initialAddress, initialComplement]);
+
+  const searchAddress = async (addressQuery) => {
+    if (!addressQuery.trim() || addressQuery.trim().length <= 3) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=fr&limit=5`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+      const results = await response.json();
+      setSearchResults(results.slice(0, 5));
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error("Error searching address:", error);
+      }
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddressSearch = (query) => {
+    setTempAddress(query);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAddress(query);
+    }, 500);
+  };
+
+  const simplifyAddressDisplay = (fullAddress) => {
+    // Extract from the address object or string
+    const parts = fullAddress.split(',').map(p => p.trim());
+
+    let streetAddress = '';
+    let postalCode = '';
+    let city = '';
+
+    // Find postal code first (5-digit number)
+    let postalCodeIndex = -1;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i];
+      if (/^\d{5}$/.test(part)) {
+        postalCode = part;
+        postalCodeIndex = i;
+        break;
+      }
+    }
+
+    // Extract street address: combine first 1 or 2 parts that contain the street info
+    // Typically: "18 Place Ambroise Courtois" or split as "18" and "Place Ambroise Courtois"
+    const streetParts = [];
+    for (let i = 0; i < Math.min(2, parts.length); i++) {
+      const part = parts[i];
+      if (part.length > 0 && !part.match(/^\d{5}$/)) {
+        streetParts.push(part);
+      }
+    }
+    streetAddress = streetParts.join(' ');
+
+    // Find city: look for text between postal code and end, avoiding administrative divisions
+    if (postalCodeIndex >= 0) {
+      for (let i = postalCodeIndex - 1; i >= 0; i--) {
+        const part = parts[i];
+        if (!/^\d{5}$/.test(part) && // not postal code
+            !/^\d+$/.test(part) && // not a number
+            !part.toLowerCase().includes('arrondissement') &&
+            !part.toLowerCase().includes('france') &&
+            !part.toLowerCase().includes('métropole') &&
+            !part.toLowerCase().includes('rhône') &&
+            !part.toLowerCase().includes('auvergne') &&
+            !part.toLowerCase().includes('alpes') &&
+            part !== streetParts[0] &&
+            part !== streetParts[1] &&
+            part.length > 0) {
+          city = part;
+          break;
+        }
+      }
+    } else {
+      // If no postal code found, try to find city from the end
+      for (let i = parts.length - 1; i > 1; i--) {
+        const part = parts[i];
+        if (!/^\d+$/.test(part) &&
+            !part.toLowerCase().includes('arrondissement') &&
+            !part.toLowerCase().includes('france') &&
+            part !== streetParts[0] &&
+            part !== streetParts[1] &&
+            part.length > 0) {
+          city = part;
+          break;
+        }
+      }
+    }
+
+    // Build simplified address: "18 Place Ambroise Courtois, 69008, Lyon"
+    const simplifiedParts = [streetAddress];
+    if (postalCode) simplifiedParts.push(postalCode);
+    if (city) simplifiedParts.push(city);
+
+    return simplifiedParts.filter(p => p && p.length > 0).join(', ');
+  };
+
+  const handleSelectAddress = (result) => {
+    const simplified = simplifyAddressDisplay(result.display_name);
+    setTempAddress(simplified);
+    setSearchResults([]);
+  };
 
   const handleSave = () => {
     onSave(tempAddress, tempComplement);
@@ -577,13 +850,39 @@ function AddressModal({ isOpen, onClose, onSave, initialAddress, initialCompleme
             <label className="block text-sm font-medium text-[#5C5C5C] mb-1.5">
               Adresse
             </label>
-            <input
-              type="text"
-              value={tempAddress}
-              onChange={(e) => setTempAddress(e.target.value)}
-              placeholder="Entrer une adresse"
-              className="w-full px-3 py-2 rounded-xl border border-[#E5E5E5] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={tempAddress}
+                onChange={(e) => handleAddressSearch(e.target.value)}
+                placeholder="Entrer une adresse"
+                className="w-full px-3 py-2 rounded-xl border border-[#E5E5E5] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+              />
+
+              {tempAddress.trim().length > 3 && !isSearching && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E5E5] rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {searchResults.map((result, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectAddress(result)}
+                      className="w-full px-3 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50 border-b border-[#E5E5E5] last:border-b-0"
+                    >
+                      {simplifyAddressDisplay(result.display_name)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {isSearching && tempAddress.trim().length > 3 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E5E5] rounded-xl shadow-lg z-10 p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center justify-center w-4 h-4 border-2 border-neutral-300 border-t-neutral-900 rounded-full animate-spin"></div>
+                    <span className="text-sm text-neutral-600">Recherche en cours...</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-[#5C5C5C] mb-1.5">
@@ -620,7 +919,7 @@ function AddressModal({ isOpen, onClose, onSave, initialAddress, initialCompleme
 }
 
 // Address Block Component
-function AddressBlockComponent({ address, complement, onAddressChange, onComplementChange, statusColor }) {
+function AddressBlockComponent({ address, complement, onAddressChange, onComplementChange, onAddressBlur, onComplementBlur, statusColor }) {
   const [coordinates, setCoordinates] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -693,6 +992,7 @@ function AddressBlockComponent({ address, complement, onAddressChange, onComplem
           <TextInput
             value={address}
             onChange={onAddressChange}
+            onBlur={onAddressBlur}
             placeholder="Entrer une adresse"
           />
         </FormField>
@@ -700,6 +1000,7 @@ function AddressBlockComponent({ address, complement, onAddressChange, onComplem
           <TextInput
             value={complement}
             onChange={onComplementChange}
+            onBlur={onComplementBlur}
             placeholder="Complément d'adresse (optionnel)"
           />
         </FormField>
@@ -714,7 +1015,7 @@ function AddressBlockComponent({ address, complement, onAddressChange, onComplem
               attribution='&copy; OpenStreetMap contributors'
             />
             <Marker position={coordinates}>
-              <Popup>{address}</Popup>
+              <Popup>{simplifyAddress(address)}</Popup>
             </Marker>
           </MapContainer>
         ) : (
@@ -755,12 +1056,47 @@ function PropertyInfoTabContent({ contact }) {
     );
   };
 
+  // Save property field to Supabase on blur
+  const savePropertyField = async (id, field, value) => {
+    // Only save main property (id === 1) to contacts table
+    if (id !== 1 || !contact?.id) return;
+
+    const fieldMap = {
+      address: 'adresse',
+      complement: 'complement_adresse'
+    };
+
+    try {
+      const updateData = {
+        [fieldMap[field]]: value,
+        modifie_le: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('contacts')
+        .update(updateData)
+        .eq('id', contact.id);
+
+      if (error) {
+        console.error(`Erreur lors de la sauvegarde du champ ${field}:`, error);
+      } else {
+        console.log(`${field} sauvegardé avec succès`);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la sauvegarde:', err);
+    }
+  };
+
   const updateProperty = (id, field, value) => {
     setProperties(prev =>
       prev.map(prop =>
         prop.id === id ? { ...prop, [field]: value } : prop
       )
     );
+  };
+
+  const handlePropertyFieldBlur = (id, field, value) => {
+    savePropertyField(id, field, value);
   };
 
   const addProperty = () => {
@@ -812,7 +1148,7 @@ function PropertyInfoTabContent({ contact }) {
                       Bien N°{property.id}
                     </span>
                     <span className="text-sm text-neutral-600">
-                      {property.address || "Adresse non renseignée"}
+                      {simplifyAddress(property.address) || "Adresse non renseignée"}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -836,9 +1172,10 @@ function PropertyInfoTabContent({ contact }) {
                 <div className="mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <FormField label="Adresse">
-                      <TextInput
+                      <AddressInputWithAutocomplete
                         value={property.address}
                         onChange={(value) => updateProperty(property.id, "address", value)}
+                        onBlur={() => handlePropertyFieldBlur(property.id, "address", property.address)}
                         placeholder="Entrer une adresse"
                       />
                     </FormField>
@@ -846,6 +1183,7 @@ function PropertyInfoTabContent({ contact }) {
                       <TextInput
                         value={property.complement}
                         onChange={(value) => updateProperty(property.id, "complement", value)}
+                        onBlur={() => handlePropertyFieldBlur(property.id, "complement", property.complement)}
                         placeholder="Complément d'adresse (optionnel)"
                       />
                     </FormField>
@@ -1064,55 +1402,30 @@ function SearchInput({ value, onChange, placeholder }) {
 }
 
 // Project List Tab Content Component
-function ProjectListTabContent() {
-  // Mock data for projects
-  const mockProjects = [
-    {
-      id: 1,
-      trade: "Cuisine",
-      name: "Rénovation cuisine appartement",
-      agent: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-      status: "En cours",
-      propertyType: "Appartement",
-      addedDate: "25/05/25"
-    },
-    {
-      id: 2,
-      trade: "Salle de bain",
-      name: "Installation salle de bain moderne",
-      agent: { name: "Sophie", avatar: "https://i.pravatar.cc/32?img=8" },
-      status: "Devis",
-      propertyType: "Maison",
-      addedDate: "20/05/25"
-    },
-    {
-      id: 3,
-      trade: "Dressing",
-      name: "Agencement dressing sur mesure",
-      agent: { name: "Thomas", avatar: "https://i.pravatar.cc/32?img=15" },
-      status: "Terminé",
-      propertyType: "Appartement",
-      addedDate: "15/05/25"
-    },
-    {
-      id: 4,
-      trade: "Cuisine",
-      name: "Installation cuisine ouverte",
-      agent: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-      status: "En attente",
-      propertyType: "Studio",
-      addedDate: "10/05/25"
-    },
-    {
-      id: 5,
-      trade: "Salle de bain",
-      name: "Rénovation salle d'eau",
-      agent: { name: "Sophie", avatar: "https://i.pravatar.cc/32?img=8" },
-      status: "En cours",
-      propertyType: "Appartement",
-      addedDate: "05/05/25"
-    }
-  ];
+function ProjectListTabContent({ projects = [], loading = false, onAddProject, users = [] }) {
+  // Transform projects from Supabase to display format
+  const displayProjects = (projects || []).map(p => {
+    // Find the referent user
+    const referent = users.find(u => u.id === p.id_referent);
+    const referentName = referent ? `${referent.prenom} ${referent.nom}` : "Non assigné";
+
+    // Truncate address if needed
+    const address = p.adresse_chantier || "Non spécifiée";
+    const truncatedAddress = address.length > 30 ? address.substring(0, 30) + "..." : address;
+
+    return {
+      id: p.id,
+      trade: p.metier_etudie || "Non spécifié",
+      name: p.nom_projet || "Sans titre",
+      agent: {
+        name: referentName,
+        avatar: referent ? `https://i.pravatar.cc/32?u=${referent.id}` : `https://i.pravatar.cc/32?img=0`
+      },
+      status: "Etude à réaliser",
+      propertyType: truncatedAddress,
+      addedDate: p.cree_le ? new Date(p.cree_le).toLocaleDateString('fr-FR') : ""
+    };
+  });
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -1122,13 +1435,13 @@ function ProjectListTabContent() {
   const [selectedDate, setSelectedDate] = useState("");
 
   // Extract unique values for filters
-  const trades = [...new Set(mockProjects.map(p => p.trade))].map(trade => ({
+  const trades = [...new Set(displayProjects.map(p => p.trade))].map(trade => ({
     value: trade,
     label: trade
   }));
 
-  const agents = [...new Set(mockProjects.map(p => p.agent.name))].map(name => {
-    const agent = mockProjects.find(p => p.agent.name === name);
+  const agents = [...new Set(displayProjects.map(p => p.agent.name))].map(name => {
+    const agent = displayProjects.find(p => p.agent.name === name);
     return {
       value: name,
       label: name,
@@ -1136,7 +1449,7 @@ function ProjectListTabContent() {
     };
   });
 
-  const statuses = [...new Set(mockProjects.map(p => p.status))].map(status => ({
+  const statuses = [...new Set(displayProjects.map(p => p.status))].map(status => ({
     value: status,
     label: status
   }));
@@ -1150,21 +1463,25 @@ function ProjectListTabContent() {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case "Etude à réaliser":
+        return { bg: "#FEF3C7", text: "#92400E", icon: "📌" };
       case "En cours":
-        return { bg: "#FEF3C7", text: "#92400E" };
+        return { bg: "#FEF3C7", text: "#92400E", icon: "▶" };
       case "Devis":
-        return { bg: "#DBEAFE", text: "#1E40AF" };
+        return { bg: "#DBEAFE", text: "#1E40AF", icon: "📄" };
       case "Terminé":
-        return { bg: "#DCFCE7", text: "#166534" };
+        return { bg: "#DCFCE7", text: "#166534", icon: "✓" };
       case "En attente":
-        return { bg: "#F3E8FF", text: "#6B21A8" };
+        return { bg: "#F3E8FF", text: "#6B21A8", icon: "⏳" };
+      case "Etude client":
+        return { bg: "#FEF3C7", text: "#92400E", icon: "📌" };
       default:
-        return { bg: "#F3F4F6", text: "#1F2937" };
+        return { bg: "#F3F4F6", text: "#1F2937", icon: "•" };
     }
   };
 
   // Filter projects based on search and filters
-  const filteredProjects = mockProjects.filter((project) => {
+  const filteredProjects = displayProjects.filter((project) => {
     const matchesSearch =
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.trade.toLowerCase().includes(searchTerm.toLowerCase());
@@ -1176,7 +1493,7 @@ function ProjectListTabContent() {
     // Simple date filtering based on dates in mock data
     let matchesDate = true;
     if (selectedDate) {
-      const projectDate = new Date(mockProjects.find(p => p.id === project.id).addedDate.split('/').reverse().join('-'));
+      const projectDate = new Date(displayProjects.find(p => p.id === project.id).addedDate.split('/').reverse().join('-'));
       const today = new Date();
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -1207,13 +1524,36 @@ function ProjectListTabContent() {
       {/* Title and Add Button */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-neutral-900">Liste des projets</h3>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E9E9E9] bg-white hover:bg-neutral-50 text-sm font-medium transition-colors">
+        <button
+          onClick={onAddProject}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E9E9E9] bg-white hover:bg-neutral-50 text-sm font-medium transition-colors"
+        >
           <Plus className="size-4" />
           Ajouter un projet
         </button>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-8 h-8 border-4 border-neutral-200 border-t-neutral-900 rounded-full animate-spin mb-2"></div>
+            <p className="text-neutral-600">Chargement des projets...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && displayProjects.length === 0 && (
+        <div className="rounded-xl p-6 border text-center" style={{ backgroundColor: "#F8F9FA", borderColor: "#E9E9E9" }}>
+          <p className="text-neutral-600 mb-2">📋</p>
+          <p className="text-neutral-900 font-medium">Aucun projet</p>
+          <p className="text-sm text-neutral-500">Ce contact n'a pas de projet associé</p>
+        </div>
+      )}
+
       {/* Gray Container with Filters and Table */}
+      {!loading && displayProjects.length > 0 && (
       <div className="rounded-xl p-6 border" style={{ backgroundColor: "#F8F9FA", borderColor: "#E9E9E9" }}>
         {/* Filters Bar */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
@@ -1305,9 +1645,10 @@ function ProjectListTabContent() {
                   </td>
                   <td className="py-4 px-4" role="cell">
                     <span
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
-                      style={getStatusColor(project.status)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: getStatusColor(project.status).bg, color: getStatusColor(project.status).text }}
                     >
+                      <span>{getStatusColor(project.status).icon}</span>
                       {project.status}
                     </span>
                   </td>
@@ -1348,67 +1689,38 @@ function ProjectListTabContent() {
           {/* Empty State */}
           {filteredProjects.length === 0 && (
             <div className="p-12 text-center text-neutral-500">
-              {mockProjects.length === 0
-                ? "Aucun projet n'est associé à ce contact"
-                : "Aucun projet ne correspond à vos filtres"}
+              {"Aucun projet ne correspond à vos filtres"}
             </div>
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
 
 // Tasks Tab Content Component
-function TasksTabContent() {
+function TasksTabContent({ contact, users = [], projects = [] }) {
   const [taskFilter, setTaskFilter] = useState("in-progress");
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const { taches, loading, error, createTache } = useTaches();
 
-  const mockTasks = [
-    {
-      id: 1,
-      type: "Tâche",
-      title: "Mesurer la cuisine",
-      project: "Rénovation cuisine appartement",
-      status: "En cours",
-      dueDate: "28/11/25",
-      assignee: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-      note: "Urgence",
-      progress: 65
-    },
-    {
-      id: 2,
-      type: "Tâche",
-      title: "Commander matériaux",
-      project: "Rénovation salle d'eau",
-      status: "En cours",
-      dueDate: "30/11/25",
-      assignee: { name: "Sophie", avatar: "https://i.pravatar.cc/32?img=8" },
-      note: "En attente devis",
-      progress: 40
-    },
-    {
-      id: 3,
-      type: "Mémo",
-      title: "Devis client",
-      project: "Installation salle de bain",
-      status: "Terminé",
-      dueDate: "25/11/25",
-      assignee: { name: "Thomas", avatar: "https://i.pravatar.cc/32?img=15" },
-      note: "Validé",
-      progress: 100
-    },
-    {
-      id: 4,
-      type: "Tâche",
-      title: "Visite du chantier",
-      project: "Agencement dressing",
-      status: "Terminé",
-      dueDate: "20/11/25",
-      assignee: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-      note: "Photos prises",
-      progress: 100
+  // Filter tasks by contact and status
+  const filteredTasks = taches.filter(task => {
+    // Filter by contact (only show tasks for this contact)
+    const contactName = `${contact?.prenom} ${contact?.nom}`.trim();
+    if (task.clientName !== contactName && task.clientName !== '') {
+      return false;
     }
-  ];
+
+    // Filter by status
+    if (taskFilter === "in-progress") {
+      return task.statut !== "Terminé";
+    } else if (taskFilter === "completed") {
+      return task.statut === "Terminé";
+    }
+    return true;
+  });
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -1421,14 +1733,28 @@ function TasksTabContent() {
     }
   };
 
-  const filteredTasks = mockTasks.filter(task => {
-    if (taskFilter === "in-progress") {
-      return task.status === "En cours";
-    } else if (taskFilter === "completed") {
-      return task.status === "Terminé";
+  const handleCreateTask = async (payload) => {
+    try {
+      // Add contact and project information to the payload
+      const taskData = {
+        titre: payload.kind === "Tâche" ? payload.taskType || "Tâche sans titre" : payload.memoName,
+        type: payload.kind,
+        nom_client: `${contact?.prenom} ${contact?.nom}`.trim(),
+        nom_projet: payload.project || null,
+        tag: payload.taskType || "Autre",
+        note: payload.note,
+        date_echeance: payload.dueDate || payload.memoEcheance,
+        statut: "Non commencé",
+        id_affecte_a: payload.salarie || null
+      };
+
+      console.log("Creating task with payload:", taskData);
+      await createTache(taskData);
+      setIsCreateTaskModalOpen(false);
+    } catch (err) {
+      console.error("Erreur lors de la création de la tâche:", err);
     }
-    return true;
-  });
+  };
 
   const getTypeStyles = (type) => {
     switch (type) {
@@ -1444,34 +1770,45 @@ function TasksTabContent() {
   return (
     <div className="space-y-6">
       {/* Title and Filter Pills */}
-      <div className="flex items-center gap-3">
-        <h3 className="text-lg font-semibold text-neutral-900">Liste des tâches</h3>
-        <div className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 p-1" role="radiogroup">
-          <button
-            onClick={() => setTaskFilter("in-progress")}
-            role="radio"
-            aria-checked={taskFilter === "in-progress"}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-              taskFilter === "in-progress"
-                ? "bg-gray-900 text-white"
-                : "text-neutral-700 hover:text-neutral-900"
-            }`}
-          >
-            En cours
-          </button>
-          <button
-            onClick={() => setTaskFilter("completed")}
-            role="radio"
-            aria-checked={taskFilter === "completed"}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-              taskFilter === "completed"
-                ? "bg-gray-900 text-white"
-                : "text-neutral-700 hover:text-neutral-900"
-            }`}
-          >
-            Terminées
-          </button>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-neutral-900">Liste des tâches</h3>
+          <div className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 p-1" role="radiogroup">
+            <button
+              onClick={() => setTaskFilter("in-progress")}
+              role="radio"
+              aria-checked={taskFilter === "in-progress"}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                taskFilter === "in-progress"
+                  ? "bg-gray-900 text-white"
+                  : "text-neutral-700 hover:text-neutral-900"
+              }`}
+            >
+              En cours
+            </button>
+            <button
+              onClick={() => setTaskFilter("completed")}
+              role="radio"
+              aria-checked={taskFilter === "completed"}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                taskFilter === "completed"
+                  ? "bg-gray-900 text-white"
+                  : "text-neutral-700 hover:text-neutral-900"
+              }`}
+            >
+              Terminées
+            </button>
+          </div>
         </div>
+
+        {/* Create Task Button */}
+        <button
+          onClick={() => setIsCreateTaskModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2B7FFF] text-white text-sm font-medium hover:bg-[#1F6FE6] transition-colors"
+        >
+          <Plus className="size-4" />
+          Créer une tâche
+        </button>
       </div>
 
       {/* Gray Container for Tasks */}
@@ -1492,8 +1829,13 @@ function TasksTabContent() {
 
         {/* Tasks Cards Container */}
         <div className="p-4 space-y-3">
-          {filteredTasks.map((task) => {
-            const statusColor = getStatusColor(task.status);
+          {loading && (
+            <div className="p-12 text-center text-neutral-500">
+              Chargement des tâches...
+            </div>
+          )}
+          {!loading && filteredTasks.map((task) => {
+            const statusColor = getStatusColor(task.statut);
             return (
               <div
                 key={task.id}
@@ -1502,18 +1844,18 @@ function TasksTabContent() {
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeStyles(task.type)}`}>
-                      {task.type}
+                      {task.type || "Tâche"}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{task.project}</span>
+                    <span className="text-sm text-neutral-600">{task.projectName || "—"}</span>
                   </div>
                   <div className="flex-1">
                     <span
                       className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
                       style={{ backgroundColor: statusColor.bg, color: statusColor.text }}
                     >
-                      {task.status}
+                      {task.statut}
                     </span>
                   </div>
                   <div className="flex-1">
@@ -1521,16 +1863,25 @@ function TasksTabContent() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={task.assignee.avatar}
-                        alt={task.assignee.name}
-                        className="size-6 rounded-full"
-                      />
-                      <span className="text-sm text-neutral-600">{task.assignee.name}</span>
+                      {task.salarie_name ? (
+                        <>
+                          <div className="size-6 rounded-full bg-blue-200 flex items-center justify-center text-xs font-medium text-blue-700">
+                            {task.salarie_name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-neutral-600">{task.salarie_name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="size-6 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-medium text-neutral-600">
+                            —
+                          </div>
+                          <span className="text-sm text-neutral-600">Non assigné</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{task.note}</span>
+                    <span className="text-sm text-neutral-600">{task.note || "—"}</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -1567,12 +1918,22 @@ function TasksTabContent() {
           )}
         </div>
       </div>
+
+      {/* Create Task Modal */}
+      <CreateTaskOrMemoModal
+        open={isCreateTaskModalOpen}
+        onClose={() => setIsCreateTaskModalOpen(false)}
+        onSubmit={handleCreateTask}
+        preFilledClient={contact ? `${contact.prenom} ${contact.nom}` : ""}
+        employees={users}
+        projects={projects}
+      />
     </div>
   );
 }
 
 // Create Appointment Modal Component
-function CreateAppointmentModal({ isOpen, onClose, onSave }) {
+function CreateAppointmentModal({ isOpen, onClose, onSave, users = [] }) {
   const [formData, setFormData] = useState({
     title: "",
     startDate: "",
@@ -1611,11 +1972,12 @@ function CreateAppointmentModal({ isOpen, onClose, onSave }) {
     }
   }, [isOpen, collaboratorDropdownOpen, locationDropdownOpen]);
 
-  const mockCollaborators = [
-    { id: 1, name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-    { id: 2, name: "Sophie", avatar: "https://i.pravatar.cc/32?img=8" },
-    { id: 3, name: "Thomas", avatar: "https://i.pravatar.cc/32?img=15" }
-  ];
+  // Transform users to collaborators format
+  const collaborators = users.map(user => ({
+    id: user.id,
+    name: `${user.prenom} ${user.nom}`,
+    avatar: `https://i.pravatar.cc/32?u=${user.id}`
+  }));
 
   const mockAddresses = [
     "123 Rue de la Paix, 75000 Paris",
@@ -1766,7 +2128,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSave }) {
                     ) : (
                       <>
                         <div className="flex items-center gap-1">
-                          {mockCollaborators
+                          {collaborators
                             .filter(c => formData.collaborators.includes(c.id))
                             .map(c => (
                               <img
@@ -1778,7 +2140,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSave }) {
                             ))}
                         </div>
                         <span className="text-sm">
-                          {mockCollaborators
+                          {collaborators
                             .filter(c => formData.collaborators.includes(c.id))
                             .map(c => c.name)
                             .join(", ")}
@@ -1791,27 +2153,33 @@ function CreateAppointmentModal({ isOpen, onClose, onSave }) {
 
                 {collaboratorDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#E5E5E5] rounded-lg shadow-lg z-10">
-                    {mockCollaborators.map((collab) => (
-                      <button
-                        key={collab.id}
-                        onClick={() => toggleCollaborator(collab.id)}
-                        className="w-full flex items-center gap-3 p-3 text-left hover:bg-neutral-50 border-b border-neutral-100 last:border-b-0 transition-colors"
-                      >
-                        <div
-                          className={`flex items-center justify-center w-4 h-4 rounded border-2 ${
-                            formData.collaborators.includes(collab.id)
-                              ? "bg-neutral-900 border-neutral-900"
-                              : "border-[#E5E5E5]"
-                          }`}
+                    {collaborators.length === 0 ? (
+                      <div className="p-3 text-center text-sm text-neutral-500">
+                        Aucun collaborateur disponible
+                      </div>
+                    ) : (
+                      collaborators.map((collab) => (
+                        <button
+                          key={collab.id}
+                          onClick={() => toggleCollaborator(collab.id)}
+                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-neutral-50 border-b border-neutral-100 last:border-b-0 transition-colors"
                         >
-                          {formData.collaborators.includes(collab.id) && (
-                            <span className="text-white text-xs">✓</span>
-                          )}
-                        </div>
-                        <img src={collab.avatar} alt={collab.name} className="size-6 rounded-full" />
-                        <span className="text-sm text-neutral-600">{collab.name}</span>
-                      </button>
-                    ))}
+                          <div
+                            className={`flex items-center justify-center w-4 h-4 rounded border-2 ${
+                              formData.collaborators.includes(collab.id)
+                                ? "bg-neutral-900 border-neutral-900"
+                                : "border-[#E5E5E5]"
+                            }`}
+                          >
+                            {formData.collaborators.includes(collab.id) && (
+                              <span className="text-white text-xs">✓</span>
+                            )}
+                          </div>
+                          <img src={collab.avatar} alt={collab.name} className="size-6 rounded-full" />
+                          <span className="text-sm text-neutral-600">{collab.name}</span>
+                        </button>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -1928,12 +2296,18 @@ function CreateAppointmentModal({ isOpen, onClose, onSave }) {
 }
 
 // Appointments Tab Content Component
-function AppointmentsTabContent() {
-  const [appointments, setAppointments] = useState([]);
+function AppointmentsTabContent({ contact, users = [] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { appointments, addAppointment, loading } = useAppointments(contact?.id);
 
-  const handleSaveAppointment = (formData) => {
-    setAppointments([...appointments, { ...formData, id: Date.now() }]);
+  const handleSaveAppointment = async (formData) => {
+    try {
+      await addAppointment(formData);
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Erreur lors de la sauvegarde du rendez-vous:', err);
+      alert('Erreur lors de la sauvegarde du rendez-vous');
+    }
   };
 
   return (
@@ -1956,8 +2330,24 @@ function AppointmentsTabContent() {
         ) : (
           <div className="space-y-3">
             {appointments.map((appointment) => (
-              <div key={appointment.id} className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-                {appointment.title}
+              <div key={appointment.id} className="bg-white rounded-xl border border-[#E5E5E5] p-4 space-y-2">
+                <h4 className="font-semibold text-neutral-900">{appointment.titre || 'Sans titre'}</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm text-neutral-600">
+                  <div>
+                    <span className="font-medium">📅 Date:</span> {new Date(appointment.date_debut).toLocaleDateString('fr-FR')}
+                  </div>
+                  <div>
+                    <span className="font-medium">🕐 Heure:</span> {appointment.heure_debut} - {appointment.heure_fin}
+                  </div>
+                  <div>
+                    <span className="font-medium">📍 Lieu:</span> {appointment.lieu || 'Non spécifié'}
+                  </div>
+                  {appointment.commentaires && (
+                    <div>
+                      <span className="font-medium">📝 Notes:</span> {appointment.commentaires}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -1968,6 +2358,7 @@ function AppointmentsTabContent() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveAppointment}
+        users={users}
       />
     </div>
   );
@@ -2039,12 +2430,47 @@ export default function ContactDetailPage({
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("contact-info");
   const [activeSubTab, setActiveSubTab] = useState("client-info");
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
+  const [users, setUsers] = useState([]);
 
   // Extract the actual contact identifier from contactId (remove "contact-" prefix)
   const actualContactId = contactId ? contactId.replace(/^contact-/, '') : null;
 
   // Fetch contact data from Supabase
   const { contact: dbContact, loading, error } = useContact(actualContactId);
+
+  // Fetch projects for this contact
+  const { projects, loading: projectsLoading, refetch: refetchProjects } = useProjects(actualContactId);
+
+  // Fetch users from organization
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) return;
+
+        const { data: authData } = await supabase
+          .from('utilisateurs_auth')
+          .select('id_organisation')
+          .eq('id_auth_user', authUser.id)
+          .single();
+
+        if (!authData) return;
+
+        const { data: utilisateurs } = await supabase
+          .from('utilisateurs')
+          .select('id, prenom, nom')
+          .eq('id_organisation', authData.id_organisation)
+          .eq('statut', 'actif');
+
+        setUsers(utilisateurs || []);
+      } catch (err) {
+        console.error('Erreur lors de la récupération des utilisateurs:', err);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Format contact data for display
   const contactData = dbContact ? {
@@ -2071,6 +2497,30 @@ export default function ContactDetailPage({
 
   const handleBack = () => {
     onNavigate("directory-all");
+  };
+
+  const handleCreateProject = async (projectData) => {
+    try {
+      // Insérer le projet dans la base de données
+      // projectData contient déjà tous les champs nécessaires
+      const { data, error } = await supabase
+        .from('projets')
+        .insert([projectData])
+        .select();
+
+      if (error) throw error;
+
+      // Fermer la modale
+      setIsCreateProjectModalOpen(false);
+
+      // Rafraîchir la liste des projets
+      await refetchProjects();
+
+      alert("Projet créé avec succès!");
+    } catch (err) {
+      console.error('Erreur lors de la création du projet:', err);
+      alert("Erreur lors de la création du projet: " + err.message);
+    }
   };
 
   // Show loading state
@@ -2152,6 +2602,7 @@ export default function ContactDetailPage({
           onTabChange={setActiveTab}
           activeSubTab={activeSubTab}
           onSubTabChange={setActiveSubTab}
+          projectsCount={projects.length}
         />
 
         {/* Content */}
@@ -2167,13 +2618,18 @@ export default function ContactDetailPage({
               <PropertyInfoTabContent contact={dbContact} />
             )}
             {activeTab === "projects" && (
-              <ProjectListTabContent />
+              <ProjectListTabContent
+                projects={projects}
+                loading={projectsLoading}
+                onAddProject={() => setIsCreateProjectModalOpen(true)}
+                users={users}
+              />
             )}
             {activeTab === "tasks" && (
-              <TasksTabContent />
+              <TasksTabContent contact={dbContact} users={users} projects={projects} />
             )}
             {activeTab === "appointments" && (
-              <AppointmentsTabContent />
+              <AppointmentsTabContent contact={dbContact} users={users} />
             )}
             {(activeTab !== "contact-info" && activeTab !== "projects" && activeTab !== "tasks" && activeTab !== "appointments") && (
               <div className="p-12 text-center text-neutral-500">
@@ -2183,6 +2639,14 @@ export default function ContactDetailPage({
           </div>
         </div>
       </main>
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        onSubmit={handleCreateProject}
+        contact={dbContact}
+      />
     </div>
   );
 }

@@ -13,9 +13,22 @@ export function useProjects(contactId = null) {
   const fetchProjects = async () => {
     try {
       setLoading(true);
+      // Join with contacts to get client name, and with utilisateurs to get agent name
       let query = supabase
         .from('projets')
-        .select('*')
+        .select(`
+          *,
+          contacts:id_contact (
+            id,
+            prenom,
+            nom
+          ),
+          utilisateurs:id_referent (
+            id,
+            prenom,
+            nom
+          )
+        `)
         .is('supprime_le', null)
         .order('cree_le', { ascending: false });
 
@@ -26,7 +39,17 @@ export function useProjects(contactId = null) {
       const { data, error } = await query;
 
       if (error) throw error;
-      setProjects(data || []);
+
+      // Transform data to include joined information
+      const enrichedData = (data || []).map(project => ({
+        ...project,
+        // Add joined contact info
+        contact: project.contacts,
+        // Add joined user (referent/agent) info
+        referent: project.utilisateurs
+      }));
+
+      setProjects(enrichedData);
     } catch (err) {
       setError(err.message);
       console.error('Erreur lors de la récupération des projets:', err);

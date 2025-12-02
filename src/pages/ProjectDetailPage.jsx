@@ -21,6 +21,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
+import ProjectDiscoveryTab from "../components/ProjectDiscoveryTab";
+import { useProject } from "../hooks/useProject";
 
 // Mock project data
 const mockProjectData = {
@@ -3443,6 +3445,12 @@ export default function ProjectDetailPage({
   onToggleSidebar,
   projectId
 }) {
+  // Extract actual project ID (remove "project-detail-" prefix if present)
+  const actualProjectId = projectId ? projectId.replace(/^project-detail-/, '') : null;
+
+  // Fetch project data
+  const { project, loading, error, updateProject } = useProject(actualProjectId);
+
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("study");
   const [activeSubTab, setActiveSubTab] = useState("discovery");
@@ -3471,6 +3479,71 @@ export default function ProjectDetailPage({
     return () => window.removeEventListener('resize', updateHeaderHeight);
   }, []);
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] text-neutral-900">
+        <Sidebar
+          currentPage="project-tracking"
+          onNavigate={onNavigate}
+          initialCollapsed={sidebarCollapsed}
+          onToggleCollapse={onToggleSidebar}
+        />
+        <main
+          className="lg:transition-[margin] lg:duration-200 min-h-screen flex items-center justify-center"
+          style={{ marginLeft: `${sidebarWidth}px` }}
+        >
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900 mb-4"></div>
+            <p className="text-neutral-600">Chargement du projet...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !project) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] text-neutral-900">
+        <Sidebar
+          currentPage="project-tracking"
+          onNavigate={onNavigate}
+          initialCollapsed={sidebarCollapsed}
+          onToggleCollapse={onToggleSidebar}
+        />
+        <main
+          className="lg:transition-[margin] lg:duration-200 min-h-screen flex items-center justify-center"
+          style={{ marginLeft: `${sidebarWidth}px` }}
+        >
+          <div className="text-center">
+            <p className="text-red-600 font-semibold">Erreur lors du chargement du projet</p>
+            <p className="text-neutral-600 text-sm mt-2">{error || "Projet non trouvé"}</p>
+            <button
+              onClick={handleBack}
+              className="mt-4 px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800"
+            >
+              Retour à la liste
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Format project data for display
+  const formattedProject = project ? {
+    id: project.id,
+    type: project.type || "Non spécifié",
+    createdAt: project.cree_le ? new Date(project.cree_le).toLocaleDateString('fr-FR') : "Date inconnue",
+    title: project.nom_projet || "Sans titre",
+    clientName: project.contact ? `${project.contact.prenom} ${project.contact.nom}`.toUpperCase() : project.nom_contact || "Client inconnu",
+    phone: project.contact?.telephone || "Non renseigné",
+    email: project.contact?.email || "Non renseigné",
+    progress: project.progression || 0,
+    progressLabel: project.statut || "Non défini"
+  } : null;
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-neutral-900">
       <Sidebar
@@ -3495,7 +3568,7 @@ export default function ProjectDetailPage({
         {/* Project Header */}
         <div ref={headerRef} className="sticky top-16 z-20">
           <ProjectHeader
-            project={mockProjectData}
+            project={formattedProject}
             onBack={handleBack}
             onEdit={() => console.log("Edit")}
             onSchedule={() => console.log("Schedule")}
@@ -3529,7 +3602,7 @@ export default function ProjectDetailPage({
           <div className="w-full pb-8 px-4 lg:px-6">
             <div className="bg-white border border-[#E5E5E5] border-t-0 rounded-b-lg p-8">
               {activeTab === "study" && activeSubTab === "discovery" && (
-                <DiscoveryTabContent />
+                <ProjectDiscoveryTab project={project} onUpdate={updateProject} />
               )}
               {activeTab === "study" && activeSubTab === "kitchen" && (
                 <KitchenDiscoveryTabContent />

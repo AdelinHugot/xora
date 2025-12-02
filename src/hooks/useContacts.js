@@ -15,12 +15,22 @@ export function useContacts() {
       setLoading(true);
       const { data, error } = await supabase
         .from('contacts')
-        .select('*')
+        .select(`
+          *,
+          utilisateurs!contacts_agenceur_referent_fkey(id, prenom, nom)
+        `)
         .is('supprime_le', null)
         .order('cree_le', { ascending: false });
 
       if (error) throw error;
-      setContacts(data || []);
+
+      // Renommer le champ pour maintenir la compatibilité avec transformContactForDirectory
+      const contactsWithCreator = data.map(contact => ({
+        ...contact,
+        ajoute_par: contact.utilisateurs
+      }));
+
+      setContacts(contactsWithCreator || []);
     } catch (err) {
       setError(err.message);
       console.error('Erreur lors de la récupération des contacts:', err);

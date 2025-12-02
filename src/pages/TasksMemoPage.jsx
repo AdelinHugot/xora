@@ -3,8 +3,9 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import UserTopBar from "../components/UserTopBar";
+import { useTaches } from "../hooks/useTaches";
 
-// Mock data generator
+// Mock data generator (gardé pour les filtres d'agenceurs)
 const generateMockTasks = () => {
   const titles = [
     "Cuisine extérieure",
@@ -824,9 +825,36 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   );
 };
 
+// Mapper les données du hook vers le format attendu par la page
+const mapTacheForDisplay = (tache) => {
+  return {
+    id: tache.id,
+    index: tache.index,
+    title: tache.titre || tache.clientName,
+    client: tache.projectName,
+    tag: tache.tag,
+    type: tache.tag === "Mémo" ? "Mémo" : "Tâche",
+    status: tache.statut,
+    progress: tache.progress,
+    due: tache.dueDate || tache.cree_le,
+    assignee: "Non assigné",
+    note: tache.note,
+    currentStage: tache.currentStage,
+    stages: tache.stages,
+    isLate: tache.isLate,
+    daysLate: tache.daysLate,
+    dueDate: tache.dueDate
+  };
+};
+
 // Main component
 export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
-  const [tasks, setTasks] = useState(mockTasks);
+  // Utiliser le hook pour les vraies données
+  const { taches, loading, error, updateTacheStage, updateTacheStatus, deleteTache, createTache } = useTaches();
+
+  // Mapper les tâches pour l'affichage
+  const mappedTaches = taches.map(mapTacheForDisplay);
+
   const [statusFilterPill, setStatusFilterPill] = useState("en-cours");
   const [filters, setFilters] = useState({
     search: "",
@@ -845,14 +873,27 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
     setCurrentPage(1);
   };
 
-  const handleUpdateTask = (id, updates) => {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, ...updates } : task))
-    );
+  const handleUpdateTask = async (id, updates) => {
+    try {
+      // Si c'est un changement de statut
+      if (updates.status !== undefined) {
+        await updateTacheStatus(id, updates.status);
+      }
+      // Si c'est un changement de stage
+      if (updates.currentStage !== undefined) {
+        await updateTacheStage(id, updates.currentStage);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour:', err);
+    }
   };
 
-  const handleDeleteTask = (id) => {
-    setTasks((prev) => prev.filter((task) => task.id !== id));
+  const handleDeleteTask = async (id) => {
+    try {
+      await deleteTache(id);
+    } catch (err) {
+      console.error('Erreur lors de la suppression:', err);
+    }
   };
 
   const handleDragStart = (e, taskId) => {
@@ -867,49 +908,47 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
 
   const handleDrop = (e, targetTaskId) => {
     e.preventDefault();
-
-    if (draggedTaskId === targetTaskId) {
-      setDraggedTaskId(null);
-      return;
-    }
-
-    setTasks((prevTasks) => {
-      const newTasks = [...prevTasks];
-      const draggedIndex = newTasks.findIndex(t => t.id === draggedTaskId);
-      const targetIndex = newTasks.findIndex(t => t.id === targetTaskId);
-
-      if (draggedIndex === -1 || targetIndex === -1) return prevTasks;
-
-      // Remove dragged item
-      const [draggedTask] = newTasks.splice(draggedIndex, 1);
-      // Insert at target position
-      newTasks.splice(targetIndex, 0, draggedTask);
-
-      // Reindex all tasks
-      return newTasks.map((task, idx) => ({ ...task, index: idx + 1 }));
-    });
-
     setDraggedTaskId(null);
+    // Le drag-drop du tri de priorité peut être implémenté plus tard
   };
 
   const handleCreateTaskOrMemo = async (payload) => {
-    console.log("Creating task/memo:", payload);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Here you would typically add the new task to the list
-    setIsModalOpen(false);
+    try {
+      // Convertir le payload de la modale au format attendu par le hook
+      const tacheData = {
+        titre: payload.kind === "Tâche" ? `${payload.taskType || 'Tâche'}` : payload.memoName,
+        memoName: payload.memoName,
+        tag: payload.kind === "Tâche" ? (payload.taskType || 'Autre') : 'Mémo',
+        type: payload.kind,
+        statut: 'Non commencé',
+        progression: 0,
+        date_echeance: payload.kind === "Tâche" ? payload.dueDate : payload.memoEcheance,
+        note: payload.kind === "Tâche" ? payload.note : payload.noteMemo,
+        nom_client: payload.client,
+        nom_projet: payload.project
+      };
+
+      // Créer la tâche via le hook
+      await createTache(tacheData);
+
+      // Fermer la modale
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("Erreur lors de la création:", err);
+      alert("Erreur lors de la création de la tâche: " + err.message);
+    }
   };
 
-  // Filter logic
+  // Filter logic - avec les vraies données du hook mappées
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      // Search
+    return mappedTaches.filter((task) => {
+      // Search dans les champs disponibles
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const searchableFields = [
-          task.title,
-          task.client,
+          task.title || "",
+          task.client || "",
           task.tag || "",
-          task.assignee,
           task.note || ""
         ].map((f) => f.toLowerCase());
 
@@ -918,19 +957,21 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
         }
       }
 
-      // Type
-      if (filters.type && task.type !== filters.type) return false;
+      // Type (tags pour les vrais tâches)
+      if (filters.type) {
+        if (filters.type === "Tâche" && task.type === "Mémo") return false;
+        if (filters.type === "Mémo" && task.type === "Tâche") return false;
+      }
 
       // Status
       if (filters.status && task.status !== filters.status) return false;
 
-      // Assignee
-      if (filters.assignee && task.assignee !== filters.assignee) return false;
-
       // Echeance
-      if (filters.echeance) {
+      if (filters.echeance && task.dueDate) {
         const today = new Date();
-        const dueDate = new Date(task.due);
+        today.setHours(0, 0, 0, 0);
+        const dueDateParts = task.dueDate.split('/');
+        const dueDate = new Date(dueDateParts[2], dueDateParts[1] - 1, dueDateParts[0]);
         const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
         if (filters.echeance === "today" && daysDiff !== 0) return false;
@@ -948,7 +989,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
 
       return true;
     });
-  }, [tasks, filters, statusFilterPill]);
+  }, [mappedTaches, filters, statusFilterPill]);
 
   // Pagination
   const totalPages = Math.ceil(filteredTasks.length / pageSize);
@@ -1021,68 +1062,157 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
               <FiltersBar filters={filters} onFilterChange={handleFilterChange} />
             </div>
 
-            {/* Content - Gray background container */}
+            {/* Content - Improved design */}
             <div className="bg-white w-full overflow-x-auto" style={{ boxSizing: "border-box" }}>
-              {/* Table Headers */}
-              <div className="py-4 border-b border-[#E9E9E9] grid gap-3 items-start" style={{
-                gridTemplateColumns: "50px 2fr 1.2fr 1fr 1.2fr 0.8fr 1.5fr 0.8fr 40px",
-                paddingLeft: "24px",
-                paddingRight: "24px",
-                boxSizing: "border-box",
+              {/* Loading State */}
+              {loading && (
+                <div className="w-full py-16 text-center">
+                  <div className="inline-flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-neutral-200 border-t-neutral-900 rounded-full animate-spin"></div>
+                    <span className="text-neutral-500">Chargement des tâches...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && (
+                <div className="w-full py-16 text-center">
+                  <div className="inline-flex flex-col items-center gap-2">
+                    <div className="text-2xl">⚠️</div>
+                    <p className="text-red-600 font-medium">Erreur du chargement</p>
+                    <p className="text-sm text-red-500">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Content - Only show if not loading and no error */}
+              {!loading && !error && (
+              <>
+              {/* Table Headers - Simplified design */}
+              <div className="py-3 px-6 bg-neutral-50 border-b border-neutral-200 grid gap-4 items-center sticky top-0" style={{
+                gridTemplateColumns: "auto 2fr 1.2fr 1fr 1.2fr 1.5fr auto",
                 width: "100%",
-                minWidth: "min-content"
               }}>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Ordre</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Descriptif</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Statut</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Échéance</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Collaborateur.s</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Note</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase">Progression</div>
-                <div></div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Ordre</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Descriptif</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Tag</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Échéance</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Statut</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Progression</div>
+                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Actions</div>
               </div>
 
               {/* Table Rows */}
               {paginatedTasks.length > 0 ? (
-                <div className="w-full">
-                  {paginatedTasks.map((task) => (
-                    <TaskRow
+                <div className="w-full divide-y divide-neutral-100">
+                  {paginatedTasks.map((task, idx) => (
+                    <div
                       key={task.id}
-                      item={task}
-                      onUpdate={handleUpdateTask}
-                      onDelete={handleDeleteTask}
-                      onDragStart={handleDragStart}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      isDragging={draggedTaskId === task.id}
-                    />
+                      className="py-3 px-6 grid gap-4 items-center hover:bg-neutral-50 transition-colors group"
+                      style={{
+                        gridTemplateColumns: "auto 2fr 1.2fr 1fr 1.2fr 1.5fr auto",
+                        width: "100%",
+                      }}
+                    >
+                      {/* Ordre */}
+                      <div className="text-sm font-semibold text-neutral-400 group-hover:text-neutral-600">
+                        #{task.index}
+                      </div>
+
+                      {/* Descriptif */}
+                      <div className="min-w-0">
+                        <p className={`font-medium truncate ${task.status === "Terminé" ? "line-through text-neutral-400" : "text-neutral-900"}`}>
+                          {task.title}
+                        </p>
+                        {task.client && <p className="text-xs text-neutral-500 truncate">{task.client}</p>}
+                      </div>
+
+                      {/* Tag */}
+                      <div className="flex justify-start">
+                        {task.tag && (
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                            task.tag === "Mémo" ? "bg-neutral-900 text-white" :
+                            task.tag === "Appel" ? "bg-purple-100 text-purple-700" :
+                            task.tag === "Email" ? "bg-sky-100 text-sky-700" :
+                            "bg-neutral-100 text-neutral-700"
+                          }`}>
+                            {task.tag}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Échéance */}
+                      <div className="text-sm text-neutral-600 whitespace-nowrap">
+                        {task.dueDate}
+                      </div>
+
+                      {/* Statut */}
+                      <div className="flex justify-start">
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
+                          className="px-2.5 py-1 text-xs font-medium rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                        >
+                          <option>Non commencé</option>
+                          <option>En cours</option>
+                          <option>Terminé</option>
+                        </select>
+                      </div>
+
+                      {/* Progression */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
+                            style={{ width: `${task.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-neutral-600 w-8 text-right">{task.progress}%</span>
+                      </div>
+
+                      {/* Actions Menu */}
+                      <button
+                        onClick={() => {
+                          if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
+                            handleDeleteTask(task.id);
+                          }
+                        }}
+                        className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        title="Supprimer"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M2.5 4.5h13M7 2h4M7.5 7.5v7M10.5 7.5v7M3.5 4.5l.5 10c0 1 .9 1.5 2 1.5h6c1.1 0 2-.5 2-1.5l.5-10" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="w-full py-12 text-center text-neutral-500" style={{
-                  paddingLeft: "24px",
-                  paddingRight: "24px"
-                }}>
-                  Aucune tâche ou mémo à afficher
+                <div className="w-full py-16 text-center">
+                  <div className="inline-flex flex-col items-center gap-2">
+                    <div className="text-3xl">📋</div>
+                    <p className="text-neutral-500 font-medium">Aucune tâche</p>
+                    <p className="text-sm text-neutral-400">Créez une nouvelle tâche pour commencer</p>
+                  </div>
                 </div>
               )}
 
               {/* Footer */}
-              <div className="py-4 border-t border-[#E9E9E9] flex items-center justify-between bg-white w-full" style={{
-                paddingLeft: "24px",
-                paddingRight: "24px",
-                boxSizing: "border-box"
-              }}>
-                <div className="text-sm text-neutral-600">
-                  Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)} sur{" "}
-                  {filteredTasks.length} éléments
+              {paginatedTasks.length > 0 && (
+                <div className="py-4 px-6 border-t border-neutral-200 flex items-center justify-between bg-neutral-50">
+                  <div className="text-sm text-neutral-600">
+                    <span className="font-medium">{filteredTasks.length}</span> tâche{filteredTasks.length > 1 ? 's' : ''} •
+                    Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)}
+                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              </div>
+              )}
+              </>
+              )}
             </div>
           </div>
         </div>

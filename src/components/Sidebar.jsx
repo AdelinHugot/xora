@@ -37,15 +37,7 @@ const navigationConfig = [
     icon: AnnuaireIcon,
     route: "directory-all", // Route par défaut affichant tous les contacts
     disabled: false,
-    hasSubmenu: true,
-    submenu: [
-      { id: "clients", label: "Clients et Prospects", route: "directory-clients" },
-      { id: "suppliers", label: "Fournisseurs", route: "directory-suppliers" },
-      { id: "artisans", label: "Artisans", route: "directory-artisans" },
-      { id: "institutional", label: "Institutionnel", route: "directory-institutional" },
-      { id: "prescriber", label: "Prescripteur", route: "directory-prescriber" },
-      { id: "subcontractor", label: "Sous-traitant", route: "directory-subcontractor" }
-    ]
+    hasSubmenu: false
   },
   {
     id: "project-tracking",
@@ -303,10 +295,11 @@ function SidebarNav({ currentPage, collapsed, onNavigate }) {
 }
 
 // Sous-composant Footer
-function SidebarFooter({ collapsed }) {
+function SidebarFooter({ collapsed, onLogout }) {
   return (
     <div className={`border-t border-neutral-200 ${collapsed ? 'px-2 py-3' : 'px-4 py-3'}`}>
-      <button 
+      <button
+        onClick={onLogout}
         className={`text-rose-700 inline-flex items-center gap-2 hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300 rounded ${
           collapsed ? 'justify-center p-2' : ''
         }`}
@@ -320,11 +313,12 @@ function SidebarFooter({ collapsed }) {
 }
 
 // Composant principal Sidebar
-export default function Sidebar({ 
-  currentPage = "dashboard", 
+export default function Sidebar({
+  currentPage = "dashboard",
   onNavigate,
   initialCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  onLogout
 }) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
 
@@ -357,7 +351,7 @@ export default function Sidebar({
         onNavigate={onNavigate} 
       />
       
-      <SidebarFooter collapsed={isCollapsed} />
+      <SidebarFooter collapsed={isCollapsed} onLogout={onLogout} />
     </aside>
   );
 }

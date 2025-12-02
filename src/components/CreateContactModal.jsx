@@ -202,8 +202,9 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
   const lastFocusedElement = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  // State for agenceurs from database
+  // State for agenceurs and organization from database
   const [agenceurs, setAgenceurs] = useState([]);
+  const [organisationName, setOrganisationName] = useState('');
 
   const origines = ["Relation", "Salon", "Web", "Recommandation", "Démarchage"];
 
@@ -280,6 +281,22 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
         }));
 
         setAgenceurs(agenceursData);
+
+        // Fetch organization name
+        const { data: orgData, error: orgError } = await supabase
+          .from('organisations')
+          .select('nom')
+          .eq('id', authData.id_organisation)
+          .single();
+
+        if (!orgError && orgData) {
+          setOrganisationName(orgData.nom);
+          // Pre-fill the societe field with the organization name
+          setFormData(prev => ({
+            ...prev,
+            societe: orgData.nom
+          }));
+        }
       } catch (error) {
         console.error('Erreur lors de la récupération des agenceurs:', error);
       }
@@ -404,6 +421,61 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
       }
     };
   }, []);
+
+  // Format address to show only: N° de rue Nom de rue, Code postal, Ville
+  const formatAddressDisplay = (result) => {
+    const fullAddress = result.display_name;
+    const parts = fullAddress.split(',').map(p => p.trim());
+
+    let streetAddress = '';
+    let postalCode = '';
+    let city = '';
+
+    // Find postal code first (5-digit number)
+    let postalCodeIndex = -1;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i];
+      if (/^\d{5}$/.test(part)) {
+        postalCode = part;
+        postalCodeIndex = i;
+        break;
+      }
+    }
+
+    // Extract street address: combine first 1 or 2 parts
+    const streetParts = [];
+    for (let i = 0; i < Math.min(2, parts.length); i++) {
+      const part = parts[i];
+      if (part.length > 0 && !part.match(/^\d{5}$/)) {
+        streetParts.push(part);
+      }
+    }
+    streetAddress = streetParts.join(' ');
+
+    // Find city: look for text between postal code and end, avoiding administrative divisions
+    if (postalCodeIndex >= 0) {
+      for (let i = postalCodeIndex - 1; i >= 0; i--) {
+        const part = parts[i];
+        if (!/^\d{5}$/.test(part) && // not postal code
+            !/^\d+$/.test(part) && // not a number
+            !part.toLowerCase().includes('arrondissement') &&
+            !part.toLowerCase().includes('france') &&
+            !part.toLowerCase().includes('métropole') &&
+            !part.toLowerCase().includes('rhône') &&
+            !part.toLowerCase().includes('auvergne') &&
+            !part.toLowerCase().includes('alpes') &&
+            !part.toLowerCase().includes('métropolitaine') &&
+            part !== streetParts[0] &&
+            part !== streetParts[1] &&
+            part.length > 0) {
+          city = part;
+          break;
+        }
+      }
+    }
+
+    return [streetAddress, postalCode, city].filter(Boolean).join(', ');
+  };
 
   // Handle address selection
   const handleSelectAddress = (result) => {
@@ -667,7 +739,7 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                               onClick={() => handleSelectAddress(result)}
                               className="w-full px-3 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0"
                             >
-                              {result.display_name}
+                              {formatAddressDisplay(result)}
                             </button>
                           ))}
                         </div>
@@ -763,9 +835,8 @@ const CreateContactModal = ({ open, onClose, onSubmit }) => {
                     type="text"
                     id="societe"
                     value={formData.societe}
-                    onChange={(e) => handleChange("societe", e.target.value)}
-                    placeholder="Nom de la société"
-                    className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 placeholder:text-[#A1A7B6]"
+                    disabled={true}
+                    className="w-full rounded-lg border border-[#E1E4ED] bg-[#F3F4F6] px-3 py-2.5 text-sm text-[#999999] focus:outline-none cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 

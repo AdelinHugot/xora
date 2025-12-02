@@ -16,162 +16,17 @@ import OurCompanyPage from "./pages/OurCompanyPage";
 import AfterSalesPage from "./pages/AfterSalesPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import { useKPIs } from "./hooks/useKPIs";
+import { usePipelineKPIs } from "./hooks/usePipelineKPIs";
+import { useTaches } from "./hooks/useTaches";
+import { useAgendaWeek } from "./hooks/useAgendaWeek";
 import KpiCaGenereSvg from "../SVG Menu/KPI - CA Généré.svg";
 import KpiMargeGenereSvg from "../SVG Menu/KPI - Marge générée.svg";
 import KpiTauxMargeSvg from "../SVG Menu/KPI - Taux de marge.svg";
 import KpiTauxTransformationSvg from "../SVG Menu/KPI - Taux de transformation.svg";
 import AttentionSvg from "../SVG Menu/Attention.svg";
 import MenuSvg from "../SVG Menu/3 Points.svg";
-
-// Mock data - KPI blanches (cartes horizontales)
-const whiteKpis = [
-  {
-    id: "ca-genere",
-    label: "CA Généré",
-    value: "53.456€",
-    goal: "110.000€",
-    percent: 65,
-    icon: KpiCaGenereSvg
-  },
-  {
-    id: "marge-generee",
-    label: "Marge générée",
-    value: "12.326€",
-    goal: "15.000€",
-    percent: 73,
-    icon: KpiMargeGenereSvg
-  },
-  {
-    id: "taux-marge",
-    label: "Taux de marge",
-    value: "23,4%",
-    goal: "35%",
-    percent: 68,
-    icon: KpiTauxMargeSvg
-  },
-  {
-    id: "taux-transformation",
-    label: "Taux de transformation",
-    value: "32,2%",
-    goal: "33%",
-    percent: 96,
-    icon: KpiTauxTransformationSvg
-  },
-];
-
-// Mock data - KPI colorés (cartes pastel)
-const coloredKpis = [
-  { id: "leads", label: "Leads", value: 8, color: "#EEE8FD" },
-  { id: "studies", label: "Études en cours", value: 8, color: "#EED1F4" },
-  { id: "order", label: "Commande client", value: 8, color: "#A9C9F9" },
-  { id: "tech", label: "Dossier tech & install", value: 10, color: "#A4E6FE" },
-  { id: "sav", label: "SAV", value: 7, color: "#FFD0C1" },
-];
-
-// Mock data - Tâches & Mémos
-const tasks = [
-  {
-    id: 1,
-    clientName: "Coline FARGET",
-    projectName: "Cuisine Moderne",
-    tag: "Dossier technique",
-    dueDate: "20/08/2025",
-    isLate: false,
-    hasAlert: false,
-    progress: 45,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 1,
-  },
-  {
-    id: 2,
-    clientName: "Laurent DURAND",
-    projectName: "Appel client",
-    tag: "Appel",
-    dueDate: "15/08/2025",
-    isLate: true,
-    daysLate: 2,
-    hasAlert: true,
-    progress: 0,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 0,
-  },
-  {
-    id: 3,
-    clientName: "Nicolas DUMONT",
-    projectName: "Installation client",
-    tag: "Commande client",
-    dueDate: "25/08/2025",
-    isLate: false,
-    hasAlert: false,
-    progress: 60,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 1,
-  },
-  {
-    id: 4,
-    clientName: "Mme Dubois",
-    projectName: "Rendez-vous avec Romain",
-    tag: "Mémo",
-    dueDate: "18/08/2025",
-    isLate: false,
-    hasAlert: false,
-    progress: 0,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 0,
-  },
-  {
-    id: 5,
-    clientName: "Pierre HERME",
-    projectName: "Cuisine Salon - Devis",
-    tag: "Email",
-    dueDate: "22/08/2025",
-    isLate: false,
-    hasAlert: false,
-    progress: 0,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 0,
-  },
-  {
-    id: 6,
-    clientName: "Marie MARTIN",
-    projectName: "Salle de bain",
-    tag: "Études en cours",
-    dueDate: "28/08/2025",
-    isLate: false,
-    hasAlert: false,
-    progress: 75,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 1,
-  },
-  {
-    id: 7,
-    clientName: "Jean FONTAINE",
-    projectName: "Placard intégré",
-    tag: "Dossier technique",
-    dueDate: "30/08/2025",
-    isLate: false,
-    hasAlert: false,
-    progress: 30,
-    stages: ["Non commencé", "En cours", "Terminé"],
-    currentStage: 1,
-  },
-];
-
-const days = [
-  { key: "mon", label: "Lundi 12" },
-  { key: "tue", label: "Mardi 13" },
-  { key: "wed", label: "Mercredi 14" },
-  { key: "thu", label: "Jeudi 15" },
-  { key: "fri", label: "Vendredi 16" },
-];
-
-const agendaItems = [
-  { id: "a1", day: "mon", start: "09:00", end: "09:30", title: "Rendez-vous client" },
-  { id: "a2", day: "tue", start: "09:00", end: "09:30", title: "Rendez-vous client" },
-  { id: "a3", day: "wed", start: "09:00", end: "09:30", title: "Rendez-vous client" },
-  { id: "a4", day: "thu", start: "09:00", end: "09:30", title: "Rendez-vous client" },
-  { id: "a5", day: "fri", start: "09:00", end: "09:30", title: "Rendez-vous client" },
-];
+import { supabase } from "./lib/supabase";
 
 // Small UI helpers (unused but kept for potential future use)
 const Badge = ({ children }) => (
@@ -204,6 +59,102 @@ const PillIcon = ({ Icon }) => (
 // Layout pieces
 
 function Topbar({ onSettingsClick = () => {} }) {
+  const [userName, setUserName] = useState("Chargement...");
+  const [userRole, setUserRole] = useState("");
+  const [userAvatar, setUserAvatar] = useState("https://i.pravatar.cc/40?img=12");
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      // Get authenticated user
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        console.log('No authenticated user found');
+        return;
+      }
+
+      console.log('Authenticated user:', authUser.email);
+
+      // Fetch user info from utilisateurs_auth table to get id_utilisateur
+      const { data: authData, error: authError } = await supabase
+        .from('utilisateurs_auth')
+        .select('id_utilisateur')
+        .eq('id_auth_user', authUser.id)
+        .single();
+
+      if (authError) {
+        console.error('Erreur lors de la récupération des données auth:', authError);
+        // Use email as fallback
+        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
+        setUserName(nameFromEmail);
+        setUserAvatar(`https://i.pravatar.cc/40?u=${authUser.id}`);
+        return;
+      }
+
+      if (!authData) {
+        console.log('No auth data found for user');
+        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
+        setUserName(nameFromEmail);
+        setUserAvatar(`https://i.pravatar.cc/40?u=${authUser.id}`);
+        return;
+      }
+
+      console.log('Auth data retrieved, id_utilisateur:', authData.id_utilisateur);
+      setUserId(authData.id_utilisateur);
+
+      // Fetch from utilisateurs table
+      const { data: userData, error: userError } = await supabase
+        .from('utilisateurs')
+        .select('prenom, nom')
+        .eq('id', authData.id_utilisateur)
+        .single();
+
+      if (userError) {
+        console.error('Erreur lors de la récupération du profil utilisateur:', userError);
+        // Use email as fallback
+        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
+        setUserName(nameFromEmail);
+        setUserAvatar(`https://i.pravatar.cc/40?u=${authData.id_utilisateur}`);
+        return;
+      }
+
+      if (userData) {
+        const prenom = userData.prenom ? userData.prenom.charAt(0).toUpperCase() + userData.prenom.slice(1).toLowerCase() : '';
+        const nom = userData.nom ? userData.nom.charAt(0).toUpperCase() + userData.nom.slice(1).toLowerCase() : '';
+        const fullName = `${prenom} ${nom}`.trim();
+        console.log('User found:', { fullName });
+        setUserName(fullName || "Utilisateur");
+        setUserRole("Utilisateur");
+        setUserAvatar(`https://i.pravatar.cc/40?u=${authData.id_utilisateur}`);
+      } else {
+        console.log('No user data returned');
+        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
+        setUserName(nameFromEmail);
+        setUserAvatar(`https://i.pravatar.cc/40?u=${authData.id_utilisateur}`);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', err);
+    }
+  };
+
+  const handleSettingsClick = () => {
+    console.log('Settings clicked, userId:', userId);
+    if (userId) {
+      // Pass the team member route to the callback
+      const route = `team-member-${userId}`;
+      console.log('Navigating to:', route);
+      onSettingsClick(route);
+    } else {
+      // Fallback if userId not loaded yet
+      console.log('userId not loaded, using fallback');
+      onSettingsClick("settings-connection");
+    }
+  };
+
   return (
     <header className="h-16 border-b border-neutral-200 bg-white/60 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -226,15 +177,15 @@ function Topbar({ onSettingsClick = () => {} }) {
           className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50"
           aria-label="Paramètres"
           title="Paramètres"
-          onClick={onSettingsClick}
+          onClick={handleSettingsClick}
         >
           <Settings className="size-4" />
         </button>
         <div className="flex items-center gap-2 pl-3 ml-2 border-l border-neutral-200">
-          <img src="https://i.pravatar.cc/40?img=12" alt="avatar" className="size-8 rounded-full" />
+          <img src={userAvatar} alt="avatar" className="size-8 rounded-full" />
           <div className="text-sm leading-tight">
-            <div className="font-semibold">Thomas</div>
-            <div className="text-neutral-500">Admin</div>
+            <div className="font-semibold">{userName}</div>
+            <div className="text-neutral-500">{userRole}</div>
           </div>
           <ChevronDown className="size-4 text-neutral-500" />
         </div>
@@ -261,6 +212,15 @@ function Searchbar() {
 // Composant pour les cartes KPI blanches horizontales
 function KpiStrip() {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { kpis, loading, error } = useKPIs();
+
+  // Map des icônes pour chaque KPI
+  const kpiIcons = {
+    'ca-genere': KpiCaGenereSvg,
+    'marge-generee': KpiMargeGenereSvg,
+    'taux-marge': KpiTauxMargeSvg,
+    'taux-transformation': KpiTauxTransformationSvg
+  };
 
   return (
     <div className="px-4 lg:px-6 mb-6">
@@ -291,41 +251,53 @@ function KpiStrip() {
           }}
         >
           <div className="p-4 md:p-5">
+            {/* État de chargement */}
+            {loading && (
+              <div className="text-center py-8 text-neutral-500">Chargement des KPIs...</div>
+            )}
+
+            {/* État d'erreur */}
+            {error && (
+              <div className="text-center py-8 text-red-500">Erreur: {error}</div>
+            )}
+
             {/* 4 cartes KPI horizontales */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-              {whiteKpis.map((kpi) => (
-                <div key={kpi.id} className="rounded-2xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
-                  {/* Médaillon icône - Carré avec radius 10px */}
-                  <div className="size-8 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#A886D7" }}>
-                    <img src={kpi.icon} alt={kpi.label} className="size-5" />
-                  </div>
-
-                  {/* Contenu */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-neutral-900 mb-1">{kpi.label}</div>
-                    <div className="flex items-center gap-1 mb-2">
-                      <span className="text-lg font-semibold text-neutral-900">{kpi.value}</span>
-                      <span className="text-sm text-neutral-400">/ {kpi.goal}</span>
+            {kpis && (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                {kpis.map((kpi) => (
+                  <div key={kpi.id} className="rounded-2xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
+                    {/* Médaillon icône - Carré avec radius 10px */}
+                    <div className="size-8 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#A886D7" }}>
+                      <img src={kpiIcons[kpi.id]} alt={kpi.label} className="size-5" />
                     </div>
 
-                    {/* Barre de progression + pourcentage */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-0.5 bg-violet-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-violet-600 transition-all duration-300"
-                          style={{ width: `${kpi.percent}%` }}
-                          role="progressbar"
-                          aria-valuenow={kpi.percent}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                        />
+                    {/* Contenu */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-neutral-900 mb-1">{kpi.label}</div>
+                      <div className="flex items-center gap-1 mb-2">
+                        <span className="text-lg font-semibold text-neutral-900">{kpi.value}</span>
+                        <span className="text-sm text-neutral-400">/ {kpi.goal}</span>
                       </div>
-                      <span className="text-xs text-neutral-500">{kpi.percent}%</span>
+
+                      {/* Barre de progression + pourcentage */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-0.5 bg-violet-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-violet-600 transition-all duration-300"
+                            style={{ width: `${kpi.percent}%` }}
+                            role="progressbar"
+                            aria-valuenow={kpi.percent}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                          />
+                        </div>
+                        <span className="text-xs text-neutral-500">{kpi.percent}%</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -335,9 +307,27 @@ function KpiStrip() {
 
 // Composant pour les cartes KPI colorées (colonne gauche)
 function KpiStack() {
+  const { kpis, loading, error } = usePipelineKPIs();
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center py-8 text-neutral-500">Chargement des KPIs...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="text-center py-8 text-red-500">Erreur: {error}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {coloredKpis.map((kpi) => (
+      {kpis && kpis.map((kpi) => (
         <div key={kpi.id} className="relative rounded-2xl border border-neutral-200 p-4" style={{ backgroundColor: kpi.color }}>
           <div className="flex items-start justify-between">
             <div className="text-neutral-700">
@@ -376,13 +366,26 @@ function getTagColors(tag) {
   return tagColorMap[tag] || { bg: "#F3F4F6", text: "#1F2937", border: "#D1D5DB" };
 }
 
-function TaskRow({ task, index }) {
+function TaskRow({ task, index, onStageChange, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentStage, setCurrentStage] = useState(task.currentStage);
   const colors = getTagColors(task.tag);
 
   // Determine if task has progress bar (not Appel, Email, Mémo)
   const hasProgressBar = !["Appel", "Email", "Mémo"].includes(task.tag);
+
+  const handleStageChange = async (stageIndex) => {
+    setCurrentStage(stageIndex);
+    if (onStageChange) {
+      try {
+        await onStageChange(task.id, stageIndex);
+      } catch (err) {
+        console.error('Erreur lors du changement de stage:', err);
+        // Revert on error
+        setCurrentStage(task.currentStage);
+      }
+    }
+  };
 
   return (
     <>
@@ -454,7 +457,7 @@ function TaskRow({ task, index }) {
               {task.stages.map((stage, i) => (
                 <button
                   key={stage}
-                  onClick={() => setCurrentStage(i)}
+                  onClick={() => handleStageChange(i)}
                   className="flex-1 px-3 py-1 rounded-full text-xs font-medium transition-all text-center"
                   style={{
                     backgroundColor: i === currentStage ? "#FFFFFF" : "transparent",
@@ -502,8 +505,8 @@ function TaskRow({ task, index }) {
               </button>
               <button
                 onClick={() => {
-                  console.log("Supprimer tâche", task.id);
                   setMenuOpen(false);
+                  if (onDelete) onDelete(task.id);
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-neutral-50 transition-colors text-red-600"
               >
@@ -521,6 +524,8 @@ function TaskRow({ task, index }) {
 }
 
 function TasksPanel({ height, onNavigate }) {
+  const { taches, loading, error, updateTacheStage, deleteTache } = useTaches();
+
   // Format date in French
   const formatDateFrench = () => {
     const now = new Date();
@@ -573,55 +578,143 @@ function TasksPanel({ height, onNavigate }) {
         </div>
       </div>
 
+      {/* État de chargement */}
+      {loading && (
+        <div className="flex-1 flex items-center justify-center text-neutral-500">
+          Chargement des tâches...
+        </div>
+      )}
+
+      {/* État d'erreur */}
+      {error && (
+        <div className="flex-1 flex items-center justify-center text-red-500">
+          Erreur: {error}
+        </div>
+      )}
+
       {/* Tâches avec scroll interne - scrollbar cachée */}
-      <div className="flex-1 overflow-y-auto grid gap-3 min-h-0" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
-        {tasks.map((t, i) => (
-          <TaskRow key={t.id} task={t} index={i} />
-        ))}
-      </div>
+      {!loading && !error && (
+        <div className="flex-1 overflow-y-auto grid gap-3 min-h-0" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+          {taches.length === 0 ? (
+            <div className="flex items-center justify-center text-neutral-400 py-8">
+              Aucune tâche pour le moment
+            </div>
+          ) : (
+            taches.map((t, i) => (
+              <TaskRow
+                key={t.id}
+                task={t}
+                index={i}
+                onStageChange={updateTacheStage}
+                onDelete={deleteTache}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function Agenda() {
-  const [week, setWeek] = useState("12/05 - 17/05");
-  const itemsByDay = useMemo(() => {
-    const map = Object.fromEntries(days.map((d) => [d.key, []]));
-    for (const it of agendaItems) map[it.day].push(it);
-    return map;
-  }, []);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const { days, appointmentsByDay, loading, error, weekDates } = useAgendaWeek(weekOffset);
+
+  // Formater les dates de la semaine pour affichage
+  const formatWeekLabel = () => {
+    if (!weekDates) return "";
+    const startFormat = new Date(weekDates.weekStart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'numeric' });
+    const endFormat = new Date(weekDates.weekEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'numeric' });
+    return `${startFormat} - ${endFormat}`;
+  };
 
   return (
     <section className="px-4 lg:px-6 mt-8">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h2 className="text-lg font-bold text-neutral-900">Agenda</h2>
         <div className="flex items-center gap-2">
-          <select className="px-3 py-2 rounded-xl border border-neutral-200 bg-white/70 text-sm font-medium" value={week} onChange={(e) => setWeek(e.target.value)}>
-            <option>12/05 - 17/05</option>
-            <option>19/05 - 24/05</option>
-          </select>
-          <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50" aria-label="Options agenda">
-            <ChevronDown className="size-4" />
+          <span className="px-3 py-2 rounded-xl border border-neutral-200 bg-white/70 text-sm font-medium text-neutral-600">
+            {formatWeekLabel()}
+          </span>
+          <button
+            onClick={() => setWeekOffset(weekOffset - 1)}
+            className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50"
+            aria-label="Semaine précédente"
+            title="Semaine précédente"
+          >
+            <ChevronDown className="size-4 rotate-90" />
+          </button>
+          <button
+            onClick={() => setWeekOffset(weekOffset + 1)}
+            className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50"
+            aria-label="Semaine suivante"
+            title="Semaine suivante"
+          >
+            <ChevronDown className="size-4 -rotate-90" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-        {days.map((d) => (
-          <div key={d.key} className="rounded-2xl border border-neutral-200 bg-white/70 overflow-hidden">
-            <div className="px-4 py-3 border-b border-neutral-200 text-sm font-semibold text-neutral-700">{d.label}</div>
-            <div className="p-3 space-y-2">
-              {itemsByDay[d.key].map((it) => (
-                <div key={it.id} className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 hover:bg-neutral-50 transition-colors">
-                  <div className="text-xs text-neutral-500 font-medium">{it.start} - {it.end}</div>
-                  <div className="text-sm font-semibold text-neutral-900 mt-1">{it.title}</div>
+      {/* État de chargement */}
+      {loading && (
+        <div className="text-center py-8 text-neutral-500">Chargement de l'agenda...</div>
+      )}
+
+      {/* État d'erreur */}
+      {error && (
+        <div className="text-center py-8 text-red-500">Erreur: {error}</div>
+      )}
+
+      {/* Grille de l'agenda - 6 colonnes, 100% largeur, responsive */}
+      {!loading && !error && (
+        <div className="w-full rounded-2xl border border-neutral-200 bg-white/70 overflow-hidden">
+          <div className="flex" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+            {days.map((d, idx) => (
+              <div
+                key={d.key}
+                className={`${
+                  idx > 0 ? 'border-l border-neutral-200' : ''
+                }`}
+              >
+                {/* En-tête du jour */}
+                <div className="px-4 py-3 border-b border-neutral-200 text-sm font-semibold text-neutral-700 bg-neutral-50 sticky top-0">
+                  {d.label}
                 </div>
-              ))}
-            </div>
+
+                {/* Rendez-vous du jour */}
+                <div className="p-3 space-y-2 min-h-48">
+                  {appointmentsByDay[d.key] && appointmentsByDay[d.key].length > 0 ? (
+                    appointmentsByDay[d.key].map((apt) => (
+                      <div
+                        key={apt.id}
+                        className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 hover:bg-neutral-50 transition-colors cursor-pointer text-xs"
+                        title={`${apt.title} - ${apt.contactName}`}
+                      >
+                        <div className="font-medium text-neutral-700">
+                          {apt.start}
+                        </div>
+                        <div className="font-semibold text-neutral-900 truncate mt-0.5">
+                          {apt.title}
+                        </div>
+                        {apt.contactName && (
+                          <div className="text-neutral-500 truncate mt-0.5">
+                            {apt.contactName}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-neutral-400 text-center py-8">
+                      -
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -707,16 +800,17 @@ function MainPanels({ onNavigate }) {
   );
 }
 
-function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
-      <Sidebar 
-        currentPage="dashboard" 
+      <Sidebar
+        currentPage="dashboard"
         onNavigate={onNavigate}
         initialCollapsed={sidebarCollapsed}
         onToggleCollapse={onToggleSidebar}
+        onLogout={onLogout}
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onSettingsClick={() => onNavigate("settings-connection")} />
@@ -737,6 +831,40 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  // Vérifier la session utilisateur au chargement
+  useEffect(() => {
+    const checkAuthSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    checkAuthSession();
+
+    // S'abonner aux changements d'authentification
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const navigateToRoute = (route) => {
     setCurrentRoute(route);
@@ -767,6 +895,26 @@ export default function App() {
     setShowSignup(false);
     // L'utilisateur est automatiquement connecté après l'inscription
     // On pourrait aussi rediriger vers login si on préfère
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Déconnecter l'utilisateur de Supabase
+      await supabase.auth.signOut();
+
+      // Réinitialiser l'état de l'application
+      setIsAuthenticated(false);
+      setCurrentRoute("dashboard");
+      window.location.hash = "";
+
+      console.log('Utilisateur déconnecté avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // Même en cas d'erreur, on déconnecte l'utilisateur localement
+      setIsAuthenticated(false);
+      setCurrentRoute("dashboard");
+      window.location.hash = "";
+    }
   };
 
   // Simple routing logic (you can replace with React Router later)
@@ -919,6 +1067,7 @@ export default function App() {
             onNavigate={handleNavigation}
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={handleToggleSidebar}
+            onLogout={handleLogout}
           />
         );
     }
@@ -933,6 +1082,18 @@ export default function App() {
   }, [currentRoute]);
 
   // Si l'utilisateur n'est pas connecté, afficher la page de login ou signup
+  // Afficher un écran de chargement pendant la vérification de la session
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900 mb-4"></div>
+          <p className="text-neutral-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     if (showSignup) {
       return (

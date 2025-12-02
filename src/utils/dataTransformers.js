@@ -21,12 +21,17 @@ const locationCoordinates = {
  * Transforme les contacts Supabase au format UI Directory
  */
 export const transformContactForDirectory = (contact, referent = null) => {
+  // Récupérer l'info du créateur (ajoute_par) depuis les données du contact
+  const creatorData = contact.ajoute_par;
+  const creatorName = creatorData ? `${creatorData.prenom} ${creatorData.nom}` : 'N/A';
+  const creatorId = creatorData?.id || contact.id;
+
   return {
     id: contact.id,
     name: `${contact.prenom} ${contact.nom}`.toUpperCase(),
     addedBy: {
-      name: referent?.prenom || 'N/A',
-      avatarUrl: `https://i.pravatar.cc/24?img=${hashCode(contact.id) % 24}`
+      name: creatorName,
+      avatarUrl: `https://i.pravatar.cc/24?u=${creatorId}`
     },
     origin: contact.origine || 'Web',
     location: contact.localisation || 'Paris',
@@ -44,16 +49,28 @@ export const transformContactForDirectory = (contact, referent = null) => {
 /**
  * Transforme les projets Supabase au format UI ProjectTracking
  */
-export const transformProjectForTracking = (project, contact = null) => {
+export const transformProjectForTracking = (project) => {
+  // Get client name from joined contact or fallback to nom_contact
+  const clientName = project.contact
+    ? `${project.contact.prenom} ${project.contact.nom}`.toUpperCase()
+    : (project.nom_contact || 'Sans nom');
+
+  // Get agent/referent name from joined utilisateur or fallback
+  const agentName = project.referent
+    ? `${project.referent.prenom} ${project.referent.nom}`
+    : 'Non assigné';
+
+  const agentId = project.referent?.id || project.id_referent || project.id;
+
   return {
     id: project.id,
-    clientName: contact ? `${contact.prenom} ${contact.nom}`.toUpperCase() : project.nom_contact,
+    clientName,
     agent: {
-      name: 'Agent',
-      avatar: `https://i.pravatar.cc/24?img=${hashCode(project.id) % 24}`
+      name: agentName,
+      avatar: `https://i.pravatar.cc/32?u=${agentId}`
     },
-    projectName: project.nom_projet,
-    status: project.statut,
+    projectName: project.nom_projet || 'Sans titre',
+    status: project.statut || 'Non défini',
     progress: project.progression || 0,
     dateAdded: formatDate(project.cree_le),
     type: project.type,
@@ -120,3 +137,79 @@ function hashCode(str) {
   }
   return Math.abs(hash);
 }
+
+/**
+ * Simplifie une adresse complète au format: Numéro Rue, Code Postal, Ville
+ * Exemple: "18, Place Ambroise Courtois, Monplaisir, Lyon 8e Arrondissement, Lyon, Métropole de Lyon, Rhône, Auvergne-Rhône-Alpes, France métropolitaine, 69008, France"
+ * Devient: "18 Place Ambroise Courtois, 69008, Lyon"
+ */
+export const simplifyAddress = (address) => {
+  if (!address) return '';
+
+  // Diviser l'adresse par les virgules
+  const parts = address.split(',').map(p => p.trim());
+
+  if (parts.length === 0) return address;
+
+  // Chercher le numéro et la rue (première partie)
+  let streetAddress = parts[0];
+
+  // Chercher le code postal (généralement 5 chiffres)
+  let postalCode = '';
+  let city = '';
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+
+    // Chercher le code postal (5 chiffres d'affilée)
+    if (/^\d{5}$/.test(part)) {
+      postalCode = part;
+      // La ville est généralement après le code postal en remontant
+      // ou avant dans la structure
+      break;
+    }
+  }
+
+  // Chercher la ville - c'est généralement le mot qui suit le code postal
+  // ou avant le code postal
+  if (postalCode) {
+    const postalIndex = parts.findIndex(p => p === postalCode);
+    // La ville est généralement juste avant le code postal ou la dernière partie significative
+    for (let i = postalIndex - 1; i >= 0; i--) {
+      const part = parts[i];
+      // Ignorer les numéros de département et régions
+      if (!/^\d+$/.test(part) && part.length > 0 && part.length < 50) {
+        // Vérifier que ce n'est pas un arrondissement (contient "Arrondissement")
+        if (!part.toLowerCase().includes('arrondissement') &&
+            !part.toLowerCase().includes('france') &&
+            part !== streetAddress) {
+          city = part;
+          break;
+        }
+      }
+    }
+  }
+
+  // Si on n'a pas trouvé la ville de cette manière, chercher le dernier mot significatif
+  if (!city && parts.length > 1) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i];
+      if (!/^\d{5}$/.test(part) &&
+          !part.includes('Arrondissement') &&
+          !part.toLowerCase().includes('france') &&
+          part.length > 2 &&
+          part.length < 50 &&
+          part !== streetAddress) {
+        city = part;
+        break;
+      }
+    }
+  }
+
+  // Construire l'adresse simplifiée
+  const simplifiedParts = [streetAddress];
+  if (postalCode) simplifiedParts.push(postalCode);
+  if (city) simplifiedParts.push(city);
+
+  return simplifiedParts.filter(p => p && p.length > 0).join(', ');
+};
