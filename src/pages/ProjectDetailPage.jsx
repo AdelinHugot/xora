@@ -1234,12 +1234,15 @@ function CommercialPresentationTabContent() {
 }
 
 // Kitchen Discovery Tab Content Component
-function KitchenDiscoveryTabContent() {
+function KitchenDiscoveryTabContent({ project, onUpdate }) {
   const [activeTertiaryTab, setActiveTertiaryTab] = useState("ambiance");
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteModalTab, setNoteModalTab] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteModalData, setDeleteModalData] = useState(null);
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle, saving, saved, error
+  const [saveError, setSaveError] = useState(null);
+  const debounceTimerRef = useRef(null);
   const [sanitaryPrices, setSanitaryPrices] = useState({
     min: "35000",
     max: "56000"
@@ -1385,6 +1388,87 @@ function KitchenDiscoveryTabContent() {
     financial: ""
   });
 
+  // Load project data into formData on mount
+  useEffect(() => {
+    if (project) {
+      setFormData((prev) => ({
+        ...prev,
+        // Ambiance section
+        ambianceTypes: project.types_ambiance || "",
+        ambianceAppreciated: project.ambiance_appreciee || "",
+        ambianceToAvoid: project.ambiance_eviter || "",
+        // Modèle final section
+        furniture: project.meubles || "",
+        handles: project.poignees || "",
+        worktop: project.plan_travail || "",
+        // Matériaux conservés section
+        kitchenFloor: project.sol_cuisine || "",
+        kitchenWall: project.revetement_murs || "",
+        other: project.autres_details || "",
+        furnitureSelection: project.selection_meubles || "",
+        materialsDescription: project.description_materiaux || ""
+      }));
+    }
+  }, [project?.id]);
+
+  // Auto-save with debounce
+  useEffect(() => {
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set a new timer for debounced save
+    debounceTimerRef.current = setTimeout(async () => {
+      if (!project || !onUpdate) return;
+
+      const dataToUpdate = {
+        // Ambiance section
+        types_ambiance: formData.ambianceTypes,
+        ambiance_appreciee: formData.ambianceAppreciated,
+        ambiance_eviter: formData.ambianceToAvoid,
+        meubles: formData.furniture,
+        poignees: formData.handles,
+        plan_travail: formData.worktop,
+        sol_cuisine: formData.kitchenFloor,
+        revetement_murs: formData.kitchenWall,
+        autres_details: formData.other,
+        selection_meubles: formData.furnitureSelection,
+        description_materiaux: formData.materialsDescription,
+        // Notes
+        notes_ambiance: tabNotes.ambiance,
+        notes_meubles: tabNotes.furniture,
+        notes_electromenagers: tabNotes.appliances,
+        notes_financier: tabNotes.financial
+      };
+
+      setSaveStatus("saving");
+      setSaveError(null);
+
+      try {
+        const result = await onUpdate(dataToUpdate);
+        if (result.success) {
+          setSaveStatus("saved");
+          // Reset to idle after 2 seconds
+          setTimeout(() => setSaveStatus("idle"), 2000);
+        } else {
+          setSaveStatus("error");
+          setSaveError(result.error || "Erreur lors de la sauvegarde");
+        }
+      } catch (err) {
+        setSaveStatus("error");
+        setSaveError(err.message || "Erreur lors de la sauvegarde");
+      }
+    }, 1000); // 1 second debounce delay
+
+    // Cleanup function
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [formData, tabNotes, project, onUpdate]);
+
   // Calculate total prices for appliances
   const calculateApplianceTotals = () => {
     let minTotal = 0;
@@ -1517,6 +1601,34 @@ function KitchenDiscoveryTabContent() {
 
   return (
     <div className="space-y-6">
+      {/* Save Status Indicator */}
+      {saveStatus !== "idle" && (
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
+          saveStatus === "saving" ? "bg-blue-50 border border-blue-200" :
+          saveStatus === "saved" ? "bg-green-50 border border-green-200" :
+          "bg-red-50 border border-red-200"
+        }`}>
+          {saveStatus === "saving" && (
+            <>
+              <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-blue-700">Sauvegarde en cours...</span>
+            </>
+          )}
+          {saveStatus === "saved" && (
+            <>
+              <Check className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-700">Sauvegardé</span>
+            </>
+          )}
+          {saveStatus === "error" && (
+            <>
+              <X className="w-4 h-4 text-red-600" />
+              <span className="text-sm text-red-700">{saveError || "Erreur lors de la sauvegarde"}</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Tertiary Navigation */}
       <div className="flex items-center gap-2 p-2" style={{ backgroundColor: "#F8F9FA", border: "1px solid #E4E4E7", borderRadius: "100px" }}>
         {tertiaryTabs.map((tab) => {
@@ -3605,7 +3717,7 @@ export default function ProjectDetailPage({
                 <ProjectDiscoveryTab project={project} onUpdate={updateProject} />
               )}
               {activeTab === "study" && activeSubTab === "kitchen" && (
-                <KitchenDiscoveryTabContent />
+                <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} />
               )}
               {activeTab === "study" && activeSubTab === "commercial" && (
                 <CommercialPresentationTabContent />
