@@ -1646,34 +1646,6 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
 
   return (
     <div className="space-y-6">
-      {/* Save Status Indicator */}
-      {saveStatus !== "idle" && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
-          saveStatus === "saving" ? "bg-blue-50 border border-blue-200" :
-          saveStatus === "saved" ? "bg-green-50 border border-green-200" :
-          "bg-red-50 border border-red-200"
-        }`}>
-          {saveStatus === "saving" && (
-            <>
-              <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-blue-700">Sauvegarde en cours...</span>
-            </>
-          )}
-          {saveStatus === "saved" && (
-            <>
-              <Check className="w-4 h-4 text-green-600" />
-              <span className="text-sm text-green-700">Sauvegardé</span>
-            </>
-          )}
-          {saveStatus === "error" && (
-            <>
-              <X className="w-4 h-4 text-red-600" />
-              <span className="text-sm text-red-700">{saveError || "Erreur lors de la sauvegarde"}</span>
-            </>
-          )}
-        </div>
-      )}
-
       {/* Tertiary Navigation */}
       <div className="flex items-center gap-2 p-2" style={{ backgroundColor: "#F8F9FA", border: "1px solid #E4E4E7", borderRadius: "100px" }}>
         {tertiaryTabs.map((tab) => {
