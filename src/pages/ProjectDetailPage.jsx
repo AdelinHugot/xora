@@ -1235,6 +1235,79 @@ function CommercialPresentationTabContent() {
 
 // Kitchen Discovery Tab Content Component
 function KitchenDiscoveryTabContent({ project, onUpdate }) {
+  // Options for dropdown menus
+  const accessoriesOptions = [
+    { value: "tirors-amortis", label: "Tiroirs avec amortisseurs" },
+    { value: "etageres-ajustables", label: "Étagères ajustables" },
+    { value: "rangement-vertical", label: "Systèmes de rangement vertical" },
+    { value: "separatifs", label: "Séparatifs de tiroirs" },
+    { value: "porte-bouteilles", label: "Porte-bouteilles" },
+    { value: "corbeille-pain", label: "Corbeille à pain" },
+    { value: "porte-epices", label: "Porte-épices" },
+    { value: "credence", label: "Crédence" },
+    { value: "poignees-speciales", label: "Poignées spéciales" }
+  ];
+
+  const brightnessOptions = [
+    { value: "tres-faible", label: "Très faible" },
+    { value: "faible", label: "Faible" },
+    { value: "normale", label: "Normale" },
+    { value: "lumineuse", label: "Lumineuse" },
+    { value: "tres-lumineuse", label: "Très lumineuse" }
+  ];
+
+  const temperatureOptions = [
+    { value: "blanc-chaud", label: "Blanc chaud (2700K)" },
+    { value: "blanc-neutre", label: "Blanc neutre (4000K)" },
+    { value: "blanc-froid", label: "Blanc froid (6000K)" },
+    { value: "melange", label: "Mélangé (ajustable)" }
+  ];
+
+  const apparatusOptions = [
+    { value: "eviers", label: "Éviers" },
+    { value: "plaques", label: "Plaques de cuisson" },
+    { value: "lave-vaisselle", label: "Lave-vaisselle" },
+    { value: "four", label: "Four" },
+    { value: "hotte", label: "Hotte" },
+    { value: "refrigerateur", label: "Réfrigérateur" },
+    { value: "micro-ondes", label: "Micro-ondes" },
+    { value: "meubles", label: "Meubles" }
+  ];
+
+  const kitchenObjectivesOptions = [
+    { value: "maximiser-stockage", label: "Maximiser l'espace de stockage" },
+    { value: "ergonomie", label: "Améliorer l'ergonomie" },
+    { value: "lumiere", label: "Gain de lumière" },
+    { value: "moderniser", label: "Moderniser l'apparence" },
+    { value: "fonctionnalite", label: "Améliorer la fonctionnalité" },
+    { value: "nettoyage", label: "Faciliter le nettoyage" },
+    { value: "flux", label: "Optimiser le flux de travail" }
+  ];
+
+  const lowFurnitureOptions = [
+    { value: "base-1-porte", label: "Base avec 1 porte" },
+    { value: "base-2-portes", label: "Base avec 2 portes" },
+    { value: "base-3-portes", label: "Base avec 3 portes" },
+    { value: "base-tiroirs", label: "Base avec tiroirs" },
+    { value: "base-angle", label: "Base d'angle" },
+    { value: "base-ouverte", label: "Base ouverte" }
+  ];
+
+  const highFurnitureOptions = [
+    { value: "armoire-1-porte", label: "Armoire haute 1 porte" },
+    { value: "armoire-2-portes", label: "Armoire haute 2 portes" },
+    { value: "armoire-etageres", label: "Armoire haute avec étagères" },
+    { value: "armoire-ouverte", label: "Armoire haute ouverte" },
+    { value: "armoire-angle", label: "Caisson haut d'angle" }
+  ];
+
+  const columnOptions = [
+    { value: "colonne-simple", label: "Colonne simple" },
+    { value: "colonne-double", label: "Colonne double" },
+    { value: "colonne-etageres", label: "Colonne avec étagères" },
+    { value: "colonne-angle", label: "Colonne d'angle" }
+  ];
+
   const [activeTertiaryTab, setActiveTertiaryTab] = useState("ambiance");
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteModalTab, setNoteModalTab] = useState(null);
@@ -1392,22 +1465,52 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
   // Load project data into formData on mount
   useEffect(() => {
     if (project) {
+      const ambianceData = project.kitchen_ambiance_data || {};
+      const meubleData = project.kitchen_meubles_data || {};
       setFormData((prev) => ({
         ...prev,
-        // Ambiance section
-        ambianceTypes: project.types_ambiance || "",
-        ambianceAppreciated: project.ambiance_appreciee || "",
-        ambianceToAvoid: project.ambiance_eviter || "",
-        // Modèle final section
-        furniture: project.meubles || "",
-        handles: project.poignees || "",
-        worktop: project.plan_travail || "",
-        // Matériaux conservés section
-        kitchenFloor: project.sol_cuisine || "",
-        kitchenWall: project.revetement_murs || "",
-        other: project.autres_details || "",
-        furnitureSelection: project.selection_meubles || "",
-        materialsDescription: project.description_materiaux || ""
+        // Ambiance section (from JSONB)
+        ambianceTypes: ambianceData.ambianceTypes || project.types_ambiance || "",
+        ambianceAppreciated: ambianceData.ambianceAppreciated || project.ambiance_appreciee || "",
+        ambianceToAvoid: ambianceData.ambianceToAvoid || project.ambiance_eviter || "",
+        // Modèle final section (from JSONB)
+        furniture: ambianceData.furniture || project.meubles || "",
+        handles: ambianceData.handles || project.poignees || "",
+        worktop: ambianceData.worktop || project.plan_travail || "",
+        // Matériaux conservés section (from JSONB)
+        kitchenFloor: ambianceData.kitchenFloor || project.sol_cuisine || "",
+        kitchenWall: ambianceData.kitchenWall || project.revetement_murs || "",
+        other: ambianceData.other || project.autres_details || "",
+        furnitureSelection: ambianceData.furnitureSelection || project.selection_meubles || "",
+        materialsDescription: ambianceData.materialsDescription || project.description_materiaux || "",
+        // Furniture section (from JSONB)
+        storageCurrentVolume: meubleData.storageCurrentVolume || "",
+        storageDesiredVolume: meubleData.storageDesiredVolume || "",
+        furnitureAccessories: meubleData.furnitureAccessories || "",
+        accessoriesComment: meubleData.accessoriesComment || "",
+        lightingBrightness: meubleData.lightingBrightness || "",
+        lightingTemperature: meubleData.lightingTemperature || "",
+        lightingDescription: meubleData.lightingDescription || "",
+        uninstallApparatus: meubleData.uninstallApparatus || "",
+        uninstallLength: meubleData.uninstallLength || "",
+        uninstallDescription: meubleData.uninstallDescription || "",
+        preparationLength: meubleData.preparationLength || "",
+        preparationWasteDescription: meubleData.preparationWasteDescription || "",
+        worktopCurrentHeight: meubleData.worktopCurrentHeight || "",
+        worktopDesiredHeight: meubleData.worktopDesiredHeight || "",
+        dailyMealAdults: meubleData.dailyMealAdults || "",
+        dailyMealChildren: meubleData.dailyMealChildren || "",
+        exceptionalMealAdults: meubleData.exceptionalMealAdults || "",
+        exceptionalMealChildren: meubleData.exceptionalMealChildren || "",
+        kitchenObjectives: meubleData.kitchenObjectives || "",
+        usageWasteDescription: meubleData.usageWasteDescription || "",
+        lowFurniture: meubleData.lowFurniture || "",
+        highFurniture: meubleData.highFurniture || "",
+        columns: meubleData.columns || "",
+        lowFurnitureDescription: meubleData.lowFurnitureDescription || "",
+        highFurnitureDescription: meubleData.highFurnitureDescription || "",
+        columnsDescription: meubleData.columnsDescription || "",
+        furnitureWasteManagement: meubleData.furnitureWasteManagement || ""
       }));
     }
   }, [project?.id]);
@@ -1450,30 +1553,62 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set a new timer for debounced save (3 seconds to wait for user to finish typing)
+    // Set a new timer for debounced save (500ms for quasi-instant save)
     debounceTimerRef.current = setTimeout(() => {
       const dataToUpdate = {
-        // Ambiance section
-        types_ambiance: formData.ambianceTypes,
-        ambiance_appreciee: formData.ambianceAppreciated,
-        ambiance_eviter: formData.ambianceToAvoid,
-        meubles: formData.furniture,
-        poignees: formData.handles,
-        plan_travail: formData.worktop,
-        sol_cuisine: formData.kitchenFloor,
-        revetement_murs: formData.kitchenWall,
-        autres_details: formData.other,
-        selection_meubles: formData.furnitureSelection,
-        description_materiaux: formData.materialsDescription,
         // Notes
         notes_ambiance: tabNotes.ambiance,
         notes_meubles: tabNotes.furniture,
         notes_electromenagers: tabNotes.appliances,
-        notes_financier: tabNotes.financial
+        notes_financier: tabNotes.financial,
+        // Ambiance section (stored as JSONB)
+        kitchen_ambiance_data: {
+          ambianceTypes: formData.ambianceTypes,
+          ambianceAppreciated: formData.ambianceAppreciated,
+          ambianceToAvoid: formData.ambianceToAvoid,
+          furniture: formData.furniture,
+          handles: formData.handles,
+          worktop: formData.worktop,
+          kitchenFloor: formData.kitchenFloor,
+          kitchenWall: formData.kitchenWall,
+          other: formData.other,
+          furnitureSelection: formData.furnitureSelection,
+          materialsDescription: formData.materialsDescription
+        },
+        // Furniture section (stored as JSONB)
+        kitchen_meubles_data: {
+          storageCurrentVolume: formData.storageCurrentVolume,
+          storageDesiredVolume: formData.storageDesiredVolume,
+          furnitureAccessories: formData.furnitureAccessories,
+          accessoriesComment: formData.accessoriesComment,
+          lightingBrightness: formData.lightingBrightness,
+          lightingTemperature: formData.lightingTemperature,
+          lightingDescription: formData.lightingDescription,
+          uninstallApparatus: formData.uninstallApparatus,
+          uninstallLength: formData.uninstallLength,
+          uninstallDescription: formData.uninstallDescription,
+          preparationLength: formData.preparationLength,
+          preparationWasteDescription: formData.preparationWasteDescription,
+          worktopCurrentHeight: formData.worktopCurrentHeight,
+          worktopDesiredHeight: formData.worktopDesiredHeight,
+          dailyMealAdults: formData.dailyMealAdults,
+          dailyMealChildren: formData.dailyMealChildren,
+          exceptionalMealAdults: formData.exceptionalMealAdults,
+          exceptionalMealChildren: formData.exceptionalMealChildren,
+          kitchenObjectives: formData.kitchenObjectives,
+          usageWasteDescription: formData.usageWasteDescription,
+          lowFurniture: formData.lowFurniture,
+          highFurniture: formData.highFurniture,
+          columns: formData.columns,
+          lowFurnitureDescription: formData.lowFurnitureDescription,
+          highFurnitureDescription: formData.highFurnitureDescription,
+          columnsDescription: formData.columnsDescription,
+          furnitureWasteManagement: formData.furnitureWasteManagement
+        }
       };
 
       saveData(dataToUpdate);
-    }, 3000); // 3 second debounce delay
+    }, 500); // 500ms debounce delay for quasi-instant save
 
     // Cleanup function - save on unmount if there are pending changes
     return () => {
@@ -1492,21 +1627,52 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
       }
 
       const dataToUpdate = {
-        types_ambiance: formData.ambianceTypes,
-        ambiance_appreciee: formData.ambianceAppreciated,
-        ambiance_eviter: formData.ambianceToAvoid,
-        meubles: formData.furniture,
-        poignees: formData.handles,
-        plan_travail: formData.worktop,
-        sol_cuisine: formData.kitchenFloor,
-        revetement_murs: formData.kitchenWall,
-        autres_details: formData.other,
-        selection_meubles: formData.furnitureSelection,
-        description_materiaux: formData.materialsDescription,
         notes_ambiance: tabNotes.ambiance,
         notes_meubles: tabNotes.furniture,
         notes_electromenagers: tabNotes.appliances,
-        notes_financier: tabNotes.financial
+        notes_financier: tabNotes.financial,
+        kitchen_ambiance_data: {
+          ambianceTypes: formData.ambianceTypes,
+          ambianceAppreciated: formData.ambianceAppreciated,
+          ambianceToAvoid: formData.ambianceToAvoid,
+          furniture: formData.furniture,
+          handles: formData.handles,
+          worktop: formData.worktop,
+          kitchenFloor: formData.kitchenFloor,
+          kitchenWall: formData.kitchenWall,
+          other: formData.other,
+          furnitureSelection: formData.furnitureSelection,
+          materialsDescription: formData.materialsDescription
+        },
+        kitchen_meubles_data: {
+          storageCurrentVolume: formData.storageCurrentVolume,
+          storageDesiredVolume: formData.storageDesiredVolume,
+          furnitureAccessories: formData.furnitureAccessories,
+          accessoriesComment: formData.accessoriesComment,
+          lightingBrightness: formData.lightingBrightness,
+          lightingTemperature: formData.lightingTemperature,
+          lightingDescription: formData.lightingDescription,
+          uninstallApparatus: formData.uninstallApparatus,
+          uninstallLength: formData.uninstallLength,
+          uninstallDescription: formData.uninstallDescription,
+          preparationLength: formData.preparationLength,
+          preparationWasteDescription: formData.preparationWasteDescription,
+          worktopCurrentHeight: formData.worktopCurrentHeight,
+          worktopDesiredHeight: formData.worktopDesiredHeight,
+          dailyMealAdults: formData.dailyMealAdults,
+          dailyMealChildren: formData.dailyMealChildren,
+          exceptionalMealAdults: formData.exceptionalMealAdults,
+          exceptionalMealChildren: formData.exceptionalMealChildren,
+          kitchenObjectives: formData.kitchenObjectives,
+          usageWasteDescription: formData.usageWasteDescription,
+          lowFurniture: formData.lowFurniture,
+          highFurniture: formData.highFurniture,
+          columns: formData.columns,
+          lowFurnitureDescription: formData.lowFurnitureDescription,
+          highFurnitureDescription: formData.highFurnitureDescription,
+          columnsDescription: formData.columnsDescription,
+          furnitureWasteManagement: formData.furnitureWasteManagement
+        }
       };
 
       // Don't await - just fire and forget on unmount
@@ -1728,11 +1894,13 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
         <div className="space-y-6">
           {/* Section Ambiance */}
           <FormSection title="Ambiance">
-            <FormField label="Ambiance(s) recherchée(s)" span={1}>
-              <SelectInput
+            <FormField label="Ambiance(s) recherchée(s)">
+              <textarea
                 value={formData.ambianceTypes}
-                onChange={(value) => updateField("ambianceTypes", value)}
-                placeholder="Sélectionner"
+                onChange={(e) => updateField("ambianceTypes", e.target.value)}
+                placeholder="Écrire les ambiances recherchées"
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
               />
             </FormField>
             <FormField label="Ambiance appréciée">
@@ -1867,6 +2035,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.furnitureAccessories}
                 onChange={(value) => updateField("furnitureAccessories", value)}
                 placeholder="Sélectionner"
+                options={accessoriesOptions}
               />
             </FormField>
             <FormField label="Commentaire" span={2}>
@@ -1887,6 +2056,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.lightingBrightness}
                 onChange={(value) => updateField("lightingBrightness", value)}
                 placeholder="Sélectionner"
+                options={brightnessOptions}
               />
             </FormField>
             <FormField label="Température de l'éclairage" span={1}>
@@ -1894,6 +2064,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.lightingTemperature}
                 onChange={(value) => updateField("lightingTemperature", value)}
                 placeholder="Sélectionner"
+                options={temperatureOptions}
               />
             </FormField>
             <FormField label="Description de l'éclairage" span={1}>
@@ -1914,6 +2085,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.uninstallApparatus}
                 onChange={(value) => updateField("uninstallApparatus", value)}
                 placeholder="Sélectionner"
+                options={apparatusOptions}
               />
             </FormField>
             <FormField label="Longueur à prévoir" span={1}>
@@ -2029,6 +2201,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.kitchenObjectives}
                 onChange={(value) => updateField("kitchenObjectives", value)}
                 placeholder="Sélectionner"
+                options={kitchenObjectivesOptions}
               />
             </FormField>
 
@@ -2051,6 +2224,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.lowFurniture}
                 onChange={(value) => updateField("lowFurniture", value)}
                 placeholder="Sélectionner"
+                options={lowFurnitureOptions}
               />
             </FormField>
             <FormField label="Meubles hauts" span={1}>
@@ -2058,6 +2232,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.highFurniture}
                 onChange={(value) => updateField("highFurniture", value)}
                 placeholder="Sélectionner"
+                options={highFurnitureOptions}
               />
             </FormField>
             <FormField label="Colonnes" span={1}>
@@ -2065,6 +2240,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 value={formData.columns}
                 onChange={(value) => updateField("columns", value)}
                 placeholder="Sélectionner"
+                options={columnOptions}
               />
             </FormField>
             <FormField label="Description meubles bas" span={1}>

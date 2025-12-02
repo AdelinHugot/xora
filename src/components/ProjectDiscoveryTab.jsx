@@ -218,6 +218,26 @@ function ContactSearchModal({ isOpen, onClose, onSelect, organizationId }) {
  * Gère l'onglet "Découverte" avec sauvegarde automatique en base de données
  */
 export default function ProjectDiscoveryTab({ project, onUpdate }) {
+  // Options for dropdowns
+  const workExecutionOptions = [
+    { value: "auto", label: "En auto-réalisation (client)" },
+    { value: "entreprise", label: "Par une entreprise" },
+    { value: "mixte", label: "Mixte (client + entreprise)" },
+    { value: "indefini", label: "À définir" }
+  ];
+
+  const artisansOptions = [
+    { value: "plombier", label: "Plombier" },
+    { value: "electricien", label: "Électricien" },
+    { value: "carreleur", label: "Carreleur" },
+    { value: "peintre", label: "Peintre" },
+    { value: "menuisier", label: "Menuisier" },
+    { value: "maçon", label: "Maçon" },
+    { value: "chauffagiste", label: "Chauffagiste" },
+    { value: "multi", label: "Entreprise multispécialiste" },
+    { value: "autre", label: "Autre" }
+  ];
+
   const [formData, setFormData] = useState({
     agency: "",
     referent: "",
@@ -260,36 +280,38 @@ export default function ProjectDiscoveryTab({ project, onUpdate }) {
   // Charger les données du projet et les infos de l'organisation
   useEffect(() => {
     if (project) {
+      const discoveryData = project.kitchen_discovery_data || {};
+
       setFormData({
-        agency: project.agence || "",
-        referent: project.id_referent || "",
-        origin: project.origine || "",
-        subOrigin: project.sous_origine || "",
-        sponsorLink: project.lien_sponsor || "",
-        sponsorLinkId: project.lien_sponsor || "",
-        siteAddress: project.adresse_chantier || "",
-        billingAddress: project.adresse_facturation || "",
-        studyTrade: project.metier_etudie || "",
-        workExecution: project.execution_travaux || "",
-        artisansNeeded: project.artisans_necessaires || false,
-        artisansList: project.liste_artisans || "",
-        signatureDate: project.date_signature ? project.date_signature : "",
-        workDates: project.dates_travaux || "",
-        installationDate: project.date_installation ? project.date_installation : "",
-        budgetLow: project.budget_bas || "",
-        budgetHigh: project.budget_haut || "",
-        globalBudget: project.budget_global || "",
-        financing: project.financement || "",
-        removal: project.enlevement || "",
-        installation: project.installation || "",
-        deliveryBy: project.livre_par || "",
-        technicalPlans: project.plans_techniques || false,
-        competitorsCount: project.nombre_concurrents || "",
-        competitors: project.concurrents || "",
-        competitorBudget: project.budget_concurrence || "",
-        projectStatus: project.statut_projet || "",
-        buildingPermit: project.permis_construire || false,
-        permitDate: project.date_permis ? project.date_permis : ""
+        agency: discoveryData.agency || project.agence || "",
+        referent: discoveryData.referent || project.id_referent || "",
+        origin: discoveryData.origin || project.origine || "",
+        subOrigin: discoveryData.subOrigin || project.sous_origine || "",
+        sponsorLink: discoveryData.sponsorLink || project.lien_sponsor || "",
+        sponsorLinkId: discoveryData.sponsorLinkId || project.lien_sponsor || "",
+        siteAddress: discoveryData.siteAddress || project.adresse_chantier || "",
+        billingAddress: discoveryData.billingAddress || project.adresse_facturation || "",
+        studyTrade: discoveryData.studyTrade || project.metier_etudie || "",
+        workExecution: discoveryData.workExecution || project.execution_travaux || "",
+        artisansNeeded: discoveryData.artisansNeeded !== undefined ? discoveryData.artisansNeeded : (project.artisans_necessaires || false),
+        artisansList: discoveryData.artisansList || project.liste_artisans || "",
+        signatureDate: discoveryData.signatureDate || (project.date_signature ? project.date_signature : ""),
+        workDates: discoveryData.workDates || project.dates_travaux || "",
+        installationDate: discoveryData.installationDate || (project.date_installation ? project.date_installation : ""),
+        budgetLow: discoveryData.budgetLow || project.budget_bas || "",
+        budgetHigh: discoveryData.budgetHigh || project.budget_haut || "",
+        globalBudget: discoveryData.globalBudget || project.budget_global || "",
+        financing: discoveryData.financing || project.financement || "",
+        removal: discoveryData.removal || project.enlevement || "",
+        installation: discoveryData.installation || project.installation || "",
+        deliveryBy: discoveryData.deliveryBy || project.livre_par || "",
+        technicalPlans: discoveryData.technicalPlans !== undefined ? discoveryData.technicalPlans : (project.plans_techniques || false),
+        competitorsCount: discoveryData.competitorsCount || project.nombre_concurrents || "",
+        competitors: discoveryData.competitors || project.concurrents || "",
+        competitorBudget: discoveryData.competitorBudget || project.budget_concurrence || "",
+        projectStatus: discoveryData.projectStatus || project.statut_projet || "",
+        buildingPermit: discoveryData.buildingPermit !== undefined ? discoveryData.buildingPermit : (project.permis_construire || false),
+        permitDate: discoveryData.permitDate || (project.date_permis ? project.date_permis : "")
       });
 
       // Fetch organization and employees
@@ -346,34 +368,37 @@ export default function ProjectDiscoveryTab({ project, onUpdate }) {
     setIsSaving(true);
     try {
       const dbUpdates = {
-        agence: updatedData.agency || null,
-        id_referent: updatedData.referent || null,
-        origine: updatedData.origin || null,
-        sous_origine: updatedData.subOrigin || null,
-        lien_sponsor: updatedData.sponsorLinkId || null,
-        adresse_chantier: updatedData.siteAddress || null,
-        adresse_facturation: updatedData.billingAddress || null,
-        metier_etudie: updatedData.studyTrade || null,
-        execution_travaux: updatedData.workExecution || null,
-        artisans_necessaires: updatedData.artisansNeeded,
-        liste_artisans: updatedData.artisansList || null,
-        date_signature: updatedData.signatureDate || null,
-        dates_travaux: updatedData.workDates || null,
-        date_installation: updatedData.installationDate || null,
-        budget_bas: updatedData.budgetLow ? parseFloat(updatedData.budgetLow) : null,
-        budget_haut: updatedData.budgetHigh ? parseFloat(updatedData.budgetHigh) : null,
-        budget_global: updatedData.globalBudget ? parseFloat(updatedData.globalBudget) : null,
-        financement: updatedData.financing || null,
-        enlevement: updatedData.removal || null,
-        installation: updatedData.installation || null,
-        livre_par: updatedData.deliveryBy || null,
-        plans_techniques: updatedData.technicalPlans,
-        nombre_concurrents: updatedData.competitorsCount ? parseInt(updatedData.competitorsCount) : null,
-        concurrents: updatedData.competitors || null,
-        budget_concurrence: updatedData.competitorBudget || null,
-        statut_projet: updatedData.projectStatus || null,
-        permis_construire: updatedData.buildingPermit,
-        date_permis: updatedData.permitDate || null
+        kitchen_discovery_data: {
+          agency: updatedData.agency || "",
+          referent: updatedData.referent || "",
+          origin: updatedData.origin || "",
+          subOrigin: updatedData.subOrigin || "",
+          sponsorLink: updatedData.sponsorLink || "",
+          sponsorLinkId: updatedData.sponsorLinkId || "",
+          siteAddress: updatedData.siteAddress || "",
+          billingAddress: updatedData.billingAddress || "",
+          studyTrade: updatedData.studyTrade || "",
+          workExecution: updatedData.workExecution || "",
+          artisansNeeded: updatedData.artisansNeeded,
+          artisansList: updatedData.artisansList || "",
+          signatureDate: updatedData.signatureDate || "",
+          workDates: updatedData.workDates || "",
+          installationDate: updatedData.installationDate || "",
+          budgetLow: updatedData.budgetLow || "",
+          budgetHigh: updatedData.budgetHigh || "",
+          globalBudget: updatedData.globalBudget || "",
+          financing: updatedData.financing || "",
+          removal: updatedData.removal || "",
+          installation: updatedData.installation || "",
+          deliveryBy: updatedData.deliveryBy || "",
+          technicalPlans: updatedData.technicalPlans,
+          competitorsCount: updatedData.competitorsCount || "",
+          competitors: updatedData.competitors || "",
+          competitorBudget: updatedData.competitorBudget || "",
+          projectStatus: updatedData.projectStatus || "",
+          buildingPermit: updatedData.buildingPermit,
+          permitDate: updatedData.permitDate || ""
+        }
       };
 
       await onUpdate(dbUpdates);
@@ -394,8 +419,8 @@ export default function ProjectDiscoveryTab({ project, onUpdate }) {
   const updateField = (field, value) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
-    // Sauvegarder immédiatement, sans attendre le débounce
-    saveToDatabase(updatedData);
+    // Sauvegarder avec debounce 500ms
+    debouncedSave(updatedData);
   };
 
   const handleSponsorSelect = (contact) => {
@@ -511,6 +536,7 @@ export default function ProjectDiscoveryTab({ project, onUpdate }) {
           <SelectInput
             value={formData.workExecution}
             onChange={(value) => updateField("workExecution", value)}
+            options={workExecutionOptions}
             placeholder="Sélectionner"
           />
         </FormField>
@@ -525,6 +551,7 @@ export default function ProjectDiscoveryTab({ project, onUpdate }) {
               <SelectInput
                 value={formData.artisansList}
                 onChange={(value) => updateField("artisansList", value)}
+                options={artisansOptions}
                 placeholder="Sélectionner les artisans"
               />
             )}
