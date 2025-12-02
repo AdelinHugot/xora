@@ -1243,6 +1243,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
   const [saveStatus, setSaveStatus] = useState("idle"); // idle, saving, saved, error
   const [saveError, setSaveError] = useState(null);
   const debounceTimerRef = useRef(null);
+  const lastSavedDataRef = useRef(null);
   const [sanitaryPrices, setSanitaryPrices] = useState({
     min: "35000",
     max: "56000"
@@ -1411,6 +1412,37 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
     }
   }, [project?.id]);
 
+  // Function to save data
+  const saveData = async (dataToSave) => {
+    if (!project || !onUpdate || !dataToSave) return;
+
+    // Check if data has actually changed
+    const dataString = JSON.stringify(dataToSave);
+    if (lastSavedDataRef.current === dataString) {
+      return; // No change, skip save
+    }
+
+    setSaveStatus("saving");
+    setSaveError(null);
+
+    try {
+      const result = await onUpdate(dataToSave);
+      if (result.success) {
+        lastSavedDataRef.current = dataString;
+        setSaveStatus("saved");
+        // Reset to idle after 2 seconds
+        const timeoutId = setTimeout(() => setSaveStatus("idle"), 2000);
+        return () => clearTimeout(timeoutId);
+      } else {
+        setSaveStatus("error");
+        setSaveError(result.error || "Erreur lors de la sauvegarde");
+      }
+    } catch (err) {
+      setSaveStatus("error");
+      setSaveError(err.message || "Erreur lors de la sauvegarde");
+    }
+  };
+
   // Auto-save with debounce
   useEffect(() => {
     // Clear existing timer
@@ -1418,10 +1450,8 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set a new timer for debounced save
-    debounceTimerRef.current = setTimeout(async () => {
-      if (!project || !onUpdate) return;
-
+    // Set a new timer for debounced save (3 seconds to wait for user to finish typing)
+    debounceTimerRef.current = setTimeout(() => {
       const dataToUpdate = {
         // Ambiance section
         types_ambiance: formData.ambianceTypes,
@@ -1442,32 +1472,47 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
         notes_financier: tabNotes.financial
       };
 
-      setSaveStatus("saving");
-      setSaveError(null);
+      saveData(dataToUpdate);
+    }, 3000); // 3 second debounce delay
 
-      try {
-        const result = await onUpdate(dataToUpdate);
-        if (result.success) {
-          setSaveStatus("saved");
-          // Reset to idle after 2 seconds
-          setTimeout(() => setSaveStatus("idle"), 2000);
-        } else {
-          setSaveStatus("error");
-          setSaveError(result.error || "Erreur lors de la sauvegarde");
-        }
-      } catch (err) {
-        setSaveStatus("error");
-        setSaveError(err.message || "Erreur lors de la sauvegarde");
-      }
-    }, 1000); // 1 second debounce delay
-
-    // Cleanup function
+    // Cleanup function - save on unmount if there are pending changes
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [formData, tabNotes, project, onUpdate]);
+  }, [formData, tabNotes]);
+
+  // Save data before component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear timer and save immediately on unmount
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      const dataToUpdate = {
+        types_ambiance: formData.ambianceTypes,
+        ambiance_appreciee: formData.ambianceAppreciated,
+        ambiance_eviter: formData.ambianceToAvoid,
+        meubles: formData.furniture,
+        poignees: formData.handles,
+        plan_travail: formData.worktop,
+        sol_cuisine: formData.kitchenFloor,
+        revetement_murs: formData.kitchenWall,
+        autres_details: formData.other,
+        selection_meubles: formData.furnitureSelection,
+        description_materiaux: formData.materialsDescription,
+        notes_ambiance: tabNotes.ambiance,
+        notes_meubles: tabNotes.furniture,
+        notes_electromenagers: tabNotes.appliances,
+        notes_financier: tabNotes.financial
+      };
+
+      // Don't await - just fire and forget on unmount
+      saveData(dataToUpdate);
+    };
+  }, []);
 
   // Calculate total prices for appliances
   const calculateApplianceTotals = () => {
