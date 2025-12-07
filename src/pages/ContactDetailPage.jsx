@@ -22,6 +22,7 @@ import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
 import CreateProjectModal from "../components/CreateProjectModal";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
+import CreateContactModal from "../components/CreateContactModal";
 import { useContact } from "../hooks/useContact";
 import { useProjects } from "../hooks/useProjects";
 import { useAppointments } from "../hooks/useAppointments";
@@ -529,7 +530,7 @@ function ClientInfoTabContent({ contact }) {
       <div className="rounded-xl border p-6 bg-gray-50 border-gray-200">
         <div className="flex items-start justify-between mb-6">
           <h3 className="text-lg font-semibold text-neutral-900">Coordonnées</h3>
-          <button className="px-4 py-2 rounded-xl bg-white border border-[#E5E5E5] hover:bg-neutral-50 text-sm font-medium transition-colors whitespace-nowrap">
+          <button onClick={() => setIsCreateContactModalOpen(true)} className="px-4 py-2 rounded-xl bg-white border border-[#E5E5E5] hover:bg-neutral-50 text-sm font-medium transition-colors whitespace-nowrap">
             + Ajouter un contact
           </button>
         </div>
@@ -2448,6 +2449,7 @@ export default function ContactDetailPage({
   const [activeTab, setActiveTab] = useState("contact-info");
   const [activeSubTab, setActiveSubTab] = useState("client-info");
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
+  const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
 
   // Extract the actual contact identifier from contactId (remove "contact-" prefix)
@@ -2671,6 +2673,16 @@ export default function ContactDetailPage({
         onClose={() => setIsCreateProjectModalOpen(false)}
         onSubmit={handleCreateProject}
         contact={dbContact}
+      />
+
+      {/* Create Contact Modal */}
+      <CreateContactModal
+        open={isCreateContactModalOpen}
+        onClose={() => setIsCreateContactModalOpen(false)}
+        onSubmit={(contactData) => {
+          setIsCreateContactModalOpen(false);
+          // The modal handles creation via Supabase insert
+        }}
       />
     </div>
   );

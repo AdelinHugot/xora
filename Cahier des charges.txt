@@ -1,0 +1,214 @@
+﻿Cahier des Charges - Modifications Xora1. Objectif du Document
+
+
+Ce document synthétise les retours de test (Xavier, Céline) concernant les anomalies, les bugs et les suggestions d'amélioration de l'expérience utilisateur (UX/UI) pour différentes sections de l'application (Tableau de Bord, Annuaire, Fiches Clients/Leads, Onglets Projets et Rendez-vous).
+
+
+2.1. TABLEAU DE BORD
+Catégorie
+	Exigence/Anomalie
+	Général
+	Assurer le fonctionnement des boutons "Rechercher un client" et "+ ajouter une tâche manuelle ou un mémo".
+	Tâches & Mémos
+	Assurer le bon ordre d'affichage des tâches et mémos.
+	Nommage
+	Renommer la page "tâche et mémoires" en "Tâches et Mémos".
+	Menu déroulant
+	Dans le menu déroulant Tâche et Mémoire, remplacer "note" par "Mémo". Corriger le bug de page blanche lors du clic sur "Mémo".
+	Historique
+	Corriger le bug de page blanche lors du clic sur le bouton "Terminé" pour afficher la liste des mémos terminés.
+	Tâches
+	Rendre les tâches cliquables pour afficher leur contenu.
+	Création Tâche
+	Modifier le bouton "+ Validateur" en "créer la tache manuelle" sur la page Tâches et Mémos.
+	Champs Tâche
+	Ajouter le champ pour le commercial concerné dans la création de tâche.
+	
+
+2.2. ANNUAIRE : clients et prospects
+Catégorie
+	Exigence/Anomalie
+	Affichage Leads
+	Corriger l'affichage des noms de LEADS dans les tableaux "TOUS" et "LEADS" (le cumul est correct, mais les entrées sont invisibles).
+	Ordre d'affichage
+	Inverser l'ordre Prénom/Nom pour afficher Nom Prénom dans l'annuaire pour faciliter la recherche.
+	Colonne "Ajouté par"
+	Remplacer le "N/A" par le prénom de l'utilisateur à côté des photos, et permettre le tri par agenceur.
+	Tri "localisation" (UX/UI)
+	Remplacer la liste déroulante complète par une recherche intuitive/suggestive lors de la saisie du nom de la ville.
+	Tri "date d’ajout" (UX/UI)
+	Remplacer les options fixes ("aujourd'hui", "cette semaine", etc.) par un calendrier permettant de choisir une date de début et de fin.
+	________________
+
+
+2.3. FICHE LEADS (Création Fiche Contact)
+Catégorie
+	Exigence/Anomalie
+	Multi-contacts
+	Ajouter un bouton "+" pour permettre la saisie immédiate des informations d'une deuxième personne (civilité/prenom/nom/tel/mail), avec le nom pré-rempli mais modifiable.
+	Téléphone (UX/UI)
+	Formater le numéro de téléphone avec des espaces par paire de chiffres (ex: 06 06 06 06 06).
+	Adresse (Anomalie)
+	Corriger la géolocalisation et les propositions d'adresse : éliminer l'affichage d'informations excessives (quartiers, villes, régions alentour) et non pertinentes. S'assurer que le numéro de rue s'affiche. L'adresse postale est considérée comme "HS" (hors service) sur plusieurs tests.
+	Adresse (UX/UI)
+	Le remplissage intuitif des adresses doit proposer la ville (ex: "Saint-Chamond") et ne pas laisser l'utilisateur dans l'incertitude si une adresse est invalide.
+	Origine Contact
+	Mettre à jour la liste des origines. S'assurer que les sous-origines et le champ "Nom et lien parrain" n'apparaissent que si l'origine "Parrainage" est sélectionnée.
+	Bug Fiche Leads
+	La fiche LEADS créée (ex: "TEST-XAV") n'est pas retrouvée dans l'annuaire.
+	
+
+2.4. Fiche Client - ONGLET : informations contact -> infos clients
+Catégorie
+	Exigence/Anomalie
+	Bug Affichage
+	Corriger l'anomalie où le clic sur la fiche d'un client (ex: Cholé FARGET) ouvre la fiche d'un autre client (ex: Chloé DUBOIS).
+	Bouton d'action
+	Assurer le fonctionnement du bouton "+ ajouter un contact".
+	Civilité
+	S'assurer que la civilité saisie en fiche contact n'est pas perdue en arrivant dans la fiche client.
+	Adresse Secondaire
+	Vérifier la nécessité d'une rubrique "adresse des biens secondaires" reliée à l'onglet "infos des biens".
+	Origine Client
+	L'origine du client doit se remplir automatiquement à partir de la saisie Leads.
+	
+
+2.5. Fiche Client - ONGLET : informations contact -> contact externe
+Catégorie
+	Exigence/Anomalie
+	Boutons d'action
+	Assurer le fonctionnement des boutons "+ ajouter un contact externe" et "ajouter depuis annuaire".
+	
+
+________________
+
+
+2.6. Fiche Client - ONGLET : informations contact -> infos des biens
+Catégorie
+	Exigence/Anomalie
+	Propriétaire
+	Ajouter un choix déroulant pour la case "propriétaire" (ex: "propriétaire" ou "locataire").
+	Étage (UX/UI)
+	Ajouter un choix déroulant pour la case "étage" (ex: rdc, 1, 2, 3, etc.).
+	Adresse Bien n°2
+	Assurer le fonctionnement de la saisie et de l'affinage de l'adresse par remplissage intuitif pour les biens secondaires.
+	
+
+2.7. Fiche Client - ONGLET : Projet
+Catégorie
+	Exigence/Anomalie
+	Compteur
+	Corriger le compteur de projets qui affiche (0) alors que des projets existent (ex: 5 dans le tableau).
+	Boutons d'action
+	Assurer le fonctionnement des boutons "+ ajouter un projet" et des "actions rapides".
+	Accès Projet
+	Assurer le fonctionnement des pictos d’actions "voir le projet" et "plus d’options" pour permettre l'accès à la découverte.
+	Nommage (UX/UI)
+	Remplacer "options du projet" par "projet express".
+	Création Projet - Origine
+	Ajouter les ascenseurs de choix manquants dans le rectangle "Origine". S'assurer que les champs "Nom et lien parrain" apparaissent uniquement si l'origine "parrainage" est sélectionnée.
+	Classification
+	Mettre à jour la liste des métiers/classifications. Créer un paramètre pour que chaque client puisse sélectionner sa méthode de travail habituelle.
+	
+
+2.8. Fiche Client - ONGLET : Taches
+Catégorie
+	Exigence/Anomalie
+	Bouton d'action
+	Assurer le fonctionnement du bouton d’action "..." (option de la tâche) à l'extrême droite de chaque ligne de projet/tâche.
+	Compteur/Liste
+	Corriger le compteur qui affiche (1) dans l'encadré alors que la liste est vide.
+	Tâche Automatique
+	Vérifier si une tâche automatique doit être créée lors de la création d'un nouveau projet.
+	Bug Tâche Projet
+	Corriger le bug où, après validation d'une tâche, elle disparaît et est remplacée par 4 autres tâches (2 en cours, 2 terminées) au retour.
+	________________
+
+
+2.9. Fiche Client - ONGLET : rendez-vous
+Catégorie
+	Exigence/Anomalie
+	Création RDV - Heure (UX/UI)
+	Limiter la sélection de l'heure de début à des intervalles de 5 minutes (au lieu de minute par minute).
+	Création RDV - Annuaire
+	Assurer le fonctionnement de la liste déroulante "Annuaire". Remplacer le terme "Annuaire" par "Nom du client" et pré-remplir automatiquement le nom si la création se fait depuis la fiche client. Si la création ne passe pas par la fiche client, proposer la liste déroulante de tous les clients.
+	Liste RDV
+	Permettre de cliquer sur un rendez-vous dans le tableau pour le ré-ouvrir/modifier.
+	Compteur RDV
+	Corriger le compteur de rendez-vous qui affiche (0) alors qu'un RDV a été créé.
+	
+
+2.10. Onglet "étude client" -> découverte
+Catégorie
+	Exigence/Anomalie
+	Origine Projet
+	Les sous-origines ne doivent apparaître qu'en fonction du choix de "l'origine" du projet.
+	Dates Chantier
+	Date prévisionnelle chantier : utiliser un calendrier pour sélectionner la durée du projet (et non une date fixe).
+	Dates Installation
+	Date installation cuisine : vérifier avec Benjamin si ce doit être une durée ou une date fixe.
+	Enveloppe Financière (UX/UI)
+	Réduire la taille des champs de budget. Ajouter le symbole € et les séparateurs de milliers dans les cases.
+	Rectangle Installation (UX/UI)
+	Réduire la taille des trois cases de ce rectangle.
+	Rectangle "concurrence"
+	Renommer en "confrère(s)". Réduire la taille de la case pour le nombre. Implémenter une liste déroulante alimentée par les paramètres pour les noms des confrères (éviter la saisie manuelle). Supprimer la case "Budget" si son utilité n'est pas confirmée. Permettre d'attribuer un statut par confrère. Le nombre de confrères consultés ne doit pas pouvoir être inférieur à 0.
+	Permis de Construire
+	Remplacer la réponse actuelle par : un champ OUI/NON. Si OUI, proposer les choix suivants, chacun avec une date en calendrier : "à déposer", "en cours d'étude", "obtenu".
+	________________
+
+
+2.11. Onglet "étude client" -> découverte cuisine -> ambiance
+Catégorie
+	Exigence/Anomalie
+	Ambiance
+	Fournir des propositions sélectionnables pour "ambiance recherchée".
+	Modèle final
+	Réduire la taille de l'affichage de "présentation client" (il s'agit du contenu copié/collé automatiquement dans le powerpoint de présentation).
+	
+
+2.12. Onglet "étude client" -> découverte cuisine -> meubles
+Catégorie
+	Exigence/Anomalie
+	Ascenseurs
+	Alimenter les listes déroulantes/ascenseurs (multi-choix pour "accessoires de meubles" et autres).
+	Plan de Préparation (Anomalie)
+	Retirer "description gestion des déchets" de ce rectangle.
+	Usage Cuisine (Anomalie)
+	Revoir le contenu de ce rectangle pour qu'il corresponde au Figma, probablement en se concentrant sur les repas. Retirer la "gestion des déchets" de ce rectangle.
+	
+
+2.13. Onglet "étude client" -> découverte cuisine -> électros et sanitaires
+Catégorie
+	Exigence/Anomalie
+	Ascenseurs
+	Alimenter toutes les listes déroulantes/ascenseurs.
+	Ajout Article (Catalogue)
+	Si le choix est "catalogue", ne laisser que la case pour saisir la référence (les autres cases sont inutiles).
+	Ajout Article (Générique)
+	Si le choix est "générique", supprimer la ligne "sélectionner la famille de l'article".
+	Affichage (UX/UI)
+	Réfléchir avec Louis à une solution UX/UI pour rendre la lecture des électros choisis plus simple, éventuellement en remontant chaque choix en haut de page.
+	
+
+2.14. Onglet "étude client" -> découverte cuisine -> estimation financière
+Catégorie
+	Exigence/Anomalie
+	Formatage (UX/UI)
+	Prévoir des séparateurs de milliers dans les cases de chaque ligne.
+	Présentation
+	Afficher l'électroménager et les sanitaires dans des cases colorées et non modifiables.
+	________________
+
+
+2.15. Anomalies Diverses et Affichage
+Catégorie
+	Exigence/Anomalie
+	Progression (Bug)
+	Corriger l'erreur d'affichage où l'avancement est à 99% sans avoir ouvert ou commencé l'étude.
+	Agenda/Sommaire
+	Dans le sommaire, renommer "ordre du jour" en "Agenda" et corriger la non-correspondance des dates.
+	Éclaireur (Clarification)
+	Clarifier la signification du terme "éclaireur" et d'autres termes étranges comme ceux trouvés dans les cases ("déposer", "installation", "Livraison à charge de").
+	Suivi des Projets (Bug)
+	Corriger l'instabilité de l'affichage sur la page "Suivi des projets" et la non-persistance des corrections (ex: changement de projet affiché après un clic).
