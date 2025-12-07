@@ -366,7 +366,7 @@ function getTagColors(tag) {
   return tagColorMap[tag] || { bg: "#F3F4F6", text: "#1F2937", border: "#D1D5DB" };
 }
 
-function TaskRow({ task, index, onStageChange, onDelete }) {
+function TaskRow({ task, index, onStageChange, onDelete, onNavigate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentStage, setCurrentStage] = useState(task.currentStage);
   const colors = getTagColors(task.tag);
@@ -485,8 +485,8 @@ function TaskRow({ task, index, onStageChange, onDelete }) {
             <div className="absolute top-full right-0 z-30 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg min-w-[140px]">
               <button
                 onClick={() => {
-                  console.log("Voir tâche", task.id);
                   setMenuOpen(false);
+                  onNavigate && onNavigate('tasks-memo');
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-neutral-50 transition-colors"
               >
@@ -495,8 +495,8 @@ function TaskRow({ task, index, onStageChange, onDelete }) {
               </button>
               <button
                 onClick={() => {
-                  console.log("Modifier tâche", task.id);
                   setMenuOpen(false);
+                  onNavigate && onNavigate('tasks-memo');
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-neutral-50 transition-colors"
               >
@@ -556,13 +556,13 @@ function TasksPanel({ height, onNavigate }) {
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Bouton Ajouter tâche */}
           <button
-            onClick={() => console.log('Ajouter tâche')}
+            onClick={() => onNavigate && onNavigate('tasks-memo')}
             className="px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
             style={{ backgroundColor: "#F3F3F3", color: "#374151" }}
-            aria-label="Ajouter une tâche manuelle ou un mémo"
-            title="Ajouter une tâche manuelle ou un mémo"
+            aria-label="Créer la tâche manuelle"
+            title="Créer la tâche manuelle"
           >
-            + Ajouter une tâche manuelle ou un mémo
+            + Créer la tâche manuelle
           </button>
 
           {/* Bouton Flèche vers haut-droit */}
@@ -608,6 +608,7 @@ function TasksPanel({ height, onNavigate }) {
                 index={i}
                 onStageChange={updateTacheStage}
                 onDelete={deleteTache}
+                onNavigate={onNavigate}
               />
             ))
           )}
