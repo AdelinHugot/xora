@@ -1037,9 +1037,8 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
       } else {
         // Fermer la modale
         setIsModalOpen(false);
-        // Naviguer vers la page de détail du contact nouvellement créé (utiliser le numéro si disponible)
-        const contactIdentifier = result.data.numero || result.data.id;
-        onNavigate(`contact-${contactIdentifier}`);
+        // Naviguer vers la page de détail du contact nouvellement créé (utiliser toujours l'UUID pour la cohérence)
+        onNavigate(`contact-${result.data.id}`);
       }
     } catch (error) {
       console.error('Erreur lors de la création du contact (catch):', error);
