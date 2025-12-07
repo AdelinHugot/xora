@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Download,
@@ -25,6 +25,7 @@ import CreateContactModal from "../components/CreateContactModal";
 import UserTopBar from "../components/UserTopBar";
 import { useContacts } from "../hooks/useContacts";
 import { transformContactForDirectory } from "../utils/dataTransformers";
+import { supabase } from "../lib/supabase";
 
 // Coordonnées géographiques des villes
 const locationCoordinates = {
@@ -256,12 +257,11 @@ function AgentDropdownDirectory({ value, onChange, agents }) {
 }
 
 // Composant Dropdown personnalisé pour les dates avec icônes flèche
-function DateDropdownDirectory({ value, onChange, options }) {
+function DateRangePickerDirectory({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [startDate, setStartDate] = useState(value?.startDate || "");
+  const [endDate, setEndDate] = useState(value?.endDate || "");
   const dropdownRef = React.useRef(null);
-
-  const selectedOption = options.find(o => o === value);
-  const selectedLabel = selectedOption || "Date d'ajout";
 
   React.useEffect(() => {
     function handleClickOutside(event) {
@@ -276,47 +276,72 @@ function DateDropdownDirectory({ value, onChange, options }) {
     }
   }, [isOpen]);
 
+  const handleApply = () => {
+    onChange({ startDate, endDate });
+    setIsOpen(false);
+  };
+
+  const handleClear = () => {
+    setStartDate("");
+    setEndDate("");
+    onChange({ startDate: "", endDate: "" });
+    setIsOpen(false);
+  };
+
+  const displayLabel = startDate && endDate
+    ? `${startDate} → ${endDate}`
+    : startDate
+    ? `À partir du ${startDate}`
+    : endDate
+    ? `Jusqu'au ${endDate}`
+    : "Date d'ajout";
+
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600 flex items-center gap-2 w-full"
       >
-        <span className="flex-1 text-left">{selectedLabel}</span>
+        <span className="flex-1 text-left truncate">{displayLabel}</span>
         <ChevronDown className="size-4 flex-shrink-0" style={{ position: "absolute", right: "12px" }} />
       </button>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 w-full">
-          <button
-            onClick={() => {
-              onChange("");
-              setIsOpen(false);
-            }}
-            className="w-full px-4 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50"
-          >
-            Date d'ajout
-          </button>
-          {options.map((option) => {
-            const isRecent = option === "Aujourd'hui" || option === "Cette semaine" || option === "Ce mois";
-            return (
+          <div className="p-4 space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date de début</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date de fin</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
               <button
-                key={option}
-                onClick={() => {
-                  onChange(option);
-                  setIsOpen(false);
-                }}
-                className="w-full px-4 py-2 text-left text-sm flex items-center gap-3 hover:bg-neutral-50"
+                onClick={handleApply}
+                className="flex-1 px-3 py-2 bg-neutral-900 text-white text-sm rounded-lg font-medium hover:bg-neutral-800 transition-colors"
               >
-                {isRecent ? (
-                  <ArrowUp className="size-4 text-neutral-600" />
-                ) : (
-                  <ArrowDown className="size-4 text-neutral-600" />
-                )}
-                <span>{option}</span>
+                Appliquer
               </button>
-            );
-          })}
+              <button
+                onClick={handleClear}
+                className="flex-1 px-3 py-2 border border-neutral-200 text-neutral-600 text-sm rounded-lg font-medium hover:bg-neutral-50 transition-colors"
+              >
+                Réinitialiser
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -384,12 +409,17 @@ function OriginDropdownDirectory({ value, onChange, options }) {
 }
 
 // Composant Dropdown personnalisé pour la localisation
-function LocationDropdownDirectory({ value, onChange, options }) {
+function LocationSearchDirectory({ value, onChange, options }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = React.useRef(null);
   const dropdownRef = React.useRef(null);
 
-  const selectedOption = options.find(o => o === value);
-  const selectedLabel = selectedOption || "Localisation";
+  const filteredOptions = searchTerm
+    ? options.filter(o => o.toLowerCase().includes(searchTerm.toLowerCase()))
+    : options;
+
+  const selectedLabel = value || "Localisation";
 
   React.useEffect(() => {
     function handleClickOutside(event) {
@@ -404,6 +434,12 @@ function LocationDropdownDirectory({ value, onChange, options }) {
     }
   }, [isOpen]);
 
+  React.useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isOpen]);
+
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <button
@@ -411,32 +447,52 @@ function LocationDropdownDirectory({ value, onChange, options }) {
         className="relative rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-600 flex items-center gap-2 w-full"
       >
         <span className="flex-1 text-left">{selectedLabel}</span>
-        <ChevronDown className="size-4 flex-shrink-0" style={{ position: "absolute", right: "12px" }} />
+        <Search className="size-4 flex-shrink-0" style={{ position: "absolute", right: "12px" }} />
       </button>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 w-full">
-          <button
-            onClick={() => {
-              onChange("");
-              setIsOpen(false);
-            }}
-            className="w-full px-4 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50"
-          >
-            Localisation
-          </button>
-          {options.map((option) => (
+          <div className="p-2 border-b border-neutral-200">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Rechercher une localisation..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
             <button
-              key={option}
               onClick={() => {
-                onChange(option);
+                onChange("");
+                setSearchTerm("");
                 setIsOpen(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm flex items-center gap-3 hover:bg-neutral-50"
+              className="w-full px-4 py-2 text-left text-sm text-neutral-600 hover:bg-neutral-50"
             >
-              <span>{option}</span>
+              Localisation
             </button>
-          ))}
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => {
+                    onChange(option);
+                    setSearchTerm("");
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm flex items-center gap-3 hover:bg-neutral-50"
+                >
+                  <span>{option}</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-neutral-400 text-center">
+                Aucune localisation trouvée
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -672,7 +728,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   );
 };
 
-const ContactsTable = ({ contacts, onViewContact }) => {
+const ContactsTable = ({ contacts, onViewContact, sortBy, onSortChange }) => {
   return (
     <div className="overflow-x-auto border border-[#E4E4E7] rounded-[8px]" style={{ maxHeight: "calc(100vh - 420px)" }}>
       <table className="w-full" role="table">
@@ -681,8 +737,15 @@ const ContactsTable = ({ contacts, onViewContact }) => {
             <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Nom & prénom
             </th>
-            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
-              Ajouté par
+            <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide cursor-pointer group" style={{ color: "#A9A9A9" }} onClick={() => onSortChange && onSortChange()}>
+              <div className="flex items-center gap-2">
+                <span>Ajouté par</span>
+                {sortBy && (
+                  <span className="text-xs">
+                    {sortBy === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
+                  </span>
+                )}
+              </div>
             </th>
             <th scope="col" className="py-3 px-3 text-left text-xs font-semibold tracking-wide" style={{ color: "#A9A9A9" }}>
               Origine
@@ -913,7 +976,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
     location: "",
     project: "",
     status: "",
-    dateAdded: ""
+    dateAdded: { startDate: "", endDate: "" }
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -966,7 +1029,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
 
   // Apply filters and search
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
+    let result = contacts.filter(contact => {
       const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesAddedBy = !filters.addedBy || contact.addedBy.name === filters.addedBy;
       const matchesOrigin = !filters.origin || contact.origin === filters.origin;
@@ -976,9 +1039,39 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
       // Apply type filter from sidebar submenu
       const matchesType = filter === "all" || contact.type === filter;
 
-      return matchesSearch && matchesAddedBy && matchesOrigin && matchesLocation && matchesStatus && matchesType;
+      // Apply date range filter
+      let matchesDateRange = true;
+      if (filters.dateAdded?.startDate || filters.dateAdded?.endDate) {
+        const contactDate = new Date(contact.cree_le);
+        if (filters.dateAdded.startDate) {
+          const startDate = new Date(filters.dateAdded.startDate);
+          matchesDateRange = matchesDateRange && contactDate >= startDate;
+        }
+        if (filters.dateAdded.endDate) {
+          const endDate = new Date(filters.dateAdded.endDate);
+          endDate.setHours(23, 59, 59, 999); // Include the entire end date
+          matchesDateRange = matchesDateRange && contactDate <= endDate;
+        }
+      }
+
+      return matchesSearch && matchesAddedBy && matchesOrigin && matchesLocation && matchesStatus && matchesType && matchesDateRange;
     });
-  }, [searchTerm, filters, filter, contacts]);
+
+    // Apply sort by agenceur if active
+    if (sortBy) {
+      result.sort((a, b) => {
+        const nameA = a.addedBy.name.toLowerCase();
+        const nameB = b.addedBy.name.toLowerCase();
+        if (sortBy === 'asc') {
+          return nameA.localeCompare(nameB);
+        } else {
+          return nameB.localeCompare(nameA);
+        }
+      });
+    }
+
+    return result;
+  }, [searchTerm, filters, filter, contacts, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredContacts.length / pageSize);
@@ -1136,7 +1229,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
 
           {/* Localisation */}
           <div className="flex-1">
-            <LocationDropdownDirectory
+            <LocationSearchDirectory
               value={filters.location}
               onChange={(value) => updateFilter('location', value)}
               options={filterOptions.location}
@@ -1154,10 +1247,9 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
 
           {/* Date d'ajout */}
           <div className="flex-1">
-            <DateDropdownDirectory
+            <DateRangePickerDirectory
               value={filters.dateAdded}
               onChange={(value) => updateFilter('dateAdded', value)}
-              options={filterOptions.dateAdded}
             />
           </div>
         </div>
@@ -1170,6 +1262,12 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
             <ContactsTable
               contacts={paginatedContacts}
               onViewContact={handleViewContact}
+              sortBy={sortBy}
+              onSortChange={() => {
+                if (sortBy === null) setSortBy('asc');
+                else if (sortBy === 'asc') setSortBy('desc');
+                else setSortBy(null);
+              }}
             />
 
             {/* Table Footer */}
@@ -1198,13 +1296,38 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
 
 export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSidebar, filter = "all" }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
+  const [currentUser, setCurrentUser] = useState(null);
+  const [sortBy, setSortBy] = useState(null); // null, 'asc', 'desc'
+
+  // Récupérer l'utilisateur courant
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userData } = await supabase
+            .from('utilisateurs')
+            .select('id, prenom, nom')
+            .eq('id_auth_user', user.id)
+            .single();
+          if (userData) {
+            setCurrentUser(userData);
+          }
+        }
+      } catch (err) {
+        console.error('Erreur lors de la récupération de l\'utilisateur courant:', err);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   // Récupérer les contacts depuis Supabase
   const { contacts: supabaseContacts, loading, error, addContact, refetch } = useContacts();
 
   // Transformer les contacts Supabase au format UI
   const transformedContacts = supabaseContacts.map(contact =>
-    transformContactForDirectory(contact)
+    transformContactForDirectory(contact, currentUser)
   );
 
   // Utiliser les contacts transformés à la place des mockContacts

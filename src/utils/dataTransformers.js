@@ -20,11 +20,14 @@ const locationCoordinates = {
 /**
  * Transforme les contacts Supabase au format UI Directory
  */
-export const transformContactForDirectory = (contact, referent = null) => {
+export const transformContactForDirectory = (contact, currentUser = null) => {
   // Récupérer l'info du créateur (ajoute_par) depuis les données du contact
   const creatorData = contact.ajoute_par;
-  const creatorName = creatorData ? `${creatorData.nom} ${creatorData.prenom}` : 'N/A';
-  const creatorId = creatorData?.id || contact.id;
+  // Si pas de créateur défini, utiliser l'utilisateur courant
+  const creatorName = creatorData
+    ? `${creatorData.nom} ${creatorData.prenom}`
+    : (currentUser ? currentUser.prenom : 'N/A');
+  const creatorId = creatorData?.id || currentUser?.id || contact.id;
 
   return {
     id: contact.id,
