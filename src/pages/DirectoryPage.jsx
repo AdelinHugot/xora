@@ -970,6 +970,7 @@ const ContactsMapView = ({ contacts, onViewContact }) => {
 const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAddContact }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("list");
+  const [sortBy, setSortBy] = useState(null); // null, 'asc', 'desc'
   const [filters, setFilters] = useState({
     addedBy: "",
     origin: "",
@@ -1297,7 +1298,6 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
 export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSidebar, filter = "all" }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [currentUser, setCurrentUser] = useState(null);
-  const [sortBy, setSortBy] = useState(null); // null, 'asc', 'desc'
 
   // Récupérer l'utilisateur courant
   useEffect(() => {
