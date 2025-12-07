@@ -83,7 +83,7 @@ export function useTaches() {
           daysLate: t.jours_retard || 0,
           hasAlert: t.a_alerte || false,
           progress: t.progression || 0,
-          statut: t.statut || 'Non commencé',
+          status: t.statut || 'Non commencé',
           stages: ['Non commencé', 'En cours', 'Terminé'],
           currentStage: getStageIndex(t.etape_tache),
           note: t.note,
@@ -156,7 +156,7 @@ export function useTaches() {
       // Met à jour l'état local
       setTaches(taches.map(t =>
         t.id === tacheId
-          ? { ...t, statut: newStatus }
+          ? { ...t, status: newStatus }
           : t
       ));
     } catch (err) {
