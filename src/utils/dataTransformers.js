@@ -23,12 +23,12 @@ const locationCoordinates = {
 export const transformContactForDirectory = (contact, referent = null) => {
   // Récupérer l'info du créateur (ajoute_par) depuis les données du contact
   const creatorData = contact.ajoute_par;
-  const creatorName = creatorData ? `${creatorData.prenom} ${creatorData.nom}` : 'N/A';
+  const creatorName = creatorData ? `${creatorData.nom} ${creatorData.prenom}` : 'N/A';
   const creatorId = creatorData?.id || contact.id;
 
   return {
     id: contact.id,
-    name: `${contact.prenom} ${contact.nom}`.toUpperCase(),
+    name: `${contact.nom} ${contact.prenom}`.toUpperCase(),
     addedBy: {
       name: creatorName,
       avatarUrl: `https://i.pravatar.cc/24?u=${creatorId}`
@@ -52,12 +52,12 @@ export const transformContactForDirectory = (contact, referent = null) => {
 export const transformProjectForTracking = (project) => {
   // Get client name from joined contact or fallback to nom_contact
   const clientName = project.contact
-    ? `${project.contact.prenom} ${project.contact.nom}`.toUpperCase()
+    ? `${project.contact.nom} ${project.contact.prenom}`.toUpperCase()
     : (project.nom_contact || 'Sans nom');
 
   // Get agent/referent name from joined utilisateur or fallback
   const agentName = project.referent
-    ? `${project.referent.prenom} ${project.referent.nom}`
+    ? `${project.referent.nom} ${project.referent.prenom}`
     : 'Non assigné';
 
   const agentId = project.referent?.id || project.id_referent || project.id;
@@ -85,7 +85,7 @@ export const transformAppointmentForAgenda = (appointment, contact = null) => {
   return {
     id: appointment.id,
     title: appointment.titre,
-    contact: contact ? `${contact.prenom} ${contact.nom}` : appointment.titre,
+    contact: contact ? `${contact.nom} ${contact.prenom}` : appointment.titre,
     date: appointment.date_debut,
     startTime: appointment.heure_debut,
     endTime: appointment.heure_fin,
@@ -137,6 +137,49 @@ function hashCode(str) {
   }
   return Math.abs(hash);
 }
+
+/**
+ * Formate un numéro de téléphone pour l'affichage (format français: 06 01 02 03 04)
+ */
+export const formatPhoneForDisplay = (phone) => {
+  if (!phone) return "";
+  // Supprimer tous les caractères non-numériques
+  const cleaned = phone.replace(/\D/g, "");
+  // Si commence par 33 (format international), convertir en 0X
+  if (cleaned.startsWith("33")) {
+    const local = cleaned.substring(2);
+    return local.replace(/(\d{2})(?=\d)/g, "$1 ");
+  }
+  // Si commence par 0, ajouter les espaces tous les 2 chiffres
+  if (cleaned.startsWith("0")) {
+    return cleaned.replace(/(\d{2})(?=\d)/g, "$1 ");
+  }
+  return phone;
+};
+
+/**
+ * Formate un numéro de téléphone pour le stockage (format E.164: +33XXXXXXXXX)
+ */
+export const formatPhoneForStorage = (phone) => {
+  if (!phone) return "";
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.startsWith("0")) {
+    return "+33" + cleaned.substring(1);
+  }
+  if (cleaned.startsWith("33")) {
+    return "+" + cleaned;
+  }
+  return "+" + cleaned;
+};
+
+/**
+ * Valide un numéro de téléphone
+ */
+export const validatePhone = (phone) => {
+  if (!phone) return true; // Champ optionnel
+  const cleaned = phone.replace(/\D/g, "");
+  return cleaned.length >= 9 && cleaned.length <= 15;
+};
 
 /**
  * Simplifie une adresse complète au format: Numéro Rue, Code Postal, Ville

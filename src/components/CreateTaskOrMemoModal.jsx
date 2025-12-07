@@ -32,6 +32,7 @@ const SALARIES = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
 const CLIENTS = ["DUBOIS Chloé", "MOREAU Julian", "BERNARD Amélie", "FARGET Coline"];
 const PROJECTS = ["Pose de cuisine", "Dossier technique", "Études en cours", "Installation", "SAV"];
 const TASK_TYPES = ["Appel", "Email", "Rendez-vous", "Relance", "Note", "Mémo"];
+const COMMERCIALS = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
 
 // Generate next 14 days
 const generateDateOptions = () => {
@@ -94,6 +95,7 @@ const CreateTaskOrMemoModal = ({
     salarie: "",
     agendaDatetime: "",
     client: preFilledClient,
+    commercial: "",
     taskType: "",
     project: preFilledProject,
     dueDate: "",
@@ -146,6 +148,7 @@ const CreateTaskOrMemoModal = ({
         salarie: "",
         agendaDatetime: "",
         client: preFilledClient || "",
+        commercial: "",
         taskType: "",
         project: preFilledProject || "",
         dueDate: "",
@@ -169,6 +172,7 @@ const CreateTaskOrMemoModal = ({
             salarie: "",
             agendaDatetime: "",
             client: prev.client, // Keep client
+            commercial: "",
             taskType: prev.taskType, // Keep taskType
             project: "",
             dueDate: "",
@@ -183,6 +187,7 @@ const CreateTaskOrMemoModal = ({
             salarie: "",
             agendaDatetime: "",
             client: prev.client, // Keep client
+            commercial: "",
             taskType: prev.taskType, // Keep taskType
             project: "",
             dueDate: "",
@@ -242,6 +247,7 @@ const CreateTaskOrMemoModal = ({
         salarie: formData.salarie,
         agendaDatetime: formData.agendaDatetime || undefined,
         client: formData.client || undefined,
+        commercial: formData.commercial || undefined,
         taskType: formData.taskType || undefined,
         project: formData.project || undefined,
         dueDate: formData.dueDate,
@@ -414,9 +420,9 @@ const CreateTaskOrMemoModal = ({
                   </div>
                 </section>
 
-                {/* Groupe 3: Client | Type | Projet | Échéance */}
+                {/* Groupe 3: Client | Commercial | Type | Projet | Échéance */}
                 <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     {/* Client */}
                     <div>
                       <label htmlFor="client" className="block text-xs text-[#6B7280] font-medium mb-3">
@@ -430,6 +436,27 @@ const CreateTaskOrMemoModal = ({
                         className="w-full rounded-lg border border-[#E1E4ED] bg-gray-50 px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none"
                         placeholder="—"
                       />
+                    </div>
+
+                    {/* Commercial concerné */}
+                    <div>
+                      <label htmlFor="commercial" className="block text-xs text-[#6B7280] font-medium mb-3">
+                        Commercial
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="commercial"
+                          value={formData.commercial}
+                          onChange={(e) => handleChange("commercial", e.target.value)}
+                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
+                        >
+                          <option value="">Sélectionner</option>
+                          {COMMERCIALS.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
+                          <ChevronDownIcon />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Type de tâche */}

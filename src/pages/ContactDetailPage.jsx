@@ -27,7 +27,7 @@ import { useProjects } from "../hooks/useProjects";
 import { useAppointments } from "../hooks/useAppointments";
 import { useTaches } from "../hooks/useTaches";
 import { supabase } from "../lib/supabase";
-import { simplifyAddress } from "../utils/dataTransformers";
+import { simplifyAddress, formatPhoneForDisplay } from "../utils/dataTransformers";
 
 // Contact Header Component
 function ContactHeader({ contact, onBack, onContact, onCall, onSchedule, onAddTask }) {
@@ -70,7 +70,7 @@ function ContactHeader({ contact, onBack, onContact, onCall, onSchedule, onAddTa
                 <div className="flex items-center gap-3 text-sm text-neutral-600 border-l border-neutral-200 pl-4">
                   <div className="flex items-center gap-1">
                     <Phone className="size-4" />
-                    <span>{contact.mobilePhone || "—"}</span>
+                    <span>{formatPhoneForDisplay(contact.mobilePhone) || "—"}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Mail className="size-4" />
@@ -125,12 +125,12 @@ function ContactHeader({ contact, onBack, onContact, onCall, onSchedule, onAddTa
 }
 
 // Tab Navigation Component
-function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, projectsCount = 0 }) {
+function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, projectsCount = 0, tasksCount = 0, appointmentsCount = 0 }) {
   const tabs = [
     { id: "contact-info", label: "Informations contact" },
     { id: "projects", label: "Projet", count: projectsCount },
-    { id: "tasks", label: "Tâches", count: 1 },
-    { id: "appointments", label: "Rendez-vous", count: 0 },
+    { id: "tasks", label: "Tâches", count: tasksCount },
+    { id: "appointments", label: "Rendez-vous", count: appointmentsCount },
     { id: "loyalty", label: "Fidélisation" },
     { id: "documents", label: "Documents" }
   ];
@@ -1194,10 +1194,14 @@ function PropertyInfoTabContent({ contact }) {
                 <div className="mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <FormField label="Propriétaire">
-                      <TextInput
+                      <SelectInput
                         value={property.owner}
                         onChange={(value) => updateProperty(property.id, "owner", value)}
-                        placeholder="Propriétaire"
+                        options={[
+                          { value: "propriétaire", label: "Propriétaire" },
+                          { value: "locataire", label: "Locataire" }
+                        ]}
+                        placeholder="Sélectionner"
                       />
                     </FormField>
                     <FormField label="Type de bien">
@@ -1258,10 +1262,21 @@ function PropertyInfoTabContent({ contact }) {
                       />
                     </FormField>
                     <FormField label="Étage">
-                      <TextInput
+                      <SelectInput
                         value={property.floor}
                         onChange={(value) => updateProperty(property.id, "floor", value)}
-                        placeholder="Étage"
+                        options={[
+                          { value: "rdc", label: "RDC" },
+                          { value: "1", label: "1" },
+                          { value: "2", label: "2" },
+                          { value: "3", label: "3" },
+                          { value: "4", label: "4" },
+                          { value: "5", label: "5" },
+                          { value: "6", label: "6" },
+                          { value: "7", label: "7" },
+                          { value: "8", label: "8+" }
+                        ]}
+                        placeholder="Sélectionner"
                       />
                     </FormField>
                     <FormField label="Ascenseur">
@@ -2083,6 +2098,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSave, users = [] }) {
               <label className="text-xs text-neutral-600 block mb-1">Heure de début</label>
               <input
                 type="time"
+                step="300"
                 value={formData.startTime}
                 onChange={(e) => handleStartDateTimeChange(formData.startDate, e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-[#E5E5E5] bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
@@ -2095,6 +2111,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSave, users = [] }) {
               <label className="text-xs text-neutral-600 block mb-1">Heure de fin</label>
               <input
                 type="time"
+                step="300"
                 value={formData.endTime}
                 onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg border border-[#E5E5E5] bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
@@ -2185,7 +2202,7 @@ function CreateAppointmentModal({ isOpen, onClose, onSave, users = [] }) {
               </div>
             </div>
             <div>
-              <label className="text-sm font-semibold text-neutral-900 block mb-2">Annuaire</label>
+              <label className="text-sm font-semibold text-neutral-900 block mb-2">Nom du client</label>
               <button
                 onClick={() => setCollaboratorDropdownOpen(false)}
                 className="w-full px-3 py-2 rounded-lg border border-[#E5E5E5] bg-white text-neutral-900 text-left flex items-center justify-between hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
@@ -2442,6 +2459,12 @@ export default function ContactDetailPage({
   // Fetch projects for this contact
   const { projects, loading: projectsLoading, refetch: refetchProjects } = useProjects(actualContactId);
 
+  // Fetch tasks for this contact
+  const { taches, loading: tachesLoading } = useTaches();
+
+  // Fetch appointments for this contact
+  const { appointments, loading: appointmentsLoading } = useAppointments(actualContactId);
+
   // Fetch users from organization
   useEffect(() => {
     const fetchUsers = async () => {
@@ -2602,7 +2625,9 @@ export default function ContactDetailPage({
           onTabChange={setActiveTab}
           activeSubTab={activeSubTab}
           onSubTabChange={setActiveSubTab}
-          projectsCount={projects.length}
+          projectsCount={(projects || []).length}
+          tasksCount={(taches || []).length}
+          appointmentsCount={(appointments || []).length}
         />
 
         {/* Content */}

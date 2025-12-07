@@ -115,7 +115,7 @@ function getStatusColors(status) {
     case "Client":
       return { bg: "#A4E6FE", text: "#1A8AB3" };
     case "Leads":
-      return { bg: "#EED1F4", text: "#C970AB" };
+      return { bg: "#EED1F4", text: "#5b21b6" };
     default:
       return { bg: "#F3F4F6", text: "#1F2937" };
   }
@@ -797,7 +797,7 @@ const LocationContactsModal = ({ location, contacts, onClose, onSelectContact })
                     className="px-3 py-1 rounded-full text-xs font-medium"
                     style={{
                       backgroundColor: contact.status === "Prospect" ? "#E0E7FF" : contact.status === "Client" ? "#A4E6FE" : "#EED1F4",
-                      color: contact.status === "Prospect" ? "#4F46E5" : contact.status === "Client" ? "#1A8AB3" : "#C970AB"
+                      color: contact.status === "Prospect" ? "#4F46E5" : contact.status === "Client" ? "#1A8AB3" : "#5b21b6"
                     }}
                   >
                     {contact.status}

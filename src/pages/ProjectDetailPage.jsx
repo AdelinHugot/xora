@@ -23,6 +23,7 @@ import UserTopBar from "../components/UserTopBar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import ProjectDiscoveryTab from "../components/ProjectDiscoveryTab";
 import { useProject } from "../hooks/useProject";
+import { formatPhoneForDisplay } from "../utils/dataTransformers";
 
 // Mock project data
 const mockProjectData = {
@@ -205,7 +206,7 @@ function ProjectHeader({ project, onBack, onEdit, onSchedule, onAddTask, onLost 
             <div className="flex items-center gap-3">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white">
                 <Phone className="size-3.5 text-[#6B7280]" />
-                <span className="text-sm text-[#374151]">{project.phone}</span>
+                <span className="text-sm text-[#374151]">{formatPhoneForDisplay(project.phone)}</span>
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white">
                 <Mail className="size-3.5 text-[#6B7280]" />
@@ -2115,15 +2116,6 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
                 placeholder="En mm"
               />
             </FormField>
-            <FormField label="Description gestion des déchets" span={2}>
-              <textarea
-                value={formData.preparationWasteDescription}
-                onChange={(e) => updateField("preparationWasteDescription", e.target.value)}
-                placeholder="Écrire un commentaire"
-                rows={4}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
-              />
-            </FormField>
           </FormSection>
 
           {/* Plan de travail */}
@@ -2205,16 +2197,6 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
               />
             </FormField>
 
-            {/* Description gestion des déchets - Deuxième ligne */}
-            <FormField label="Description gestion des déchets" span={1}>
-              <textarea
-                value={formData.usageWasteDescription}
-                onChange={(e) => updateField("usageWasteDescription", e.target.value)}
-                placeholder="Écrire un commentaire"
-                rows={4}
-                className="w-full px-4 py-3 rounded-lg border border-[#E1E4ED] bg-white text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-4 focus:ring-[#2B7FFF]/10 resize-none"
-              />
-            </FormField>
           </FormSection>
 
           {/* Type de rangements */}
@@ -3498,8 +3480,8 @@ function DiscoveryTabContent() {
         </FormField>
       </FormSection>
 
-      {/* Concurrence */}
-      <FormSection title="Concurrence">
+      {/* Confrère(s) */}
+      <FormSection title="Confrère(s)">
         <FormField label="Nombre de confrères consultés">
           <TextInput
             type="number"

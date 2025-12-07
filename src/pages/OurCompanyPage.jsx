@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
 import { useTeamMembers } from "../hooks/useTeamMembers";
 import { useOrganization } from "../hooks/useOrganization";
+import { formatPhoneForDisplay } from "../utils/dataTransformers";
 
 // Tab Navigation Component
 function TabNavigation({ activeTab, onTabChange }) {
@@ -137,7 +138,7 @@ function TeamsTabContent({ onNavigate }) {
           ) : filteredEmployees.length > 0 ? (
             filteredEmployees.map((member) => {
               const fullName = `${member.prenom} ${member.nom}`;
-              const phone = member.telephone || '-';
+              const phone = formatPhoneForDisplay(member.telephone) || '-';
               const avatarSeed = member.id.substring(0, 8);
               const avatar = `https://i.pravatar.cc/32?u=${avatarSeed}`;
 

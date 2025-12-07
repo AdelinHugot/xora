@@ -672,8 +672,8 @@ export default function ProjectDiscoveryTab({ project, onUpdate }) {
         </FormField>
       </FormSection>
 
-      {/* Concurrence */}
-      <FormSection title="Concurrence">
+      {/* Confrère(s) */}
+      <FormSection title="Confrère(s)">
         <FormField label="Nombre de confrères consultés">
           <TextInput
             type="number"

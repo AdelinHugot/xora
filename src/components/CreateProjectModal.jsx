@@ -222,7 +222,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit, contact 
           <div className="p-6 space-y-4">
           {/* Bloc 1: Express Project */}
           <section className="rounded-lg bg-[#F3F4F6] p-4 space-y-3 border border-[#E1E4ED]">
-            <h3 className="text-xs text-[#6B7280] font-medium">Options du projet</h3>
+            <h3 className="text-xs text-[#6B7280] font-medium">Projet express</h3>
 
             <div className="flex items-center gap-3">
               <div className="relative inline-block w-12 h-6">

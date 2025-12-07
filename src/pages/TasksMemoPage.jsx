@@ -217,7 +217,7 @@ const Topbar = ({ onNavigate }) => {
             <path d="M16.5 3.88501L7.9425 12.45L4.7625 9.27001L5.82 8.21251L7.9425 10.335L15.4425 2.83501L16.5 3.88501ZM14.8425 7.66501C14.94 8.09251 15 8.54251 15 9.00001C15 12.315 12.315 15 9 15C5.685 15 3 12.315 3 9.00001C3 5.68501 5.685 3.00001 9 3.00001C10.185 3.00001 11.28 3.34501 12.21 3.93751L13.29 2.85751C12.0348 1.97217 10.536 1.49788 9 1.50001C4.86 1.50001 1.5 4.86001 1.5 9.00001C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9.00001C16.5 8.10751 16.335 7.25251 16.05 6.45751L14.8425 7.66501Z" fill="currentColor"/>
           </svg>
         </div>
-        <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Tâches & mémo</h1>
+        <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Tâches et Mémos</h1>
       </div>
       <UserTopBar onSettingsClick={() => onNavigate("settings-connection")} />
     </header>
@@ -248,7 +248,7 @@ const FiltersBar = ({ filters, onFilterChange }) => {
           onChange={(e) => onFilterChange("type", e.target.value)}
           className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
         >
-          <option value="">Tâches & mémo</option>
+          <option value="">Tâches et Mémos</option>
           <option value="Tâche">Tâche</option>
           <option value="Mémo">Mémo</option>
         </select>
@@ -1023,7 +1023,7 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-lg font-semibold text-neutral-900">
-                    Liste des tâches et mémo ({filteredTasks.length})
+                    Liste des tâches et mémos ({filteredTasks.length})
                   </h2>
                   {/* Status Filter Pill */}
                   <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-100 p-1">
