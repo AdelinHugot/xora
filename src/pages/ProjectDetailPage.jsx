@@ -258,7 +258,7 @@ function ProjectHeader({ project, onBack, onEdit, onSchedule, onAddTask, onLost 
 }
 
 // Progress Ring Component (for active tab indicator)
-function ProgressRing({ progress = 99 }) {
+function ProgressRing({ progress = 0 }) {
   const radius = 7; // For 16px diameter (18px on dense screens)
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
@@ -293,7 +293,7 @@ function ProgressRing({ progress = 99 }) {
 }
 
 // Tab Navigation Component
-function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, onOpenSummary, progressSidebarWidth }) {
+function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, onOpenSummary, progressSidebarWidth, progress = 0 }) {
   const tabs = [
     { id: "study", label: "Étude client", hasProgress: true },
     { id: "tasks", label: "Tâches", count: 4 },
@@ -339,8 +339,8 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
                   <span>{tab.label}</span>
                   {tab.hasProgress && isActive && (
                     <span className="inline-flex items-center gap-1.5">
-                      <ProgressRing progress={99} />
-                      <span className="text-xs font-semibold text-[#E663C5]">99%</span>
+                      <ProgressRing progress={progress} />
+                      <span className="text-xs font-semibold text-[#E663C5]">{progress}%</span>
                     </span>
                   )}
                   {tab.count !== undefined && (
@@ -3543,10 +3543,10 @@ function DiscoveryTabContent() {
 }
 
 // Progress Summary Sidebar Component
-function ProgressSidebar({ isCollapsed, onToggle, headerHeight }) {
+function ProgressSidebar({ isCollapsed, onToggle, headerHeight, progress = 0 }) {
   const steps = [
     { label: "Études à réaliser", progress: 2, color: "violet" },
-    { label: "Étude", progress: 99, color: "green" },
+    { label: "Étude", progress: progress, color: "green" },
     { label: "Commande", progress: 0, color: "neutral" },
     { label: "Installation", progress: 0, color: "neutral" }
   ];
@@ -3872,6 +3872,7 @@ export default function ProjectDetailPage({
           onSubTabChange={setActiveSubTab}
           onOpenSummary={() => console.log("Open summary")}
           progressSidebarWidth={progressSidebarWidth}
+          progress={formattedProject?.progress || 0}
         />
 
         {/* Progress Sidebar - Fixed on the right */}
@@ -3879,6 +3880,7 @@ export default function ProjectDetailPage({
           isCollapsed={progressSidebarCollapsed}
           onToggle={() => setProgressSidebarCollapsed(!progressSidebarCollapsed)}
           headerHeight={headerHeight}
+          progress={formattedProject?.progress || 0}
         />
 
         {/* Content */}
