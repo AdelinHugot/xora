@@ -13,12 +13,29 @@ export function useContacts() {
   const fetchContacts = async () => {
     try {
       setLoading(true);
+
+      // Get current user's organization
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Utilisateur non authentifié');
+      }
+
+      const { data: authData, error: authError } = await supabase
+        .from('utilisateurs_auth')
+        .select('id_organisation')
+        .eq('id_auth_user', user.id)
+        .single();
+
+      if (authError) throw authError;
+      if (!authData) throw new Error('Organisation non trouvée');
+
       const { data, error } = await supabase
         .from('contacts')
         .select(`
           *,
           utilisateurs!contacts_agenceur_referent_fkey(id, prenom, nom)
         `)
+        .eq('id_organisation', authData.id_organisation)
         .is('supprime_le', null)
         .order('cree_le', { ascending: false });
 
