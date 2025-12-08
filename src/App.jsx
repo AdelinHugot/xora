@@ -194,16 +194,96 @@ function Topbar({ onSettingsClick = () => {} }) {
   );
 }
 
-function Searchbar() {
+function Searchbar({ contacts = [], onNavigate }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const searchRef = React.useRef(null);
+
+  // Filter contacts based on search term
+  const searchResults = searchTerm.trim() === ""
+    ? []
+    : contacts.filter(contact =>
+        contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.telephone?.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 10); // Limit to 10 results
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const handleSelectContact = (contact) => {
+    if (onNavigate) {
+      onNavigate(`contact-${contact.id}`);
+    }
+    setSearchTerm("");
+    setIsOpen(false);
+  };
+
   return (
     <div className="p-4 lg:p-6">
-      <div className="relative">
+      <div className="relative" ref={searchRef}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
         <input
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white/70 placeholder:text-neutral-400"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white/70 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           placeholder="Rechercher un client"
           type="search"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
         />
+
+        {/* Dropdown with search results */}
+        {isOpen && (searchResults.length > 0 || searchTerm.trim() !== "") && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
+            {searchResults.length > 0 ? (
+              <div className="py-1">
+                {searchResults.map((contact) => (
+                  <button
+                    key={contact.id}
+                    onClick={() => handleSelectContact(contact)}
+                    className="w-full px-4 py-3 text-left hover:bg-neutral-50 transition-colors border-b border-neutral-100 last:border-b-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "#E4E4E7" }}>
+                        <span className="text-xs font-semibold text-neutral-600">
+                          {contact.name?.charAt(0) || "?"}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-neutral-900 truncate">
+                          {contact.name}
+                        </div>
+                        {contact.email && (
+                          <div className="text-xs text-neutral-500 truncate">
+                            {contact.email}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="px-4 py-6 text-center text-sm text-neutral-500">
+                Aucun client trouvé pour "{searchTerm}"
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -803,7 +883,8 @@ function MainPanels({ onNavigate }) {
 
 function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
-  
+  const { contacts, loading } = useContacts();
+
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
       <Sidebar
@@ -816,7 +897,15 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onSettingsClick={() => onNavigate("settings-connection")} />
         <div className="w-full">
-          <Searchbar />
+          <Searchbar
+            contacts={contacts.map(contact => ({
+              id: contact.id,
+              name: `${contact.nom} ${contact.prenom}`.toUpperCase(),
+              email: contact.email,
+              telephone: contact.telephone
+            }))}
+            onNavigate={onNavigate}
+          />
           <KpiStrip />
           <MainPanels onNavigate={onNavigate} />
           <Agenda />
