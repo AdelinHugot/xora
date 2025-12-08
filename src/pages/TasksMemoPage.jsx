@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import UserTopBar from "../components/UserTopBar";
 import { useTaches } from "../hooks/useTaches";
+import { useTeamMembers } from "../hooks/useTeamMembers";
 
 // Mock data generator (gardé pour les filtres d'agenceurs)
 const generateMockTasks = () => {
@@ -851,11 +852,12 @@ const mapTacheForDisplay = (tache) => {
 export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
   // Utiliser le hook pour les vraies données
   const { taches, loading, error, updateTacheStage, updateTacheStatus, deleteTache, createTache } = useTaches();
+  const { teamMembers } = useTeamMembers();
 
   // Mapper les tâches pour l'affichage
   const mappedTaches = taches.map(mapTacheForDisplay);
 
-  const [statusFilterPill, setStatusFilterPill] = useState("en-cours");
+  const [statusFilterPill, setStatusFilterPill] = useState("all");
   const [filters, setFilters] = useState({
     search: "",
     type: "",
@@ -1004,6 +1006,8 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateTaskOrMemo}
+        employees={teamMembers}
+        commercials={teamMembers}
       />
 
       <Sidebar

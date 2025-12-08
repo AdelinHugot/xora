@@ -87,6 +87,7 @@ const CreateTaskOrMemoModal = ({
   preFilledClient = "",
   preFilledProject = "",
   employees = [],
+  commercials = [],
   projects = []
 }) => {
   const [formData, setFormData] = useState({
@@ -451,7 +452,15 @@ const CreateTaskOrMemoModal = ({
                           className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
                         >
                           <option value="">Sélectionner</option>
-                          {COMMERCIALS.map(c => <option key={c} value={c}>{c}</option>)}
+                          {commercials.length > 0 ? (
+                            commercials.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.prenom} {c.nom}
+                              </option>
+                            ))
+                          ) : (
+                            COMMERCIALS.map(c => <option key={c} value={c}>{c}</option>)
+                          )}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />

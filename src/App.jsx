@@ -19,7 +19,10 @@ import SignupPage from "./pages/SignupPage";
 import { useKPIs } from "./hooks/useKPIs";
 import { usePipelineKPIs } from "./hooks/usePipelineKPIs";
 import { useTaches } from "./hooks/useTaches";
+import { useContacts } from "./hooks/useContacts";
+import { useTeamMembers } from "./hooks/useTeamMembers";
 import { useAgendaWeek } from "./hooks/useAgendaWeek";
+import CreateTaskOrMemoModal from "./components/CreateTaskOrMemoModal";
 import KpiCaGenereSvg from "../SVG Menu/KPI - CA Généré.svg";
 import KpiMargeGenereSvg from "../SVG Menu/KPI - Marge générée.svg";
 import KpiTauxMargeSvg from "../SVG Menu/KPI - Taux de marge.svg";
@@ -604,7 +607,9 @@ function TaskRow({ task, index, onStageChange, onDelete, onNavigate }) {
 }
 
 function TasksPanel({ height, onNavigate }) {
-  const { taches, loading, error, updateTacheStage, deleteTache } = useTaches();
+  const { taches, loading, error, updateTacheStage, deleteTache, refetch } = useTaches();
+  const { teamMembers } = useTeamMembers();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Format date in French
   const formatDateFrench = () => {
@@ -617,6 +622,14 @@ function TasksPanel({ height, onNavigate }) {
     const month = months[now.getMonth()];
     const year = now.getFullYear();
     return `${day} ${month} ${year}`;
+  };
+
+  // Handle task creation success
+  const handleTaskCreated = () => {
+    setIsModalOpen(false);
+    if (refetch) {
+      refetch();
+    }
   };
 
   return (
@@ -636,7 +649,7 @@ function TasksPanel({ height, onNavigate }) {
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Bouton Ajouter tâche */}
           <button
-            onClick={() => onNavigate && onNavigate('tasks-memo')}
+            onClick={() => setIsModalOpen(true)}
             className="px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
             style={{ backgroundColor: "#F3F3F3", color: "#374151" }}
             aria-label="Créer la tâche manuelle"
@@ -694,6 +707,15 @@ function TasksPanel({ height, onNavigate }) {
           )}
         </div>
       )}
+
+      {/* Task/Memo Creation Modal */}
+      <CreateTaskOrMemoModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleTaskCreated}
+        employees={teamMembers}
+        commercials={teamMembers}
+      />
     </div>
   );
 }
