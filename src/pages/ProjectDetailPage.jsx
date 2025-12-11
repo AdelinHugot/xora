@@ -23,6 +23,7 @@ import UserTopBar from "../components/UserTopBar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import ProjectDiscoveryTab from "../components/ProjectDiscoveryTab";
 import { useProject } from "../hooks/useProject";
+import { useTaches } from "../hooks/useTaches";
 import { formatPhoneForDisplay } from "../utils/dataTransformers";
 
 // Mock project data
@@ -617,56 +618,32 @@ function NumberSpinner({ value, onChange, placeholder = "0" }) {
 }
 
 // Project Tasks Tab Content Component
-function ProjectTasksTabContent() {
+function ProjectTasksTabContent({ project }) {
   const [taskFilter, setTaskFilter] = useState("in-progress");
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const { taches, loading: tachesLoading } = useTaches();
 
-  const mockTasks = [
-    {
-      id: 1,
-      type: "Tâche",
-      title: "Mesurer la cuisine",
-      phase: "Phase 1 - Étude",
-      status: "En cours",
-      dueDate: "28/11/25",
-      assignee: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-      note: "Urgence",
-      progress: 65
+  // Filter tasks by project name
+  const projectTasksRaw = taches.filter(task => {
+    const projectName = project?.titre || project?.nom_projet;
+    return (task.projectName === projectName) || (task.nom_projet === projectName);
+  });
+
+  // Transform taches to match the UI format
+  const transformedTasks = projectTasksRaw.map(task => ({
+    id: task.id,
+    type: task.type,
+    title: task.titre,
+    phase: task.tag || "Autre",
+    status: task.status === "En cours" ? "En cours" : task.status === "Terminé" ? "Terminé" : "Non commencé",
+    dueDate: task.dueDate,
+    assignee: {
+      name: task.salarie_name || "Non assigné",
+      avatar: `https://i.pravatar.cc/32?u=${task.id_affecte_a || 'unknown'}`
     },
-    {
-      id: 2,
-      type: "Tâche",
-      title: "Commander matériaux",
-      phase: "Phase 2 - Approvisionnement",
-      status: "En cours",
-      dueDate: "30/11/25",
-      assignee: { name: "Sophie", avatar: "https://i.pravatar.cc/32?img=8" },
-      note: "En attente devis",
-      progress: 40
-    },
-    {
-      id: 3,
-      type: "Mémo",
-      title: "Validation devis client",
-      phase: "Phase 1 - Étude",
-      status: "Terminé",
-      dueDate: "25/11/25",
-      assignee: { name: "Thomas", avatar: "https://i.pravatar.cc/32?img=15" },
-      note: "Validé",
-      progress: 100
-    },
-    {
-      id: 4,
-      type: "Tâche",
-      title: "Visite du chantier",
-      phase: "Phase 3 - Installation",
-      status: "Terminé",
-      dueDate: "20/11/25",
-      assignee: { name: "Benjamin", avatar: "https://i.pravatar.cc/32?img=5" },
-      note: "Photos prises",
-      progress: 100
-    }
-  ];
+    note: task.note || "",
+    progress: task.progress
+  }));
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -679,7 +656,7 @@ function ProjectTasksTabContent() {
     }
   };
 
-  const filteredTasks = mockTasks.filter(task => {
+  const filteredTasks = transformedTasks.filter(task => {
     if (taskFilter === "in-progress") {
       return task.status === "En cours";
     } else if (taskFilter === "completed") {
@@ -3905,7 +3882,7 @@ export default function ProjectDetailPage({
                 </div>
               )}
               {activeTab === "tasks" && (
-                <ProjectTasksTabContent />
+                <ProjectTasksTabContent project={project} />
               )}
               {activeTab !== "study" && activeTab !== "tasks" && (
                 <div className="p-12 text-center text-neutral-500">
