@@ -95,6 +95,15 @@ export function useTaches(limit = null) {
 
         if (tachesError) throw tachesError;
 
+        console.log(`[useTaches] Fetched ${tachesData?.length || 0} tasks for organisation ${authData.id_organisation}`, tachesData);
+
+        // DEBUG: Fetch ALL tasks without filters to see what's in the database
+        const { data: allTaches } = await supabase
+          .from('taches')
+          .select('id, titre, id_organisation, supprime_le, statut, index_tache, nom_client, nom_projet, id_contact, id_projet');
+
+        console.log(`[useTaches] DEBUG - Total tasks in database: ${allTaches?.length || 0}`, allTaches);
+
         // Récupère les utilisateurs pour résoudre les noms des salariés assignés
         const { data: utilisateurs } = await supabase
           .from('utilisateurs')
@@ -273,15 +282,17 @@ export function useTaches(limit = null) {
         titre: tacheData.titre || tacheData.memoName || 'Sans titre',
         tag: tacheData.tag || 'Autre',
         type: tacheData.type || 'Tâche',
-        statut: dbStatus,
+        statut: tacheData.statut || dbStatus,
         progression: tacheData.progression || 0,
         date_echeance: tacheData.date_echeance || tacheData.dueDate,
         note: tacheData.note,
         nom_client: tacheData.nom_client,
         nom_projet: tacheData.nom_projet,
+        id_contact: tacheData.id_contact || null,
+        id_projet: tacheData.id_projet || null,
         id_affecte_a: tacheData.id_affecte_a || null,
         id_organisation: authData.id_organisation,
-        index_tache: (taches.length || 0) + 1
+        index_tache: tacheData.index_tache || ((taches.length || 0) + 1)
       };
 
       const { data, error } = await supabase
@@ -312,7 +323,9 @@ export function useTaches(limit = null) {
         index: data[0].index_tache,
         titre: data[0].titre || 'Sans titre',
         type: data[0].type || 'Tâche',
+        id_contact: data[0].id_contact,
         clientName: data[0].nom_client || '',
+        id_projet: data[0].id_projet,
         projectName: data[0].nom_projet || '',
         tag: data[0].tag,
         dueDate: data[0].date_echeance
