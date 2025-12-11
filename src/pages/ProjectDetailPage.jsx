@@ -619,41 +619,31 @@ function NumberSpinner({ value, onChange, placeholder = "0" }) {
 
 // Project Tasks Tab Content Component
 function ProjectTasksTabContent({ project }) {
-  const [taskFilter, setTaskFilter] = useState("all");
+  const [taskFilter, setTaskFilter] = useState("in-progress");
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const { taches, loading: tachesLoading, createTache } = useTaches();
+  const { taches, loading, error, createTache } = useTaches();
 
   // Filter tasks by project ID (preferred) or project name (fallback)
-  const projectTasksRaw = taches.filter(task => {
+  const filteredTasks = taches.filter(task => {
     // Use id_projet if available (most reliable)
-    if (project?.id && task.id_projet === project.id) {
-      return true;
-    }
+    const isProjectMatch = project?.id && task.id_projet === project.id;
     // Fallback to project name matching if id_projet is not set
     const projectName = project?.titre;
-    return projectName && task.projectName === projectName && task.projectName !== 'Non spécifié';
+    const isProjectNameMatch = projectName && task.projectName === projectName && task.projectName !== 'Non spécifié';
+
+    // Show task if it matches the project
+    if (!isProjectMatch && !isProjectNameMatch) {
+      return false;
+    }
+
+    // Filter by status
+    if (taskFilter === "in-progress") {
+      return task.status !== "Terminé";
+    } else if (taskFilter === "completed") {
+      return task.status === "Terminé";
+    }
+    return true;
   });
-
-  // DEBUG logging
-  console.log("[ProjectTasksTabContent] Project:", project);
-  console.log("[ProjectTasksTabContent] All taches:", taches);
-  console.log("[ProjectTasksTabContent] Filtered projectTasksRaw:", projectTasksRaw);
-
-  // Transform taches to match the UI format
-  const transformedTasks = projectTasksRaw.map(task => ({
-    id: task.id,
-    type: task.type,
-    title: task.titre,
-    phase: task.tag || "Autre",
-    status: task.status === "En cours" ? "En cours" : task.status === "Terminé" ? "Terminé" : "Non commencé",
-    dueDate: task.dueDate,
-    assignee: {
-      name: task.salarie_name || "Non assigné",
-      avatar: `https://i.pravatar.cc/32?u=${task.id_affecte_a || 'unknown'}`
-    },
-    note: task.note || "",
-    progress: task.progress
-  }));
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -665,17 +655,6 @@ function ProjectTasksTabContent({ project }) {
         return { bg: "#F3F4F6", text: "#1F2937", progressBar: "bg-neutral-400", progressText: "text-neutral-600" };
     }
   };
-
-  const filteredTasks = transformedTasks.filter(task => {
-    if (taskFilter === "in-progress") {
-      return task.status === "En cours";
-    } else if (taskFilter === "completed") {
-      return task.status === "Terminé";
-    } else if (taskFilter === "not-started") {
-      return task.status === "Non commencé";
-    }
-    return true; // "all" filter
-  });
 
   const getTypeStyles = (type) => {
     switch (type) {
@@ -690,67 +669,45 @@ function ProjectTasksTabContent({ project }) {
 
   return (
     <div className="space-y-6">
-      {/* Title, Filter Pills, and Add Button */}
-      <div className="flex items-center justify-between">
+      {/* Title and Filter Pills */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold text-neutral-900">Liste des tâches</h3>
           <div className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 p-1" role="radiogroup">
-          <button
-            onClick={() => setTaskFilter("all")}
-            role="radio"
-            aria-checked={taskFilter === "all"}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-              taskFilter === "all"
-                ? "bg-gray-900 text-white"
-                : "text-neutral-700 hover:text-neutral-900"
-            }`}
-          >
-            Tous
-          </button>
-          <button
-            onClick={() => setTaskFilter("not-started")}
-            role="radio"
-            aria-checked={taskFilter === "not-started"}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-              taskFilter === "not-started"
-                ? "bg-gray-900 text-white"
-                : "text-neutral-700 hover:text-neutral-900"
-            }`}
-          >
-            Non commencé
-          </button>
-          <button
-            onClick={() => setTaskFilter("in-progress")}
-            role="radio"
-            aria-checked={taskFilter === "in-progress"}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-              taskFilter === "in-progress"
-                ? "bg-gray-900 text-white"
-                : "text-neutral-700 hover:text-neutral-900"
-            }`}
-          >
-            En cours
-          </button>
-          <button
-            onClick={() => setTaskFilter("completed")}
-            role="radio"
-            aria-checked={taskFilter === "completed"}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-              taskFilter === "completed"
-                ? "bg-gray-900 text-white"
-                : "text-neutral-700 hover:text-neutral-900"
-            }`}
-          >
-            Terminées
-          </button>
+            <button
+              onClick={() => setTaskFilter("in-progress")}
+              role="radio"
+              aria-checked={taskFilter === "in-progress"}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                taskFilter === "in-progress"
+                  ? "bg-gray-900 text-white"
+                  : "text-neutral-700 hover:text-neutral-900"
+              }`}
+            >
+              En cours
+            </button>
+            <button
+              onClick={() => setTaskFilter("completed")}
+              role="radio"
+              aria-checked={taskFilter === "completed"}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                taskFilter === "completed"
+                  ? "bg-gray-900 text-white"
+                  : "text-neutral-700 hover:text-neutral-900"
+              }`}
+            >
+              Terminées
+            </button>
+          </div>
         </div>
-        </div>
+
+        {/* Create Task Button */}
         <button
           onClick={() => setAddTaskModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2B7FFF] text-white text-sm font-medium hover:bg-[#1F6FE6] transition-colors"
         >
           <Plus className="size-4" />
-          Ajouter une tâche
+          Créer une tâche
         </button>
       </div>
 
@@ -760,7 +717,7 @@ function ProjectTasksTabContent({ project }) {
         <div className="w-full border-b border-[#E4E4E7] p-4" style={{ backgroundColor: "#FAFAFA" }}>
           <div className="flex items-center gap-4">
             <span className="text-xs font-semibold text-neutral-600 flex-1">Type</span>
-            <span className="text-xs font-semibold text-neutral-600 flex-1">Phase</span>
+            <span className="text-xs font-semibold text-neutral-600 flex-1">Projet</span>
             <span className="text-xs font-semibold text-neutral-600 flex-1">Statut</span>
             <span className="text-xs font-semibold text-neutral-600 flex-1">Échéance</span>
             <span className="text-xs font-semibold text-neutral-600 flex-1">Collaborateur</span>
@@ -772,7 +729,12 @@ function ProjectTasksTabContent({ project }) {
 
         {/* Tasks Cards Container */}
         <div className="p-4 space-y-3">
-          {filteredTasks.map((task) => {
+          {loading && (
+            <div className="p-12 text-center text-neutral-500">
+              Chargement des tâches...
+            </div>
+          )}
+          {!loading && filteredTasks.map((task) => {
             const statusColor = getStatusColor(task.status);
             return (
               <div
@@ -782,11 +744,11 @@ function ProjectTasksTabContent({ project }) {
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeStyles(task.type)}`}>
-                      {task.type}
+                      {task.type || "Tâche"}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{task.phase}</span>
+                    <span className="text-sm text-neutral-600">{task.projectName || "—"}</span>
                   </div>
                   <div className="flex-1">
                     <span
@@ -801,16 +763,25 @@ function ProjectTasksTabContent({ project }) {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={task.assignee.avatar}
-                        alt={task.assignee.name}
-                        className="size-6 rounded-full"
-                      />
-                      <span className="text-sm text-neutral-600">{task.assignee.name}</span>
+                      {task.salarie_name ? (
+                        <>
+                          <div className="size-6 rounded-full bg-blue-200 flex items-center justify-center text-xs font-medium text-blue-700">
+                            {task.salarie_name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-neutral-600">{task.salarie_name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="size-6 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-medium text-neutral-600">
+                            —
+                          </div>
+                          <span className="text-sm text-neutral-600">Non assigné</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm text-neutral-600">{task.note}</span>
+                    <span className="text-sm text-neutral-600">{task.note || "—"}</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -842,7 +813,7 @@ function ProjectTasksTabContent({ project }) {
           {/* Empty State */}
           {filteredTasks.length === 0 && (
             <div className="p-12 text-center text-neutral-500 border border-[#E4E4E7] rounded-lg bg-white">
-              {taskFilter === "in-progress" ? "Aucune tâche en cours" : taskFilter === "completed" ? "Aucune tâche terminée" : taskFilter === "not-started" ? "Aucune tâche non commencée" : "Aucune tâche"}
+              Aucune tâche {taskFilter === "in-progress" ? "en cours" : "terminée"}
             </div>
           )}
         </div>
