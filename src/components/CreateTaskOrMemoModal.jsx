@@ -1,71 +1,51 @@
 // filename: CreateTaskOrMemoModal.jsx
 import React, { useState, useEffect, useRef } from "react";
+import { useContactSearch } from "../hooks/useContactSearch";
+import { useDebounce } from "../hooks/useDebounce";
+import { useProjects } from "../hooks/useProjects";
 
 // SVG Icons
 const XIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M15 5L5 15M5 5l10 10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M15 5L5 15M5 5l10 10" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const CheckDocIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M16.667 5L7.5 14.167 3.333 10" strokeLinecap="round" strokeLinejoin="round"/>
-    <rect x="2.5" y="2.5" width="15" height="15" rx="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16.667 5L7.5 14.167 3.333 10" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="2.5" y="2.5" width="15" height="15" rx="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const PlusIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M8 3v10M3 8h10" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M8 3v10M3 8h10" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const ChevronDownIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-// Mock data
-const SALARIES = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
-const CLIENTS = ["DUBOIS Chloé", "MOREAU Julian", "BERNARD Amélie", "FARGET Coline"];
-const PROJECTS = ["Pose de cuisine", "Dossier technique", "Études en cours", "Installation", "SAV"];
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M7.333 12.667A5.333 5.333 0 107.333 2a5.333 5.333 0 000 10.667zM14 14l-2.9-2.9" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const Spinner = () => (
+  <svg className="size-4 animate-spin" viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
+    <path d="M8 2a6 6 0 016 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+// Constants
 const TASK_TYPES = ["Appel", "Email", "Rendez-vous", "Relance", "Note", "Mémo"];
-const COMMERCIALS = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
-
-// Generate next 14 days
-const generateDateOptions = () => {
-  const options = [];
-  const today = new Date();
-
-  for (let i = 0; i <= 14; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-    const label = i === 0 ? "Aujourd'hui" : i === 1 ? "Demain" : date.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
-    options.push({
-      label,
-      value: date.toISOString().split('T')[0]
-    });
-  }
-
-  return options;
-};
-
-// Generate time slots
-const generateTimeOptions = () => {
-  const options = [];
-  for (let hour = 8; hour <= 18; hour++) {
-    for (let min = 0; min < 60; min += 30) {
-      const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-      options.push(timeStr);
-    }
-  }
-  return options;
-};
-
-const DATE_OPTIONS = generateDateOptions();
-const TIME_OPTIONS = generateTimeOptions();
+const COMMERCIALS_FALLBACK = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
 
 // Task type badge colors
 const getTaskTypeBadgeClass = (type) => {
@@ -80,11 +60,228 @@ const getTaskTypeBadgeClass = (type) => {
   return classes[type] || "bg-neutral-100 text-neutral-900";
 };
 
+// Custom Select Component (Reusable)
+const UserSelect = ({ value, onChange, options, placeholder = "Sélectionner", disabled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  const selectedOption = options.find(opt => opt.id === value);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setFocusedIndex(-1);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (e) => {
+    if (disabled) return;
+
+    switch (e.key) {
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setFocusedIndex(0);
+        } else if (focusedIndex >= 0) {
+          onChange(options[focusedIndex].id);
+          setIsOpen(false);
+          setFocusedIndex(-1);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setIsOpen(false);
+        setFocusedIndex(-1);
+        buttonRef.current?.focus();
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setFocusedIndex(0);
+        } else {
+          setFocusedIndex(prev => Math.min(prev + 1, options.length - 1));
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (isOpen) {
+          setFocusedIndex(prev => Math.max(prev - 1, 0));
+        }
+        break;
+      case "Tab":
+        if (isOpen) {
+          setIsOpen(false);
+          setFocusedIndex(-1);
+        }
+        break;
+    }
+  };
+
+  const handleOptionClick = (optionId) => {
+    onChange(optionId);
+    setIsOpen(false);
+    setFocusedIndex(-1);
+    buttonRef.current?.focus();
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        role="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+        className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-[#1F2027] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+      >
+        <span className="flex items-center gap-2">
+          {selectedOption ? (
+            <>
+              {selectedOption.avatarUrl && (
+                <img
+                  src={selectedOption.avatarUrl}
+                  alt=""
+                  className="size-6 rounded-full"
+                />
+              )}
+              <span>{selectedOption.name}</span>
+            </>
+          ) : (
+            <span className="text-[#A1A7B6]">{placeholder}</span>
+          )}
+        </span>
+        <ChevronDownIcon />
+      </button>
+
+      {isOpen && (
+        <div
+          role="listbox"
+          className="absolute z-10 mt-1 w-full rounded-lg border border-[#E1E4ED] bg-white shadow-lg max-h-60 overflow-y-auto"
+        >
+          {options.map((option, index) => (
+            <div
+              key={option.id}
+              role="option"
+              aria-selected={value === option.id}
+              tabIndex={-1}
+              onClick={() => handleOptionClick(option.id)}
+              onMouseEnter={() => setFocusedIndex(index)}
+              className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors text-sm ${focusedIndex === index ? "bg-[#F3F4F6]" : ""
+                } ${value === option.id ? "bg-[#F8F9FA]" : ""} ${index === 0 ? "rounded-t-lg" : ""
+                } ${index === options.length - 1 ? "rounded-b-lg" : ""}`}
+            >
+              {option.avatarUrl && (
+                <img
+                  src={option.avatarUrl}
+                  alt=""
+                  className="size-6 rounded-full"
+                />
+              )}
+              <span>{option.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Client Search Component
+const ClientSearch = ({ value, onChange, onContactSelect, placeholder = "Rechercher un client..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { results, loading, searchContacts } = useContactSearch();
+  const dropdownRef = useRef(null);
+
+  // Debounce the search term to avoid too many API calls
+  const debouncedSearchTerm = useDebounce(value, 300);
+
+  // Trigger search when debounced value changes
+  useEffect(() => {
+    if (debouncedSearchTerm && debouncedSearchTerm.length >= 2) {
+      searchContacts(debouncedSearchTerm);
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  }, [debouncedSearchTerm, searchContacts]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (clientName, contactId) => {
+    onChange(clientName); // Update parent state with selected name
+    if (onContactSelect) {
+      onContactSelect(contactId); // Notify parent of contact ID
+    }
+    setIsOpen(false); // Close dropdown
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pl-9 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+          onFocus={() => {
+            if (value && value.length >= 2) setIsOpen(true);
+          }}
+        />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A7B6]">
+          {loading ? <Spinner /> : <SearchIcon />}
+        </div>
+      </div>
+
+      {isOpen && results && results.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-[#E1E4ED] bg-white shadow-lg max-h-60 overflow-y-auto">
+          {results.map((result, idx) => (
+            <button
+              key={result.id || idx}
+              type="button"
+              onClick={() => handleSelect(result.name, result.id)}
+              className="w-full px-3 py-2 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 flex flex-col"
+            >
+              <span className="font-medium">{result.name}</span>
+              {result.email && <span className="text-xs text-[#6B7280]">{result.email}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CreateTaskOrMemoModal = ({
   open,
   onClose,
   onSubmit,
   preFilledClient = "",
+  preFilledContactId = null,
   preFilledProject = "",
   employees = [],
   commercials = [],
@@ -93,6 +290,7 @@ const CreateTaskOrMemoModal = ({
   const [formData, setFormData] = useState({
     kind: "Tâche",
     // Fields for Tâche
+    taskName: "", // New field for Task Title
     salarie: "",
     agendaDatetime: "",
     client: preFilledClient,
@@ -109,9 +307,34 @@ const CreateTaskOrMemoModal = ({
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState(null);
   const modalRef = useRef(null);
   const firstInputRef = useRef(null);
   const lastFocusedElement = useRef(null);
+
+  // Load projects for the selected contact
+  const { projects: contactProjects } = useProjects(selectedContactId);
+
+  // Prepare employee options for UserSelect
+  const employeeOptions = employees.map(e => ({
+    id: e.id,
+    name: `${e.prenom} ${e.nom}`,
+    avatarUrl: `https://i.pravatar.cc/150?u=${e.id}`
+  }));
+
+  // Prepare commercial options for UserSelect
+  const commercialOptions = commercials.length > 0
+    ? commercials.map(c => ({
+      id: c.id,
+      name: `${c.prenom} ${c.nom}`,
+      avatarUrl: `https://i.pravatar.cc/150?u=${c.id}`
+    }))
+    : COMMERCIALS_FALLBACK.map((name, idx) => ({
+      id: name, // Using name as ID for fallback
+      name: name,
+      avatarUrl: `https://i.pravatar.cc/150?u=${idx}`
+    }));
+
 
   // Save last focused element when modal opens
   useEffect(() => {
@@ -146,6 +369,7 @@ const CreateTaskOrMemoModal = ({
     if (!open) {
       setFormData({
         kind: "Tâche",
+        taskName: "", // Reset Title
         salarie: "",
         agendaDatetime: "",
         client: preFilledClient || "",
@@ -160,8 +384,12 @@ const CreateTaskOrMemoModal = ({
       });
       setErrors({});
       setIsSubmitting(false);
+      setSelectedContactId(null);
+    } else if (open && preFilledContactId) {
+      // When modal opens with pre-filled contact ID, set it
+      setSelectedContactId(preFilledContactId);
     }
-  }, [open, preFilledClient, preFilledProject]);
+  }, [open, preFilledClient, preFilledProject, preFilledContactId]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -170,11 +398,12 @@ const CreateTaskOrMemoModal = ({
         if (value === "Tâche") {
           return {
             kind: "Tâche",
+            taskName: "", // Reset
             salarie: "",
             agendaDatetime: "",
-            client: prev.client, // Keep client
+            client: prev.client,
             commercial: "",
-            taskType: prev.taskType, // Keep taskType
+            taskType: prev.taskType,
             project: "",
             dueDate: "",
             noteTask: "",
@@ -187,9 +416,9 @@ const CreateTaskOrMemoModal = ({
             kind: "Mémo",
             salarie: "",
             agendaDatetime: "",
-            client: prev.client, // Keep client
+            client: prev.client,
             commercial: "",
-            taskType: prev.taskType, // Keep taskType
+            taskType: prev.taskType,
             project: "",
             dueDate: "",
             noteTask: "",
@@ -207,10 +436,19 @@ const CreateTaskOrMemoModal = ({
     }
   };
 
+  const handleContactSelect = (contactId) => {
+    setSelectedContactId(contactId);
+    // Reset project field when client changes
+    setFormData(prev => ({ ...prev, project: "" }));
+  };
+
   const validate = () => {
     const newErrors = {};
 
     if (formData.kind === "Tâche") {
+      if (!formData.taskName.trim()) {
+        newErrors.taskName = "Le nom de la tâche est requis";
+      }
       if (!formData.salarie) {
         newErrors.salarie = "Le salarié est requis pour une tâche";
       }
@@ -220,7 +458,7 @@ const CreateTaskOrMemoModal = ({
     } else {
       // Mémo
       if (!formData.memoName) {
-        newErrors.memoName = "Le nom de la mémo est requis";
+        newErrors.memoName = "Le nom du mémo est requis";
       }
       if (!formData.memoEcheance) {
         newErrors.memoEcheance = "L'échéance est requise";
@@ -245,6 +483,7 @@ const CreateTaskOrMemoModal = ({
     if (formData.kind === "Tâche") {
       payload = {
         kind: "Tâche",
+        titre: formData.taskName.trim(), // Send title
         salarie: formData.salarie,
         agendaDatetime: formData.agendaDatetime || undefined,
         client: formData.client || undefined,
@@ -285,7 +524,7 @@ const CreateTaskOrMemoModal = ({
 
   const isFormValid = () => {
     if (formData.kind === "Tâche") {
-      return formData.salarie && formData.dueDate;
+      return formData.taskName.trim() && formData.salarie && formData.dueDate;
     } else {
       return formData.memoName && formData.memoEcheance;
     }
@@ -319,7 +558,7 @@ const CreateTaskOrMemoModal = ({
                 <CheckDocIcon />
               </div>
               <h2 id="create-task-memo-title" className="text-sm font-semibold text-[#1F2027]">
-                Créer une tâche ou une mémo
+                Créer une tâche ou un mémo
               </h2>
             </div>
             <button
@@ -339,24 +578,22 @@ const CreateTaskOrMemoModal = ({
             <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
               <div className="flex items-center justify-between">
                 <label className="text-xs text-[#6B7280] font-medium mb-0">
-                  Créer une tâche ou une mémo
+                  Type d'élément
                 </label>
                 <div className="inline-flex rounded-full border border-[#E1E4ED] overflow-hidden bg-white">
                   <button
                     type="button"
                     onClick={() => handleChange("kind", "Tâche")}
-                    className={`px-3 py-1 text-sm transition-colors ${
-                      formData.kind === "Tâche" ? "bg-neutral-900 text-white" : "hover:bg-[#F3F4F6]"
-                    }`}
+                    className={`px-3 py-1 text-sm transition-colors ${formData.kind === "Tâche" ? "bg-neutral-900 text-white" : "hover:bg-[#F3F4F6]"
+                      }`}
                   >
                     Tâche
                   </button>
                   <button
                     type="button"
                     onClick={() => handleChange("kind", "Mémo")}
-                    className={`px-3 py-1 text-sm transition-colors ${
-                      formData.kind === "Mémo" ? "bg-neutral-900 text-white" : "hover:bg-[#F3F4F6]"
-                    }`}
+                    className={`px-3 py-1 text-sm transition-colors ${formData.kind === "Mémo" ? "bg-neutral-900 text-white" : "hover:bg-[#F3F4F6]"
+                      }`}
                   >
                     Mémo
                   </button>
@@ -367,37 +604,45 @@ const CreateTaskOrMemoModal = ({
             {/* Conditional form content based on kind */}
             {formData.kind === "Tâche" ? (
               <>
-                {/* Groupe 2: Salarié | Agenda */}
-                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                {/* Groupe 2: Nom et Salarié | Agenda */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED] space-y-4">
+                  {/* Nom de la tâche */}
+                  <div>
+                    <label htmlFor="taskName" className="block text-xs font-medium text-[#4B5563] mb-1.5">
+                      Nom de la tâche <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      ref={firstInputRef}
+                      type="text"
+                      id="taskName"
+                      value={formData.taskName}
+                      onChange={(e) => handleChange("taskName", e.target.value)}
+                      placeholder="Ex: Relancer M. Dupont"
+                      className={`w-full rounded-lg border ${errors.taskName ? "border-red-500" : "border-[#E1E4ED]"
+                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
+                      aria-invalid={errors.taskName ? "true" : "false"}
+                      aria-describedby={errors.taskName ? "taskName-error" : undefined}
+                    />
+                    {errors.taskName && (
+                      <p id="taskName-error" className="mt-1 text-xs text-red-600">
+                        {errors.taskName}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Salarié */}
                     <div>
-                      <label htmlFor="salarie" className="block text-xs text-[#6B7280] font-medium mb-3">
+                      <label htmlFor="salarie" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                         Salarié <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative">
-                        <select
-                          ref={firstInputRef}
-                          id="salarie"
-                          value={formData.salarie}
-                          onChange={(e) => handleChange("salarie", e.target.value)}
-                          className={`w-full rounded-lg border ${
-                            errors.salarie ? "border-red-500" : "border-[#E1E4ED]"
-                          } bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none`}
-                          aria-invalid={errors.salarie ? "true" : "false"}
-                          aria-describedby={errors.salarie ? "salarie-error" : undefined}
-                        >
-                          <option value="">Sélectionner</option>
-                          {employees.map(e => (
-                            <option key={e.id} value={e.id}>
-                              {e.prenom} {e.nom}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
-                          <ChevronDownIcon />
-                        </div>
-                      </div>
+                      <UserSelect
+                        value={formData.salarie}
+                        onChange={(val) => handleChange("salarie", val)}
+                        options={employeeOptions}
+                        placeholder="Choisir un salarié"
+                        disabled={false}
+                      />
                       {errors.salarie && (
                         <p id="salarie-error" className="mt-1 text-xs text-red-600">
                           {errors.salarie}
@@ -407,8 +652,8 @@ const CreateTaskOrMemoModal = ({
 
                     {/* Agenda du salarié */}
                     <div>
-                      <label htmlFor="agendaDatetime" className="block text-xs text-[#6B7280] font-medium mb-3">
-                        Date et heure dans l'emploi du temps du salarié
+                      <label htmlFor="agendaDatetime" className="block text-xs font-medium text-[#4B5563] mb-1.5">
+                        Date et heure dans l'emploi du temps
                       </label>
                       <input
                         type="datetime-local"
@@ -421,46 +666,43 @@ const CreateTaskOrMemoModal = ({
                   </div>
                 </section>
 
-                {/* Groupe 3: Client | Commercial | Type | Projet | Échéance */}
-                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Groupe 3: Détails */}
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED] space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Client */}
                     <div>
-                      <label htmlFor="client" className="block text-xs text-[#6B7280] font-medium mb-3">
+                      <label htmlFor="client" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                         Client
                       </label>
-                      <input
-                        id="client"
-                        type="text"
+                      <ClientSearch
                         value={formData.client}
-                        readOnly
-                        className="w-full rounded-lg border border-[#E1E4ED] bg-gray-50 px-3 py-2.5 text-sm text-[#1F2027] focus:outline-none"
-                        placeholder="—"
+                        onChange={(val) => handleChange("client", val)}
+                        onContactSelect={handleContactSelect}
+                        placeholder="Rechercher un client..."
                       />
                     </div>
 
-                    {/* Commercial concerné */}
+                    {/* Projet concerné */}
                     <div>
-                      <label htmlFor="commercial" className="block text-xs text-[#6B7280] font-medium mb-3">
-                        Commercial
+                      <label htmlFor="project" className="block text-xs font-medium text-[#4B5563] mb-1.5">
+                        Projet concerné
                       </label>
                       <div className="relative">
                         <select
-                          id="commercial"
-                          value={formData.commercial}
-                          onChange={(e) => handleChange("commercial", e.target.value)}
-                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
+                          id="project"
+                          value={formData.project}
+                          onChange={(e) => handleChange("project", e.target.value)}
+                          disabled={!selectedContactId}
+                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <option value="">Sélectionner</option>
-                          {commercials.length > 0 ? (
-                            commercials.map(c => (
-                              <option key={c.id} value={c.id}>
-                                {c.prenom} {c.nom}
-                              </option>
-                            ))
-                          ) : (
-                            COMMERCIALS.map(c => <option key={c} value={c}>{c}</option>)
-                          )}
+                          <option value="">
+                            {selectedContactId ? "Sélectionner" : "Sélectionner un client d'abord"}
+                          </option>
+                          {contactProjects.map(p => (
+                            <option key={p.id} value={p.titre}>
+                              {p.titre}
+                            </option>
+                          ))}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
                           <ChevronDownIcon />
@@ -468,9 +710,23 @@ const CreateTaskOrMemoModal = ({
                       </div>
                     </div>
 
+                    {/* Commercial concerné */}
+                    <div>
+                      <label htmlFor="commercial" className="block text-xs font-medium text-[#4B5563] mb-1.5">
+                        Commercial
+                      </label>
+                      <UserSelect
+                        value={formData.commercial}
+                        onChange={(val) => handleChange("commercial", val)}
+                        options={commercialOptions}
+                        placeholder="Choisir un commercial"
+                        disabled={false}
+                      />
+                    </div>
+
                     {/* Type de tâche */}
                     <div>
-                      <label htmlFor="taskType" className="block text-xs text-[#6B7280] font-medium mb-3">
+                      <label htmlFor="taskType" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                         Type de tâche
                       </label>
                       {formData.taskType ? (
@@ -504,34 +760,9 @@ const CreateTaskOrMemoModal = ({
                       )}
                     </div>
 
-                    {/* Projet concerné */}
-                    <div>
-                      <label htmlFor="project" className="block text-xs text-[#6B7280] font-medium mb-3">
-                        Projet concerné
-                      </label>
-                      <div className="relative">
-                        <select
-                          id="project"
-                          value={formData.project}
-                          onChange={(e) => handleChange("project", e.target.value)}
-                          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pr-8 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 appearance-none"
-                        >
-                          <option value="">Sélectionner</option>
-                          {projects.map(p => (
-                            <option key={p.id} value={p.nom_projet}>
-                              {p.nom_projet}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#6B7280]">
-                          <ChevronDownIcon />
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Échéance */}
-                    <div>
-                      <label htmlFor="dueDate" className="block text-xs text-[#6B7280] font-medium mb-3">
+                    <div className="md:col-span-2">
+                      <label htmlFor="dueDate" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                         Échéance <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -539,9 +770,8 @@ const CreateTaskOrMemoModal = ({
                         id="dueDate"
                         value={formData.dueDate}
                         onChange={(e) => handleChange("dueDate", e.target.value)}
-                        className={`w-full rounded-lg border ${
-                          errors.dueDate ? "border-red-500" : "border-[#E1E4ED]"
-                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
+                        className={`w-full rounded-lg border ${errors.dueDate ? "border-red-500" : "border-[#E1E4ED]"
+                          } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
                         aria-invalid={errors.dueDate ? "true" : "false"}
                         aria-describedby={errors.dueDate ? "dueDate-error" : undefined}
                       />
@@ -557,7 +787,7 @@ const CreateTaskOrMemoModal = ({
                 {/* Groupe 4: Note */}
                 <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
                   <div>
-                    <label htmlFor="noteTask" className="block text-xs text-[#6B7280] font-medium mb-3">
+                    <label htmlFor="noteTask" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                       Note de la tâche
                     </label>
                     <textarea
@@ -565,8 +795,8 @@ const CreateTaskOrMemoModal = ({
                       value={formData.noteTask}
                       onChange={(e) => handleChange("noteTask", e.target.value)}
                       placeholder="Saisir une note ou une consigne..."
-                      rows={5}
-                      className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 min-h-[120px] resize-y"
+                      rows={4}
+                      className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 min-h-[100px] resize-y"
                     />
                   </div>
                 </section>
@@ -574,12 +804,12 @@ const CreateTaskOrMemoModal = ({
             ) : (
               <>
                 {/* Mémo Form */}
-                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
-                  <div className="space-y-4">
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED] space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {/* Nom de la mémo */}
                     <div>
-                      <label htmlFor="memoName" className="block text-xs text-[#6B7280] font-medium mb-3">
-                        Nom de la mémo <span className="text-red-500">*</span>
+                      <label htmlFor="memoName" className="block text-xs font-medium text-[#4B5563] mb-1.5">
+                        Nom du mémo <span className="text-red-500">*</span>
                       </label>
                       <input
                         ref={firstInputRef}
@@ -587,10 +817,9 @@ const CreateTaskOrMemoModal = ({
                         id="memoName"
                         value={formData.memoName}
                         onChange={(e) => handleChange("memoName", e.target.value)}
-                        placeholder="Titre de la mémo"
-                        className={`w-full rounded-lg border ${
-                          errors.memoName ? "border-red-500" : "border-[#E1E4ED]"
-                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
+                        placeholder="Titre du mémo"
+                        className={`w-full rounded-lg border ${errors.memoName ? "border-red-500" : "border-[#E1E4ED]"
+                          } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
                         aria-invalid={errors.memoName ? "true" : "false"}
                         aria-describedby={errors.memoName ? "memoName-error" : undefined}
                       />
@@ -603,7 +832,7 @@ const CreateTaskOrMemoModal = ({
 
                     {/* Échéance */}
                     <div>
-                      <label htmlFor="memoEcheance" className="block text-xs text-[#6B7280] font-medium mb-3">
+                      <label htmlFor="memoEcheance" className="block text-xs font-medium text-[#4B5563] mb-1.5">
                         Échéance <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -611,9 +840,8 @@ const CreateTaskOrMemoModal = ({
                         id="memoEcheance"
                         value={formData.memoEcheance}
                         onChange={(e) => handleChange("memoEcheance", e.target.value)}
-                        className={`w-full rounded-lg border ${
-                          errors.memoEcheance ? "border-red-500" : "border-[#E1E4ED]"
-                        } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
+                        className={`w-full rounded-lg border ${errors.memoEcheance ? "border-red-500" : "border-[#E1E4ED]"
+                          } bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30`}
                         aria-invalid={errors.memoEcheance ? "true" : "false"}
                         aria-describedby={errors.memoEcheance ? "memoEcheance-error" : undefined}
                       />
@@ -626,16 +854,16 @@ const CreateTaskOrMemoModal = ({
 
                     {/* Note de la mémo */}
                     <div>
-                      <label htmlFor="noteMemo" className="block text-xs text-[#6B7280] font-medium mb-3">
-                        Note de la mémo
+                      <label htmlFor="noteMemo" className="block text-xs font-medium text-[#4B5563] mb-1.5">
+                        Note du mémo
                       </label>
                       <textarea
                         id="noteMemo"
                         value={formData.noteMemo}
                         onChange={(e) => handleChange("noteMemo", e.target.value)}
                         placeholder="Saisir une note..."
-                        rows={5}
-                        className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 min-h-[120px] resize-y"
+                        rows={4}
+                        className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30 min-h-[100px] resize-y"
                       />
                     </div>
                   </div>
@@ -678,31 +906,3 @@ const CreateTaskOrMemoModal = ({
 };
 
 export default CreateTaskOrMemoModal;
-
-// Example usage
-export function ExampleCreateTaskOrMemoModal() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleSubmit = async (payload) => {
-    console.log("Task/Memo created:", payload);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  };
-
-  return (
-    <div className="p-8">
-      <button
-        onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 hover:bg-neutral-50"
-      >
-        <PlusIcon />
-        Ouvrir la modale
-      </button>
-
-      <CreateTaskOrMemoModal
-        open={isOpen}
-        onClose={() => setIsOpen(false)}
-        onSubmit={handleSubmit}
-      />
-    </div>
-  );
-}

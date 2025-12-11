@@ -1941,6 +1941,7 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
         onClose={() => setIsCreateTaskModalOpen(false)}
         onSubmit={handleCreateTask}
         preFilledClient={contact ? `${contact.prenom} ${contact.nom}` : ""}
+        preFilledContactId={contact?.id || null}
         employees={users}
         projects={projects}
       />
