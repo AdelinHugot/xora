@@ -625,8 +625,9 @@ function ProjectTasksTabContent({ project }) {
 
   // Filter tasks by project name
   const projectTasksRaw = taches.filter(task => {
-    const projectName = project?.titre || project?.nom_projet;
-    return (task.projectName === projectName) || (task.nom_projet === projectName);
+    const projectName = project?.titre;
+    // Match tasks that belong to this project (exclude 'Non spécifié')
+    return projectName && task.projectName === projectName && task.projectName !== 'Non spécifié';
   });
 
   // Transform taches to match the UI format

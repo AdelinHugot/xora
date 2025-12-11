@@ -1729,7 +1729,7 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
 
     // Check if task belongs to any project of this contact
     const isProjectMatch = projects.some(project =>
-      task.projectName === project.titre || task.nom_projet === project.titre
+      task.projectName === project.titre
     );
 
     // Show task if it matches the client name OR belongs to a project of this contact
@@ -1739,9 +1739,9 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
 
     // Filter by status
     if (taskFilter === "in-progress") {
-      return task.statut !== "Terminé";
+      return task.status !== "Terminé";
     } else if (taskFilter === "completed") {
-      return task.statut === "Terminé";
+      return task.status === "Terminé";
     }
     return true;
   });

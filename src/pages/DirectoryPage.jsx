@@ -1305,13 +1305,23 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: userData } = await supabase
-            .from('utilisateurs')
-            .select('id, prenom, nom')
+          // First get the utilisateur ID from utilisateurs_auth bridge table
+          const { data: authData, error: authError } = await supabase
+            .from('utilisateurs_auth')
+            .select('id_utilisateur')
             .eq('id_auth_user', user.id)
             .single();
-          if (userData) {
-            setCurrentUser(userData);
+
+          if (!authError && authData) {
+            // Then fetch the actual user data from utilisateurs
+            const { data: userData } = await supabase
+              .from('utilisateurs')
+              .select('id, prenom, nom')
+              .eq('id', authData.id_utilisateur)
+              .single();
+            if (userData) {
+              setCurrentUser(userData);
+            }
           }
         }
       } catch (err) {
