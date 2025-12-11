@@ -61,7 +61,7 @@ const PillIcon = ({ Icon }) => (
 
 // Layout pieces
 
-function Topbar({ onSettingsClick = () => {} }) {
+function Topbar({ onSettingsClick = () => { } }) {
   const [userName, setUserName] = useState("Chargement...");
   const [userRole, setUserRole] = useState("");
   const [userAvatar, setUserAvatar] = useState("https://i.pravatar.cc/40?img=12");
@@ -163,8 +163,8 @@ function Topbar({ onSettingsClick = () => {} }) {
       <div className="flex items-center gap-4">
         <div className="p-2.5 bg-white border border-neutral-300 rounded text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2.25 11.0625C2.25 10.7518 2.50184 10.5 2.8125 10.5H9.1875C9.49815 10.5 9.75 10.7518 9.75 11.0625V15.1875C9.75 15.4982 9.49815 15.75 9.1875 15.75H2.8125C2.50184 15.75 2.25 15.4982 2.25 15.1875V11.0625Z" fill="currentColor"/>
-            <path d="M2.25 2.8125C2.25 2.50184 2.50184 2.25 2.8125 2.25H15.1875C15.4982 2.25 15.75 2.50184 15.75 2.8125V6.9375C15.75 7.24816 15.4982 7.5 15.1875 7.5H2.8125C2.50184 7.5 2.25 7.24816 2.25 6.9375V2.8125Z" fill="currentColor"/>
+            <path d="M2.25 11.0625C2.25 10.7518 2.50184 10.5 2.8125 10.5H9.1875C9.49815 10.5 9.75 10.7518 9.75 11.0625V15.1875C9.75 15.4982 9.49815 15.75 9.1875 15.75H2.8125C2.50184 15.75 2.25 15.4982 2.25 15.1875V11.0625Z" fill="currentColor" />
+            <path d="M2.25 2.8125C2.25 2.50184 2.50184 2.25 2.8125 2.25H15.1875C15.4982 2.25 15.75 2.50184 15.75 2.8125V6.9375C15.75 7.24816 15.4982 7.5 15.1875 7.5H2.8125C2.50184 7.5 2.25 7.24816 2.25 6.9375V2.8125Z" fill="currentColor" />
           </svg>
         </div>
         <h1 className="text-xl font-semibold text-neutral-900 my-2">Tableau de bord</h1>
@@ -197,100 +197,8 @@ function Topbar({ onSettingsClick = () => {} }) {
   );
 }
 
-function Searchbar({ contacts = [], onNavigate }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const searchRef = React.useRef(null);
-
-  // Filter contacts based on search term
-  const searchResults = searchTerm.trim() === ""
-    ? []
-    : contacts.filter(contact =>
-        contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.telephone?.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 10); // Limit to 10 results
-
-  // Close dropdown when clicking outside
-  React.useEffect(() => {
-    function handleClickOutside(event) {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isOpen]);
-
-  const handleSelectContact = (contact) => {
-    if (onNavigate) {
-      onNavigate(`contact-${contact.id}`);
-    }
-    setSearchTerm("");
-    setIsOpen(false);
-  };
-
-  return (
-    <div className="p-4 lg:p-6">
-      <div className="relative" ref={searchRef}>
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
-        <input
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white/70 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-          placeholder="Rechercher un client"
-          type="search"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-        />
-
-        {/* Dropdown with search results */}
-        {isOpen && (searchResults.length > 0 || searchTerm.trim() !== "") && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
-            {searchResults.length > 0 ? (
-              <div className="py-1">
-                {searchResults.map((contact) => (
-                  <button
-                    key={contact.id}
-                    onClick={() => handleSelectContact(contact)}
-                    className="w-full px-4 py-3 text-left hover:bg-neutral-50 transition-colors border-b border-neutral-100 last:border-b-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="size-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "#E4E4E7" }}>
-                        <span className="text-xs font-semibold text-neutral-600">
-                          {contact.name?.charAt(0) || "?"}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-neutral-900 truncate">
-                          {contact.name}
-                        </div>
-                        {contact.email && (
-                          <div className="text-xs text-neutral-500 truncate">
-                            {contact.email}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="px-4 py-6 text-center text-sm text-neutral-500">
-                Aucun client trouvé pour "{searchTerm}"
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// Internal Searchbar component removed. Importing from components/Searchbar.jsx
+import Searchbar from "./components/Searchbar";
 
 // Composant pour les cartes KPI blanches horizontales
 function KpiStrip() {
@@ -318,9 +226,8 @@ function KpiStrip() {
             title={isExpanded ? "Replier les KPIs" : "Déplier les KPIs"}
           >
             <ChevronDown
-              className={`size-5 text-neutral-600 transition-transform duration-300 ${
-                isExpanded ? "rotate-0" : "rotate-180"
-              }`}
+              className={`size-5 text-neutral-600 transition-transform duration-300 ${isExpanded ? "rotate-0" : "rotate-180"
+                }`}
             />
           </button>
         </div>
@@ -484,11 +391,12 @@ function TaskRow({ task, index, onStageChange, onDelete, onNavigate }) {
           {/* Row: Client - Projet + Pastille */}
           <div className="flex items-center gap-2">
             {/* Texte Client - Projet */}
+            {/* Texte Titre de la tâche */}
             <div className="text-sm font-bold text-neutral-900 whitespace-nowrap overflow-hidden text-ellipsis">
-              {task.clientName} - {task.projectName}
+              {task.titre}
             </div>
 
-            {/* Badge/Pastille - Collé à droite du projet */}
+            {/* Pastille - Collé à droite du projet */}
             <div
               className="px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0"
               style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
@@ -497,9 +405,12 @@ function TaskRow({ task, index, onStageChange, onDelete, onNavigate }) {
             </div>
           </div>
 
-          {/* Date en dessous */}
-          <div className="text-xs text-neutral-900 leading-tight">
-            Date limite : {task.dueDate}
+          {/* Client et Date en dessous */}
+          <div className="text-xs text-neutral-500 leading-tight truncate">
+            {task.clientName && task.clientName !== 'Non spécifié' && (
+              <span className="font-medium text-neutral-700 mr-2">{task.clientName} •</span>
+            )}
+            <span>Date limite : {task.dueDate}</span>
           </div>
         </div>
 
@@ -607,7 +518,8 @@ function TaskRow({ task, index, onStageChange, onDelete, onNavigate }) {
 }
 
 function TasksPanel({ height, onNavigate }) {
-  const { taches, loading, error, updateTacheStage, deleteTache, refetch } = useTaches();
+  // Limiter à 50 tâches pour le tableau de bord pour améliorer les performances
+  const { taches, loading, error, updateTacheStage, deleteTache, refetch } = useTaches(50);
   const { teamMembers } = useTeamMembers();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -776,9 +688,8 @@ function Agenda() {
             {days.map((d, idx) => (
               <div
                 key={d.key}
-                className={`${
-                  idx > 0 ? 'border-l border-neutral-200' : ''
-                }`}
+                className={`${idx > 0 ? 'border-l border-neutral-200' : ''
+                  }`}
               >
                 {/* En-tête du jour */}
                 <div className="px-4 py-3 border-b border-neutral-200 text-sm font-semibold text-neutral-700 bg-neutral-50 sticky top-0">
@@ -905,7 +816,7 @@ function MainPanels({ onNavigate }) {
 
 function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
-  const { contacts, loading } = useContacts();
+  // Removed useContacts hook call since we use server-side search now
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
@@ -919,15 +830,7 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onSettingsClick={() => onNavigate("settings-connection")} />
         <div className="w-full">
-          <Searchbar
-            contacts={contacts.map(contact => ({
-              id: contact.id,
-              name: `${contact.nom} ${contact.prenom}`.toUpperCase(),
-              email: contact.email,
-              telephone: contact.telephone
-            }))}
-            onNavigate={onNavigate}
-          />
+          <Searchbar onNavigate={onNavigate} />
           <KpiStrip />
           <MainPanels onNavigate={onNavigate} />
           <Agenda />

@@ -7,99 +7,7 @@ import { useTaches } from "../hooks/useTaches";
 import { useTeamMembers } from "../hooks/useTeamMembers";
 
 // Mock data generator (gardé pour les filtres d'agenceurs)
-const generateMockTasks = () => {
-  const titles = [
-    "Cuisine extérieure",
-    "Appeler Laurent",
-    "Installation client – Nicolas DUMONT",
-    "Rendez-vous avec Romain pour Mme Dubois",
-    "Cuisine Salon – Pierre HERME",
-    "Livraison Cuisine – Coline FARGET",
-    "Devis salle de bain",
-    "Suivi dossier technique",
-    "Validation plan installation",
-    "Commande fournisseur",
-    "Contrôle qualité",
-    "Rendez-vous showroom",
-    "Installation électroménager",
-    "Finalisation pose carrelage",
-    "Appel client retour",
-    "Étude faisabilité projet",
-    "Visite chantier",
-    "Préparation dossier SAV"
-  ];
 
-  const clients = [
-    "Coline FARGET",
-    "Nicolas DUMONT",
-    "Mme Dubois",
-    "Pierre HERME",
-    "Laurent MARTIN",
-    "Sophie BERNARD",
-    "Jean DURAND",
-    "Marie LEROY"
-  ];
-
-  const assignees = [
-    "Jérémy",
-    "Amélie",
-    "Lucas",
-    "Thomas",
-    "Coline"
-  ];
-
-  const tags = [
-    "Mémo",
-    "Dossier technique",
-    "Études en cours",
-    "Installation",
-    "Prospect",
-    "Étude client",
-    "SAV",
-    "Terminé"
-  ];
-
-  const statuses = [
-    "Non commencé",
-    "En cours",
-    "Terminé"
-  ];
-
-  const tasks = [];
-
-  for (let i = 1; i <= 42; i++) {
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    let progress = Math.floor(Math.random() * 100);
-
-    // Adjust progress based on status
-    if (status === "Non commencé") progress = Math.min(progress, 20);
-    if (status === "Terminé") progress = 100;
-    if (status === "En cours") progress = Math.max(20, Math.min(progress, 80));
-
-    const today = new Date();
-    const daysOffset = Math.floor(Math.random() * 60) - 30; // -30 to +30 days
-    const dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + daysOffset);
-
-    tasks.push({
-      id: `task-${i}`,
-      index: i,
-      title: titles[Math.floor(Math.random() * titles.length)],
-      tag: Math.random() > 0.3 ? tags[Math.floor(Math.random() * tags.length)] : undefined,
-      client: clients[Math.floor(Math.random() * clients.length)],
-      assignee: assignees[Math.floor(Math.random() * assignees.length)],
-      due: dueDate.toISOString(),
-      status,
-      progress,
-      note: Math.random() > 0.7 ? "Note de suivi client" : undefined,
-      type: Math.random() > 0.5 ? "Tâche" : "Mémo"
-    });
-  }
-
-  return tasks;
-};
-
-const mockTasks = generateMockTasks();
 
 // Statuts de projets pour la diversification
 const PROJECT_STATUSES = [
@@ -215,7 +123,7 @@ const Topbar = ({ onNavigate }) => {
       <div className="flex items-center gap-4">
         <div className="p-2.5 bg-neutral-50 border border-[#E9E9E9] rounded-lg text-neutral-900">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16.5 3.88501L7.9425 12.45L4.7625 9.27001L5.82 8.21251L7.9425 10.335L15.4425 2.83501L16.5 3.88501ZM14.8425 7.66501C14.94 8.09251 15 8.54251 15 9.00001C15 12.315 12.315 15 9 15C5.685 15 3 12.315 3 9.00001C3 5.68501 5.685 3.00001 9 3.00001C10.185 3.00001 11.28 3.34501 12.21 3.93751L13.29 2.85751C12.0348 1.97217 10.536 1.49788 9 1.50001C4.86 1.50001 1.5 4.86001 1.5 9.00001C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9.00001C16.5 8.10751 16.335 7.25251 16.05 6.45751L14.8425 7.66501Z" fill="currentColor"/>
+            <path d="M16.5 3.88501L7.9425 12.45L4.7625 9.27001L5.82 8.21251L7.9425 10.335L15.4425 2.83501L16.5 3.88501ZM14.8425 7.66501C14.94 8.09251 15 8.54251 15 9.00001C15 12.315 12.315 15 9 15C5.685 15 3 12.315 3 9.00001C3 5.68501 5.685 3.00001 9 3.00001C10.185 3.00001 11.28 3.34501 12.21 3.93751L13.29 2.85751C12.0348 1.97217 10.536 1.49788 9 1.50001C4.86 1.50001 1.5 4.86001 1.5 9.00001C1.5 13.14 4.86 16.5 9 16.5C13.14 16.5 16.5 13.14 16.5 9.00001C16.5 8.10751 16.335 7.25251 16.05 6.45751L14.8425 7.66501Z" fill="currentColor" />
           </svg>
         </div>
         <h1 className="font-bold text-xl lg:text-2xl text-neutral-900">Tâches et Mémos</h1>
@@ -225,8 +133,7 @@ const Topbar = ({ onNavigate }) => {
   );
 };
 
-const FiltersBar = ({ filters, onFilterChange }) => {
-  const assignees = ["Jérémy", "Amélie", "Lucas", "Thomas", "Coline"];
+const FiltersBar = ({ filters, onFilterChange, teamMembers = [] }) => {
 
   return (
     <div className="py-4 px-6">
@@ -271,7 +178,11 @@ const FiltersBar = ({ filters, onFilterChange }) => {
           className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
         >
           <option value="">Agenceur·s</option>
-          {assignees.map(a => <option key={a} value={a}>{a}</option>)}
+          {teamMembers.map(member => (
+            <option key={member.id} value={member.prenom}>
+              {member.prenom} {member.nom}
+            </option>
+          ))}
         </select>
 
         <select
@@ -290,142 +201,13 @@ const FiltersBar = ({ filters, onFilterChange }) => {
   );
 };
 
-const TagBadge = ({ tag }) => {
-  if (!tag) return null;
 
-  const tagClasses = {
-    "Mémo": "bg-gray-800 text-white",
-    "Dossier technique": "bg-blue-100 text-blue-700",
-    "Études en cours": "bg-pink-100 text-pink-700",
-    "Installation": "bg-sky-100 text-sky-700"
-  };
 
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${tagClasses[tag]}`}>
-      {tag}
-    </span>
-  );
-};
 
-const StatusSegmented = ({ value, onChange }) => {
-  const statuses = ["Non commencé", "En cours", "Terminé"];
 
-  return (
-    <div className="inline-flex items-center rounded-full border border-neutral-300 p-1" role="radiogroup">
-      {statuses.map((s) => (
-        <button
-          key={s}
-          type="button"
-          role="radio"
-          aria-checked={value === s}
-          onClick={() => onChange(s)}
-          className={`px-3 py-1 text-xs rounded-full transition-colors whitespace-nowrap ${
-            value === s ? "bg-gray-900 text-white" : "hover:bg-white"
-          }`}
-        >
-          {s}
-        </button>
-      ))}
-    </div>
-  );
-};
 
-const ProgressBar = ({ value, status, color }) => {
-  const getColor = () => {
-    if (color) return color;
-    if (status === "Terminé") return "bg-green-500";
-    if (status === "En cours") return "bg-blue-500";
-    return "bg-neutral-400";
-  };
 
-  const getTextColor = () => {
-    if (status === "Terminé") return "text-green-600";
-    if (status === "En cours") return "text-blue-600";
-    return "text-neutral-600";
-  };
 
-  return (
-    <div className="flex items-center gap-2 flex-1 min-w-[120px]">
-      <div className="relative h-1.5 rounded-full bg-neutral-200 flex-1">
-        <div
-          className={`absolute inset-y-0 left-0 rounded-full ${getColor()}`}
-          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-        />
-      </div>
-      <span className={`text-xs font-medium ${getTextColor()} w-10 text-right`}>
-        {value}%
-      </span>
-    </div>
-  );
-};
-
-const RowMenu = ({ onView, onEdit, onDuplicate, onDelete }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
-  const buttonRef = useRef(null);
-
-  useOutsideClick(menuRef, () => setIsOpen(false));
-
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-        if (buttonRef.current) {
-          buttonRef.current.focus();
-        }
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
-  }, [isOpen]);
-
-  const menuItems = [
-    { label: "Voir", action: onView },
-    { label: "Éditer", action: onEdit },
-    { label: "Dupliquer", action: onDuplicate },
-    { label: "Supprimer", action: onDelete }
-  ];
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        className="p-2 rounded-lg hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
-      >
-        <MoreVerticalIcon />
-      </button>
-
-      {isOpen && (
-        <div
-          role="menu"
-          className="absolute right-0 z-20 mt-1 w-40 rounded-lg border border-neutral-200 bg-white shadow-lg"
-        >
-          {menuItems.map((item, idx) => (
-            <button
-              key={item.label}
-              role="menuitem"
-              onClick={() => {
-                item.action();
-                setIsOpen(false);
-              }}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-white ${
-                idx === 0 ? "rounded-t-lg" : ""
-              } ${idx === menuItems.length - 1 ? "rounded-b-lg" : ""}`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const NoteButton = ({ note, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -469,278 +251,7 @@ const NoteButton = ({ note, onChange }) => {
   );
 };
 
-const TaskRow = ({ item, onUpdate, onDelete, onDragStart, onDragOver, onDrop, isDragging }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
 
-  const formatDate = (isoDate) => {
-    const date = new Date(isoDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    date.setHours(0, 0, 0, 0);
-
-    const daysLate = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-
-    if (daysLate > 0) {
-      return <span className="font-bold text-red-600">{daysLate} j retard</span>;
-    }
-
-    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
-  };
-
-  const getTypeStyles = (type) => {
-    switch (type) {
-      case "Tâche":
-        return {
-          bg: "bg-blue-100",
-          text: "text-blue-700",
-          progressColor: "bg-blue-500"
-        };
-      case "Mémo":
-        return {
-          bg: "bg-neutral-900",
-          text: "text-white",
-          progressColor: "bg-neutral-900"
-        };
-      default:
-        return {
-          bg: "bg-neutral-100",
-          text: "text-neutral-900",
-          progressColor: "bg-neutral-400"
-        };
-    }
-  };
-
-  const getTagStyles = (tag) => {
-    switch (tag) {
-      case "Prospect":
-        return {
-          bg: "bg-[#E0E7FF]",
-          text: "text-[#4F46E5]"
-        };
-      case "Étude client":
-        return {
-          bg: "bg-[#EED1F4]",
-          text: "text-[#C970AB]"
-        };
-      case "Dossier technique":
-        return {
-          bg: "bg-[#A4E6FE]",
-          text: "text-[#1A8AB3]"
-        };
-      case "Installation":
-        return {
-          bg: "bg-[#A9C9F9]",
-          text: "text-[#385D95]"
-        };
-      case "SAV":
-        return {
-          bg: "bg-[#FFD0C1]",
-          text: "text-[#DF7959]"
-        };
-      case "Terminé":
-        return {
-          bg: "bg-[#76D88B]",
-          text: "text-[#2A732F]"
-        };
-      case "Mémo":
-        return {
-          bg: "bg-neutral-900",
-          text: "text-white"
-        };
-      case "Études en cours":
-        return {
-          bg: "bg-orange-100",
-          text: "text-orange-700"
-        };
-      default:
-        return {
-          bg: "bg-neutral-100",
-          text: "text-neutral-900"
-        };
-    }
-  };
-
-  const handleStatusChange = (newStatus) => {
-    let newProgress = item.progress;
-    if (newStatus === "Non commencé") newProgress = 0;
-    if (newStatus === "Terminé") newProgress = 100;
-    if (newStatus === "En cours" && item.progress === 0) newProgress = 50;
-
-    onUpdate(item.id, { status: newStatus, progress: newProgress });
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    };
-
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuOpen]);
-
-  return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, item.id)}
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop(e, item.id)}
-      className={`w-full py-4 hover:bg-neutral-100 transition-colors grid gap-3 items-start ${
-        isDragging ? "opacity-50 bg-neutral-100" : "bg-white"
-      }`}
-      style={{
-        gridTemplateColumns: "50px 2fr 1.2fr 1fr 1.2fr 0.8fr 1.5fr 0.8fr 40px",
-        paddingLeft: "24px",
-        paddingRight: "24px",
-        boxSizing: "border-box",
-        width: "100%",
-        minWidth: "min-content"
-      }}
-    >
-      {/* Ordre */}
-      <div className="flex items-center justify-center">
-        <div className="cursor-move text-neutral-400 hover:text-neutral-600">
-          <GripVerticalIcon />
-        </div>
-      </div>
-
-      {/* Descriptif */}
-      <div className="min-w-0 overflow-hidden w-full">
-        <div className="flex items-start gap-2 min-w-0">
-          <span className={`font-semibold truncate ${item.status === "Terminé" ? "line-through text-neutral-400" : "text-neutral-900"}`}>{item.title}</span>
-        </div>
-        <div className="text-xs text-neutral-500 truncate">{item.client}</div>
-      </div>
-
-      {/* Type/Tag */}
-      <div className="flex items-start justify-start">
-        {item.tag ? (
-          <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTagStyles(item.tag).bg} ${getTagStyles(item.tag).text}`}>
-            {item.tag}
-          </div>
-        ) : (
-          <div className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeStyles(item.type).bg} ${getTypeStyles(item.type).text}`}>
-            {item.type}
-          </div>
-        )}
-      </div>
-
-      {/* Échéance */}
-      <div className="text-xs text-neutral-500 whitespace-nowrap">
-        {formatDate(item.due)}
-      </div>
-
-      {/* Collaborateur.s */}
-      <div className="flex items-start gap-2 whitespace-nowrap">
-        <img
-          src={`https://i.pravatar.cc/24?img=${item.assignee.charCodeAt(0)}`}
-          alt={item.assignee}
-          className="size-6 rounded-full"
-        />
-        <span className="text-sm text-neutral-700">{item.assignee}</span>
-      </div>
-
-      {/* Note */}
-      <NoteButton
-        note={item.note}
-        onChange={(v) => onUpdate(item.id, { note: v })}
-      />
-
-      {/* Progression ou Statut Badge */}
-      {item.type === "Mémo" ? (
-        <div className="flex items-start justify-start">
-          <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-50 p-1">
-            <button
-              onClick={() => handleStatusChange("Non commencé")}
-              className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                item.status === "Non commencé" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100 text-neutral-700"
-              }`}
-            >
-              Non
-            </button>
-            <button
-              onClick={() => handleStatusChange("En cours")}
-              className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                item.status === "En cours" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100 text-neutral-700"
-              }`}
-            >
-              Cours
-            </button>
-            <button
-              onClick={() => handleStatusChange("Terminé")}
-              className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                item.status === "Terminé" ? "bg-neutral-900 text-white" : "hover:bg-neutral-100 text-neutral-700"
-              }`}
-            >
-              Terminé
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-start justify-start">
-          <ProgressBar value={item.progress} status={item.status} color={getTypeStyles(item.type).progressColor} />
-        </div>
-      )}
-
-      {/* Actions Menu */}
-      <div className="relative flex justify-end" ref={menuRef}>
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="p-2 bg-neutral-100 hover:bg-neutral-200 rounded-lg text-neutral-600 hover:text-neutral-900 transition-all border border-[#E4E4E7]"
-        >
-          <MoreVerticalIcon className="size-5" />
-        </button>
-
-        {menuOpen && (
-          <div className="absolute right-0 mt-1 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg z-50">
-            {item.type === "Tâche" ? (
-              <>
-                <button
-                  onClick={() => {
-                    console.log("Voir le projet:", item);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-white flex items-center gap-2 border-b border-neutral-100"
-                >
-                  <Eye className="size-4" />
-                  Voir le projet
-                </button>
-                <button
-                  onClick={() => {
-                    console.log("Modifier la tâche:", item);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-white flex items-center gap-2"
-                >
-                  <Pencil className="size-4" />
-                  Modifier la tâche
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => {
-                  console.log("Modifier le mémo:", item);
-                  setMenuOpen(false);
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-white flex items-center gap-2"
-              >
-                <Pencil className="size-4" />
-                Éditer le mémo
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   const getVisiblePages = () => {
@@ -794,13 +305,12 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
           disabled={page === "..."}
           aria-current={page === currentPage ? "page" : undefined}
           aria-label={typeof page === "number" ? `Page ${page}` : undefined}
-          className={`size-9 flex items-center justify-center rounded-lg text-sm font-medium ${
-            page === currentPage
-              ? "bg-neutral-900 text-white"
-              : page === "..."
+          className={`size-9 flex items-center justify-center rounded-lg text-sm font-medium ${page === currentPage
+            ? "bg-neutral-900 text-white"
+            : page === "..."
               ? "cursor-default"
               : "border border-neutral-200 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-300"
-          }`}
+            }`}
         >
           {page}
         </button>
@@ -835,7 +345,7 @@ const mapTacheForDisplay = (tache) => {
     client: tache.projectName,
     tag: tache.tag,
     type: tache.tag === "Mémo" ? "Mémo" : "Tâche",
-    status: tache.statut,
+    status: tache.status,
     progress: tache.progress,
     due: tache.dueDate || tache.cree_le,
     assignee: "Non assigné",
@@ -857,7 +367,9 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
   // Mapper les tâches pour l'affichage
   const mappedTaches = taches.map(mapTacheForDisplay);
 
+  // State pour le filtre principal (Pill)
   const [statusFilterPill, setStatusFilterPill] = useState("all");
+
   const [filters, setFilters] = useState({
     search: "",
     type: "",
@@ -866,7 +378,6 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
     echeance: ""
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const pageSize = 10;
 
@@ -877,13 +388,11 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
 
   const handleUpdateTask = async (id, updates) => {
     try {
-      // Si c'est un changement de statut
       if (updates.status !== undefined) {
         await updateTacheStatus(id, updates.status);
       }
-      // Si c'est un changement de stage
       if (updates.currentStage !== undefined) {
-        await updateTacheStage(id, updates.currentStage);
+        await updateTacheStage(id, updates.status === 'Terminé' ? 2 : (updates.status === 'En cours' ? 1 : 0));
       }
     } catch (err) {
       console.error('Erreur lors de la mise à jour:', err);
@@ -898,53 +407,26 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
     }
   };
 
-  const handleDragStart = (e, taskId) => {
-    setDraggedTaskId(taskId);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e, targetTaskId) => {
-    e.preventDefault();
-    setDraggedTaskId(null);
-    // Le drag-drop du tri de priorité peut être implémenté plus tard
-  };
-
-  const handleCreateTaskOrMemo = async (payload) => {
+  const handleCreateTask = async (newTask) => {
     try {
-      // Convertir le payload de la modale au format attendu par le hook
-      const tacheData = {
-        titre: payload.kind === "Tâche" ? `${payload.taskType || 'Tâche'}` : payload.memoName,
-        memoName: payload.memoName,
-        tag: payload.kind === "Tâche" ? (payload.taskType || 'Autre') : 'Mémo',
-        type: payload.kind,
-        statut: 'Non commencé',
-        progression: 0,
-        date_echeance: payload.kind === "Tâche" ? payload.dueDate : payload.memoEcheance,
-        note: payload.kind === "Tâche" ? payload.note : payload.noteMemo,
-        nom_client: payload.client,
-        nom_projet: payload.project
-      };
-
-      // Créer la tâche via le hook
-      await createTache(tacheData);
-
-      // Fermer la modale
+      await createTache(newTask);
       setIsModalOpen(false);
     } catch (err) {
-      console.error("Erreur lors de la création:", err);
       alert("Erreur lors de la création de la tâche: " + err.message);
     }
   };
 
-  // Filter logic - avec les vraies données du hook mappées
+  // Filter logic
   const filteredTasks = useMemo(() => {
     return mappedTaches.filter((task) => {
-      // Search dans les champs disponibles
+      // 1. Filtre Principal (Pill)
+      if (statusFilterPill === "en-cours") {
+        if (task.status !== "En cours" && task.status !== "Non commencé") return false;
+      } else if (statusFilterPill === "termine") {
+        if (task.status !== "Terminé") return false;
+      }
+
+      // 2. Search
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const searchableFields = [
@@ -959,34 +441,33 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
         }
       }
 
-      // Type (tags pour les vrais tâches)
+      // 3. Autres filtres
       if (filters.type) {
         if (filters.type === "Tâche" && task.type === "Mémo") return false;
         if (filters.type === "Mémo" && task.type === "Tâche") return false;
       }
 
-      // Status
-      if (filters.status && task.status !== filters.status) return false;
+      // The status filter from the FiltersBar should only apply if the main pill is "all"
+      // or if it's consistent with the main pill.
+      // For simplicity, if a status is selected in the FiltersBar, it overrides/refines the pill.
+      if (filters.status) {
+        if (task.status !== filters.status) return false;
+      }
 
-      // Echeance
+
+      if (filters.assignee && task.assignee !== filters.assignee && (!task.salarie_name || !task.salarie_name.includes(filters.assignee))) return false;
+
       if (filters.echeance && task.dueDate) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const dueDateParts = task.dueDate.split('/');
-        const dueDate = new Date(dueDateParts[2], dueDateParts[1] - 1, dueDateParts[0]);
+        const [day, month, year] = task.dueDate.split('/');
+        const dueDate = new Date(year, month - 1, day);
         const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
         if (filters.echeance === "today" && daysDiff !== 0) return false;
         if (filters.echeance === "week" && (daysDiff < 0 || daysDiff > 7)) return false;
         if (filters.echeance === "month" && (daysDiff < 0 || daysDiff > 30)) return false;
         if (filters.echeance === "late" && daysDiff >= 0) return false;
-      }
-
-      // Status Filter Pill
-      if (statusFilterPill === "en-cours") {
-        if (task.status !== "En cours" && task.status !== "Non commencé") return false;
-      } else if (statusFilterPill === "termine") {
-        if (task.status !== "Terminé") return false;
       }
 
       return true;
@@ -998,164 +479,173 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedTasks = filteredTasks.slice(startIndex, startIndex + pageSize);
 
-  const sidebarWidth = sidebarCollapsed ? 72 : 256;
+  // --- Helper pour l'affichage de l'échéance ---
+  const renderDueDate = (dateStr) => {
+    if (!dateStr || dateStr === 'Pas de date') return <span className="text-neutral-400">Pas de date</span>;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [day, month, year] = dateStr.split('/');
+    const dueDate = new Date(year, month - 1, day);
+    const diffTime = today.getTime() - dueDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0) {
+      return (
+        <span className="text-red-600 font-bold">
+          {diffDays} jour{diffDays > 1 ? 's' : ''} de retard
+        </span>
+      );
+    }
+    return <span className="text-neutral-900 font-medium">{dateStr}</span>;
+  };
+
+  const isLate = (dateStr) => {
+    if (!dateStr || dateStr === 'Pas de date') return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [day, month, year] = dateStr.split('/');
+    const dueDate = new Date(year, month - 1, day);
+    return dueDate < today;
+  };
+
+
+  // --- Layout Helpers ---
+  const sidebarWidth = sidebarCollapsed ? "72px" : "256px";
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
-      <CreateTaskOrMemoModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateTaskOrMemo}
-        employees={teamMembers}
-        commercials={teamMembers}
-      />
-
+    <div className="flex h-screen bg-[#F3F4F6] overflow-hidden font-sans text-neutral-900">
       <Sidebar
         currentPage="tasks-memo"
         onNavigate={onNavigate}
         initialCollapsed={sidebarCollapsed}
         onToggleCollapse={onToggleSidebar}
       />
-      <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
+
+      <main
+        className="flex-1 flex flex-col h-full overflow-hidden relative transition-[margin] duration-300 ease-in-out"
+        style={{ marginLeft: sidebarWidth }}
+      >
         <Topbar onNavigate={onNavigate} />
-        <div className="w-full py-6 px-4 lg:px-6">
-          {/* Main Card */}
-          <div className="rounded-2xl border border-[#E9E9E9] bg-white shadow-sm">
-            {/* Card Header */}
-            <div className="p-6 pb-0">
-              {/* First row: Title, Pill, Button */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-semibold text-neutral-900">
-                    Liste des tâches et mémos ({filteredTasks.length})
-                  </h2>
-                  {/* Status Filter Pill */}
-                  <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-100 p-1">
-                    <button
-                      onClick={() => setStatusFilterPill("en-cours")}
-                      className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                        statusFilterPill === "en-cours"
-                          ? "bg-gray-900 text-white"
-                          : "text-neutral-700 hover:text-neutral-900"
-                      }`}
-                    >
-                      En cours
-                    </button>
-                    <button
-                      onClick={() => setStatusFilterPill("termine")}
-                      className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                        statusFilterPill === "termine"
-                          ? "bg-gray-900 text-white"
-                          : "text-neutral-700 hover:text-neutral-900"
-                      }`}
-                    >
-                      Terminé
-                    </button>
+
+        <CreateTaskOrMemoModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleCreateTask}
+          employees={teamMembers}
+          commercials={teamMembers}
+        />
+
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="max-w-[1600px] mx-auto space-y-6">
+
+            {/* Main Card Container */}
+            <div className="rounded-2xl border border-[#E9E9E9] bg-white shadow-sm">
+
+              {/* Header */}
+              <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-neutral-900">
+                      Liste des tâches et mémo ({filteredTasks.length})
+                    </h2>
+                    {/* Status Pill */}
+                    <div className="inline-flex rounded-full border border-neutral-300 bg-neutral-100 p-1">
+                      <button
+                        onClick={() => setStatusFilterPill("all")}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${statusFilterPill === "all" ? "bg-gray-900 text-white" : "text-neutral-700 hover:text-neutral-900"
+                          }`}
+                      >
+                        Tout voir
+                      </button>
+                      <button
+                        onClick={() => setStatusFilterPill("en-cours")}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${statusFilterPill === "en-cours" ? "bg-gray-900 text-white" : "text-neutral-700 hover:text-neutral-900"
+                          }`}
+                      >
+                        En cours
+                      </button>
+                      <button
+                        onClick={() => setStatusFilterPill("termine")}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${statusFilterPill === "termine" ? "bg-gray-900 text-white" : "text-neutral-700 hover:text-neutral-900"
+                          }`}
+                      >
+                        Terminé
+                      </button>
+                    </div>
                   </div>
+
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 transition-colors shadow-lg shadow-neutral-900/10"
+                  >
+                    <PlusIcon />
+                    Ajouter une tâche manuelle ou un mémo
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-300"
-                >
-                  <PlusIcon />
-                  Ajouter une tâche ou un mémo
-                </button>
+
+                {/* Filters */}
+                <FiltersBar filters={filters} onFilterChange={handleFilterChange} teamMembers={teamMembers} />
               </div>
 
-              {/* Second row: Filters */}
-              <FiltersBar filters={filters} onFilterChange={handleFilterChange} />
-            </div>
-
-            {/* Content - Improved design */}
-            <div className="bg-white w-full overflow-x-auto" style={{ boxSizing: "border-box" }}>
-              {/* Loading State */}
-              {loading && (
-                <div className="w-full py-16 text-center">
-                  <div className="inline-flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-4 border-neutral-200 border-t-neutral-900 rounded-full animate-spin"></div>
-                    <span className="text-neutral-500">Chargement des tâches...</span>
-                  </div>
+              {/* Table Content */}
+              <div className="w-full overflow-x-auto mt-2">
+                {/* Headers */}
+                <div className="py-3 px-6 bg-neutral-50 border-y border-neutral-200 grid gap-4 items-center min-w-[1000px]" style={{ gridTemplateColumns: "60px 2.5fr 1fr 1fr 1fr 1fr 0.5fr 1.5fr 40px" }}>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Ordre</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Descriptif</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Tag</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Échéance</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Statut</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Collaborateur</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Note</div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase">Progression</div>
+                  <div></div>
                 </div>
-              )}
 
-              {/* Error State */}
-              {error && (
-                <div className="w-full py-16 text-center">
-                  <div className="inline-flex flex-col items-center gap-2">
-                    <div className="text-2xl">⚠️</div>
-                    <p className="text-red-600 font-medium">Erreur du chargement</p>
-                    <p className="text-sm text-red-500">{error}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Content - Only show if not loading and no error */}
-              {!loading && !error && (
-              <>
-              {/* Table Headers - Simplified design */}
-              <div className="py-3 px-6 bg-neutral-50 border-b border-neutral-200 grid gap-4 items-center sticky top-0" style={{
-                gridTemplateColumns: "auto 2fr 1.2fr 1fr 1.2fr 1.5fr auto",
-                width: "100%",
-              }}>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Ordre</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Descriptif</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Tag</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Échéance</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Statut</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Progression</div>
-                <div className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Actions</div>
-              </div>
-
-              {/* Table Rows */}
-              {paginatedTasks.length > 0 ? (
-                <div className="w-full divide-y divide-neutral-100">
-                  {paginatedTasks.map((task, idx) => (
+                <div className="divide-y divide-neutral-100">
+                  {loading && (
+                    <div className="py-12 text-center text-neutral-500">Chargement...</div>
+                  )}
+                  {!loading && !error && paginatedTasks.length === 0 && (
+                    <div className="py-12 text-center text-neutral-500">Aucune tâche trouvée</div>
+                  )}
+                  {!loading && !error && paginatedTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="py-3 px-6 grid gap-4 items-center hover:bg-neutral-50 transition-colors group"
-                      style={{
-                        gridTemplateColumns: "auto 2fr 1.2fr 1fr 1.2fr 1.5fr auto",
-                        width: "100%",
-                      }}
+                      className="py-4 px-6 grid gap-4 items-center hover:bg-neutral-50 transition-colors min-w-[1000px]"
+                      style={{ gridTemplateColumns: "60px 2.5fr 1fr 1fr 1fr 1fr 0.5fr 1.5fr 40px" }}
                     >
                       {/* Ordre */}
-                      <div className="text-sm font-semibold text-neutral-400 group-hover:text-neutral-600">
-                        #{task.index}
-                      </div>
+                      <div className="text-sm text-neutral-400 font-mono">#{task.index}</div>
 
                       {/* Descriptif */}
                       <div className="min-w-0">
-                        <p className={`font-medium truncate ${task.status === "Terminé" ? "line-through text-neutral-400" : "text-neutral-900"}`}>
-                          {task.title}
-                        </p>
-                        {task.client && <p className="text-xs text-neutral-500 truncate">{task.client}</p>}
+                        <div className={`font-medium truncate ${task.status === "Terminé" ? "line-through text-neutral-400" : "text-neutral-900"}`}>{task.title}</div>
+                        <div className="text-xs text-neutral-500 truncate">{task.clientName !== 'Non spécifié' ? task.clientName : ''}</div>
                       </div>
 
                       {/* Tag */}
-                      <div className="flex justify-start">
+                      <div>
                         {task.tag && (
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                            task.tag === "Mémo" ? "bg-neutral-900 text-white" :
-                            task.tag === "Appel" ? "bg-purple-100 text-purple-700" :
-                            task.tag === "Email" ? "bg-sky-100 text-sky-700" :
-                            "bg-neutral-100 text-neutral-700"
-                          }`}>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${task.tag === 'Mémo' ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-700'
+                            }`}>
                             {task.tag}
                           </span>
                         )}
                       </div>
 
-                      {/* Échéance */}
-                      <div className="text-sm text-neutral-600 whitespace-nowrap">
+                      {/* Echeance */}
+                      <div className="text-sm text-neutral-600">
                         {task.dueDate}
                       </div>
 
                       {/* Statut */}
-                      <div className="flex justify-start">
+                      <div>
                         <select
                           value={task.status}
                           onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
-                          className="px-2.5 py-1 text-xs font-medium rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                          className="px-2 py-1 text-xs rounded border border-neutral-200 bg-white"
                         >
                           <option>Non commencé</option>
                           <option>En cours</option>
@@ -1163,60 +653,52 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                         </select>
                       </div>
 
+                      {/* Collaborateur */}
+                      <div className="flex items-center gap-2">
+                        {task.salarie_name ? (
+                          <span className="text-sm text-neutral-700">{task.salarie_name.split(' ')[0]}</span>
+                        ) : (
+                          <span className="text-xs text-neutral-400 italic">Non assigné</span>
+                        )}
+                      </div>
+
+                      {/* Note */}
+                      <div>
+                        {task.note && <NoteIcon />}
+                      </div>
+
                       {/* Progression */}
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
-                            style={{ width: `${task.progress}%` }}
-                          />
+                          <div className="h-full bg-blue-600" style={{ width: `${task.progress}%` }} />
                         </div>
-                        <span className="text-xs font-medium text-neutral-600 w-8 text-right">{task.progress}%</span>
+                        <span className="text-xs text-neutral-500 w-8 text-right">{task.progress}%</span>
                       </div>
 
-                      {/* Actions Menu */}
-                      <button
-                        onClick={() => {
-                          if (confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
-                            handleDeleteTask(task.id);
-                          }
-                        }}
-                        className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                        title="Supprimer"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M2.5 4.5h13M7 2h4M7.5 7.5v7M10.5 7.5v7M3.5 4.5l.5 10c0 1 .9 1.5 2 1.5h6c1.1 0 2-.5 2-1.5l.5-10" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
+                      {/* Actions */}
+                      <div className="flex justify-end">
+                        <button onClick={() => handleDeleteTask(task.id)} className="text-neutral-400 hover:text-red-500">
+                          <MoreVerticalIcon />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="w-full py-16 text-center">
-                  <div className="inline-flex flex-col items-center gap-2">
-                    <div className="text-3xl">📋</div>
-                    <p className="text-neutral-500 font-medium">Aucune tâche</p>
-                    <p className="text-sm text-neutral-400">Créez une nouvelle tâche pour commencer</p>
-                  </div>
-                </div>
-              )}
 
-              {/* Footer */}
-              {paginatedTasks.length > 0 && (
-                <div className="py-4 px-6 border-t border-neutral-200 flex items-center justify-between bg-neutral-50">
-                  <div className="text-sm text-neutral-600">
-                    <span className="font-medium">{filteredTasks.length}</span> tâche{filteredTasks.length > 1 ? 's' : ''} •
-                    Affichage {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)}
+                {/* Footer */}
+                {paginatedTasks.length > 0 && (
+                  <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50 flex justify-between items-center">
+                    <span className="text-sm text-neutral-500">
+                      {startIndex + 1}-{Math.min(startIndex + pageSize, filteredTasks.length)} sur {filteredTasks.length}
+                    </span>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
                   </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              )}
-              </>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1227,5 +709,5 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
 
 // Example wrapper for standalone use
 export function ExampleTasksMemoPage() {
-  return <TasksMemoPage onNavigate={() => {}} sidebarCollapsed={false} onToggleSidebar={() => {}} />;
+  return <TasksMemoPage onNavigate={() => { }} sidebarCollapsed={false} onToggleSidebar={() => { }} />;
 }

@@ -1764,10 +1764,15 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
 
   const handleCreateTask = async (payload) => {
     try {
+      console.log("[handleCreateTask] Payload received from modal:", payload);
+      console.log("[handleCreateTask] Current contact:", contact);
+      console.log("[handleCreateTask] Available projects:", projects);
+
       // Find the project ID if a project is selected
       let id_projet = null;
       if (payload.project) {
         const selectedProject = projects.find(p => p.titre === payload.project);
+        console.log(`[handleCreateTask] Looking for project "${payload.project}", found:`, selectedProject);
         if (selectedProject) {
           id_projet = selectedProject.id;
         }
@@ -1788,7 +1793,7 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
         id_affecte_a: payload.salarie || null
       };
 
-      console.log("Creating task with payload:", taskData);
+      console.log("[handleCreateTask] Final taskData to send:", taskData);
       await createTache(taskData);
       setIsCreateTaskModalOpen(false);
     } catch (err) {
@@ -1967,6 +1972,7 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
         preFilledClient={contact ? `${contact.prenom} ${contact.nom}` : ""}
         preFilledContactId={contact?.id || null}
         employees={users}
+        commercials={users}
         projects={projects}
       />
     </div>
