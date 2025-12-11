@@ -1719,7 +1719,7 @@ function ProjectListTabContent({ projects = [], loading = false, onAddProject, u
 function TasksTabContent({ contact, users = [], projects = [] }) {
   const [taskFilter, setTaskFilter] = useState("in-progress");
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const { taches, loading, error, createTache } = useTaches();
+  const { taches, loading, error, createTache, updateTacheStatus } = useTaches();
 
   // Filter tasks by contact and status
   const filteredTasks = taches.filter(task => {
@@ -1896,12 +1896,16 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
                     <span className="text-sm text-neutral-600">{task.projectName || "—"}</span>
                   </div>
                   <div className="flex-1">
-                    <span
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                    <select
+                      value={task.status}
+                      onChange={(e) => updateTacheStatus(task.id, e.target.value)}
+                      className="text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-0"
                       style={{ backgroundColor: statusColor.bg, color: statusColor.text }}
                     >
-                      {task.statut}
-                    </span>
+                      <option value="Non commencé">Non commencé</option>
+                      <option value="En cours">En cours</option>
+                      <option value="Terminé">Terminé</option>
+                    </select>
                   </div>
                   <div className="flex-1">
                     <span className="text-sm text-neutral-600">{task.dueDate}</span>
