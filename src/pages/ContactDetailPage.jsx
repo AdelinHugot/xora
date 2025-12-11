@@ -1723,9 +1723,17 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
 
   // Filter tasks by contact and status
   const filteredTasks = taches.filter(task => {
-    // Filter by contact (only show tasks for this contact)
+    // Filter by contact OR by project associated with this contact
     const contactName = `${contact?.prenom} ${contact?.nom}`.trim();
-    if (task.clientName !== contactName && task.clientName !== '') {
+    const isClientMatch = task.clientName === contactName;
+
+    // Check if task belongs to any project of this contact
+    const isProjectMatch = projects.some(project =>
+      task.projectName === project.titre || task.nom_projet === project.titre
+    );
+
+    // Show task if it matches the client name OR belongs to a project of this contact
+    if (!isClientMatch && !isProjectMatch) {
       return false;
     }
 
