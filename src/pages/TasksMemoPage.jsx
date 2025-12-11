@@ -337,18 +337,32 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 };
 
 // Mapper les données du hook vers le format attendu par la page
+const getStatusColor = (status) => {
+  switch (status) {
+    case "En cours":
+      return { bg: "#FEF3C7", text: "#92400E", progressBar: "bg-blue-500", progressText: "text-blue-600" };
+    case "Terminé":
+      return { bg: "#DCFCE7", text: "#166534", progressBar: "bg-green-500", progressText: "text-green-600" };
+    default:
+      return { bg: "#F3F4F6", text: "#1F2937", progressBar: "bg-neutral-400", progressText: "text-neutral-600" };
+  }
+};
+
 const mapTacheForDisplay = (tache) => {
   return {
     id: tache.id,
     index: tache.index,
     title: tache.titre || tache.clientName,
     client: tache.projectName,
+    clientName: tache.clientName,
+    projectName: tache.projectName,
     tag: tache.tag,
-    type: tache.tag === "Mémo" ? "Mémo" : "Tâche",
+    type: tache.type,
     status: tache.status,
     progress: tache.progress,
     due: tache.dueDate || tache.cree_le,
     assignee: "Non assigné",
+    salarie_name: tache.salarie_name,
     note: tache.note,
     currentStage: tache.currentStage,
     stages: tache.stages,
@@ -642,15 +656,21 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
 
                       {/* Statut */}
                       <div>
-                        <select
-                          value={task.status}
-                          onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
-                          className="px-2 py-1 text-xs rounded border border-neutral-200 bg-white"
-                        >
-                          <option>Non commencé</option>
-                          <option>En cours</option>
-                          <option>Terminé</option>
-                        </select>
+                        {(() => {
+                          const statusColor = getStatusColor(task.status);
+                          return (
+                            <select
+                              value={task.status}
+                              onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
+                              className="text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-0"
+                              style={{ backgroundColor: statusColor.bg, color: statusColor.text }}
+                            >
+                              <option value="Non commencé">Non commencé</option>
+                              <option value="En cours">En cours</option>
+                              <option value="Terminé">Terminé</option>
+                            </select>
+                          );
+                        })()}
                       </div>
 
                       {/* Collaborateur */}
