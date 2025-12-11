@@ -1880,7 +1880,7 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
             </div>
           )}
           {!loading && filteredTasks.map((task) => {
-            const statusColor = getStatusColor(task.statut);
+            const statusColor = getStatusColor(task.status);
             return (
               <div
                 key={task.id}
