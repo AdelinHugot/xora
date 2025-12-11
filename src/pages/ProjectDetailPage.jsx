@@ -619,9 +619,9 @@ function NumberSpinner({ value, onChange, placeholder = "0" }) {
 
 // Project Tasks Tab Content Component
 function ProjectTasksTabContent({ project }) {
-  const [taskFilter, setTaskFilter] = useState("in-progress");
+  const [taskFilter, setTaskFilter] = useState("all");
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const { taches, loading: tachesLoading } = useTaches();
+  const { taches, loading: tachesLoading, createTache } = useTaches();
 
   // Filter tasks by project ID (preferred) or project name (fallback)
   const projectTasksRaw = taches.filter(task => {
@@ -633,6 +633,11 @@ function ProjectTasksTabContent({ project }) {
     const projectName = project?.titre;
     return projectName && task.projectName === projectName && task.projectName !== 'Non spécifié';
   });
+
+  // DEBUG logging
+  console.log("[ProjectTasksTabContent] Project:", project);
+  console.log("[ProjectTasksTabContent] All taches:", taches);
+  console.log("[ProjectTasksTabContent] Filtered projectTasksRaw:", projectTasksRaw);
 
   // Transform taches to match the UI format
   const transformedTasks = projectTasksRaw.map(task => ({
@@ -666,8 +671,10 @@ function ProjectTasksTabContent({ project }) {
       return task.status === "En cours";
     } else if (taskFilter === "completed") {
       return task.status === "Terminé";
+    } else if (taskFilter === "not-started") {
+      return task.status === "Non commencé";
     }
-    return true;
+    return true; // "all" filter
   });
 
   const getTypeStyles = (type) => {
@@ -688,6 +695,30 @@ function ProjectTasksTabContent({ project }) {
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold text-neutral-900">Liste des tâches</h3>
           <div className="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 p-1" role="radiogroup">
+          <button
+            onClick={() => setTaskFilter("all")}
+            role="radio"
+            aria-checked={taskFilter === "all"}
+            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+              taskFilter === "all"
+                ? "bg-gray-900 text-white"
+                : "text-neutral-700 hover:text-neutral-900"
+            }`}
+          >
+            Tous
+          </button>
+          <button
+            onClick={() => setTaskFilter("not-started")}
+            role="radio"
+            aria-checked={taskFilter === "not-started"}
+            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+              taskFilter === "not-started"
+                ? "bg-gray-900 text-white"
+                : "text-neutral-700 hover:text-neutral-900"
+            }`}
+          >
+            Non commencé
+          </button>
           <button
             onClick={() => setTaskFilter("in-progress")}
             role="radio"
@@ -811,7 +842,7 @@ function ProjectTasksTabContent({ project }) {
           {/* Empty State */}
           {filteredTasks.length === 0 && (
             <div className="p-12 text-center text-neutral-500 border border-[#E4E4E7] rounded-lg bg-white">
-              Aucune tâche {taskFilter === "in-progress" ? "en cours" : "terminée"}
+              {taskFilter === "in-progress" ? "Aucune tâche en cours" : taskFilter === "completed" ? "Aucune tâche terminée" : taskFilter === "not-started" ? "Aucune tâche non commencée" : "Aucune tâche"}
             </div>
           )}
         </div>
@@ -821,10 +852,31 @@ function ProjectTasksTabContent({ project }) {
       <CreateTaskOrMemoModal
         open={addTaskModalOpen}
         onClose={() => setAddTaskModalOpen(false)}
-        onSubmit={(data) => {
-          console.log("Tâche ajoutée:", data);
-          setAddTaskModalOpen(false);
+        onSubmit={async (payload) => {
+          try {
+            console.log("[ProjectTasksTabContent] Task payload received:", payload);
+
+            const taskData = {
+              titre: payload.kind === "Tâche" ? payload.taskType || "Tâche sans titre" : payload.memoName,
+              type: payload.kind,
+              id_projet: project?.id || null,
+              nom_projet: project?.titre || null,
+              tag: payload.taskType || "Autre",
+              note: payload.note,
+              date_echeance: payload.dueDate || payload.memoEcheance,
+              statut: "non_commence",
+              id_affecte_a: payload.salarie || null
+            };
+
+            console.log("[ProjectTasksTabContent] Final taskData to send:", taskData);
+            await createTache(taskData);
+            setAddTaskModalOpen(false);
+          } catch (err) {
+            console.error("Erreur lors de la création de la tâche:", err);
+          }
         }}
+        preFilledClient={project?.clientName || ""}
+        preFilledProject={project?.titre || ""}
       />
     </div>
   );
