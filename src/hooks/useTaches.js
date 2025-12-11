@@ -1,10 +1,43 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-export function useTaches() {
+export function useTaches(limit = null) {
   const [taches, setTaches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Mappings Statiques
+  const DB_TO_UI_STATUS = {
+    'non_commence': 'Non commencé',
+    'en_cours': 'En cours',
+    'termine': 'Terminé',
+    // Fallback pour la rétrocompatibilité (si la BDD contient encore les anciennes valeurs)
+    'Non commencé': 'Non commencé',
+    'En cours': 'En cours',
+    'Terminé': 'Terminé'
+  };
+
+  const UI_TO_DB_STATUS = {
+    'Non commencé': 'non_commence',
+    'En cours': 'en_cours',
+    'Terminé': 'termine'
+  };
+
+  const DB_STATUS_TO_STAGE = {
+    'non_commence': 0,
+    'en_cours': 1,
+    'termine': 2,
+    // Fallback pour la rétrocompatibilité
+    'Non commencé': 0,
+    'En cours': 1,
+    'Terminé': 2
+  };
+
+  const STAGE_TO_DB_STATUS = {
+    0: 'non_commence',
+    1: 'en_cours',
+    2: 'termine'
+  };
 
   useEffect(() => {
     const fetchTaches = async () => {
@@ -27,7 +60,7 @@ export function useTaches() {
         if (!authData) throw new Error('Organisation non trouvée');
 
         // Récupère les tâches avec relations (contact et projet)
-        const { data: tachesData, error: tachesError } = await supabase
+        let query = supabase
           .from('taches')
           .select(
             `id,
@@ -35,6 +68,8 @@ export function useTaches() {
             type,
             titre,
             tag,
+            id_projet,
+            id_contact,
             nom_client,
             nom_projet,
             statut,
@@ -44,7 +79,6 @@ export function useTaches() {
             est_en_retard,
             jours_retard,
             a_alerte,
-            etape_tache,
             id_affecte_a,
             cree_le,
             modifie_le`
@@ -52,6 +86,12 @@ export function useTaches() {
           .eq('id_organisation', authData.id_organisation)
           .is('supprime_le', null)
           .order('index_tache', { ascending: true });
+
+        if (limit) {
+          query = query.limit(limit);
+        }
+
+        const { data: tachesData, error: tachesError } = await query;
 
         if (tachesError) throw tachesError;
 
@@ -68,30 +108,38 @@ export function useTaches() {
         }
 
         // Formate les tâches au format attendu par le Dashboard
-        const formattedTaches = tachesData.map((t) => ({
-          id: t.id,
-          index: t.index_tache || 0,
-          titre: t.titre || 'Sans titre',
-          type: t.type || 'Tâche',
-          clientName: t.nom_client || 'Non spécifié',
-          projectName: t.nom_projet || 'Non spécifié',
-          tag: t.tag || 'Autre',
-          dueDate: t.date_echeance
-            ? new Date(t.date_echeance).toLocaleDateString('fr-FR')
-            : 'Pas de date',
-          isLate: t.est_en_retard || false,
-          daysLate: t.jours_retard || 0,
-          hasAlert: t.a_alerte || false,
-          progress: t.progression || 0,
-          status: t.statut || 'Non commencé',
-          stages: ['Non commencé', 'En cours', 'Terminé'],
-          currentStage: getStageIndex(t.etape_tache),
-          note: t.note,
-          id_affecte_a: t.id_affecte_a,
-          salarie_name: t.id_affecte_a ? userMap[t.id_affecte_a] : null,
-          cree_le: t.cree_le,
-          modifie_le: t.modifie_le,
-        }));
+        const formattedTaches = tachesData.map((t) => {
+          // Robustesse : si le statut en BDD n'est pas standard, on fallback proprement
+          const dbStatus = t.statut || 'non_commence';
+          const uiStatus = DB_TO_UI_STATUS[dbStatus] || 'Non commencé';
+
+          return {
+            id: t.id,
+            index: t.index_tache || 0,
+            titre: t.titre || 'Sans titre',
+            type: t.type || 'Tâche',
+            id_contact: t.id_contact,
+            clientName: t.nom_client || 'Non spécifié',
+            id_projet: t.id_projet,
+            projectName: t.nom_projet || 'Non spécifié',
+            tag: t.tag || 'Autre',
+            dueDate: t.date_echeance
+              ? new Date(t.date_echeance).toLocaleDateString('fr-FR')
+              : 'Pas de date',
+            isLate: t.est_en_retard || false,
+            daysLate: t.jours_retard || 0,
+            hasAlert: t.a_alerte || false,
+            progress: t.progression || 0,
+            status: uiStatus, // Pour l'affichage UI
+            stages: ['Non commencé', 'En cours', 'Terminé'],
+            currentStage: DB_STATUS_TO_STAGE[dbStatus] || 0,
+            note: t.note,
+            id_affecte_a: t.id_affecte_a,
+            salarie_name: t.id_affecte_a ? userMap[t.id_affecte_a] : null,
+            cree_le: t.cree_le,
+            modifie_le: t.modifie_le,
+          };
+        });
 
         setTaches(formattedTaches);
       } catch (err) {
@@ -103,30 +151,26 @@ export function useTaches() {
     };
 
     fetchTaches();
-  }, []);
+  }, [limit]);
 
-  // Fonction utilitaire pour convertir etape_tache en index
-  const getStageIndex = (etapeTache) => {
-    const stageMap = {
-      'non_commence': 0,
-      'en_cours': 1,
-      'termine': 2
-    };
-    return stageMap[etapeTache] || 0;
-  };
-
-  // Fonction pour mettre à jour l'étape d'une tâche
+  // Fonction pour mettre à jour l'étape d'une tâche (Dashboard logic)
   const updateTacheStage = async (tacheId, stageIndex) => {
     try {
-      const stageMap = {
-        0: 'non_commence',
-        1: 'en_cours',
-        2: 'termine'
-      };
+      const newDbStatus = STAGE_TO_DB_STATUS[stageIndex];
+      const newUiStatus = DB_TO_UI_STATUS[newDbStatus];
+
+      const updates = { statut: newDbStatus };
+
+      // Synchronisation progression
+      if (stageIndex === 2) {
+        updates.progression = 100;
+      } else if (stageIndex === 0) {
+        updates.progression = 0;
+      }
 
       const { error } = await supabase
         .from('taches')
-        .update({ etape_tache: stageMap[stageIndex] })
+        .update(updates)
         .eq('id', tacheId);
 
       if (error) throw error;
@@ -134,7 +178,12 @@ export function useTaches() {
       // Met à jour l'état local
       setTaches(taches.map(t =>
         t.id === tacheId
-          ? { ...t, currentStage: stageIndex }
+          ? {
+            ...t,
+            status: newUiStatus,
+            currentStage: stageIndex,
+            progress: updates.progression !== undefined ? updates.progression : t.progress
+          }
           : t
       ));
     } catch (err) {
@@ -143,12 +192,24 @@ export function useTaches() {
     }
   };
 
-  // Fonction pour mettre à jour le statut d'une tâche
-  const updateTacheStatus = async (tacheId, newStatus) => {
+  // Fonction pour mettre à jour le statut d'une tâche (Page Tâches logic)
+  const updateTacheStatus = async (tacheId, newUiStatus) => {
     try {
+      const newDbStatus = UI_TO_DB_STATUS[newUiStatus] || 'non_commence';
+      const stageIndex = DB_STATUS_TO_STAGE[newDbStatus] || 0;
+
+      const updates = { statut: newDbStatus };
+
+      // Synchronisation progression
+      if (newUiStatus === 'Terminé') {
+        updates.progression = 100;
+      } else if (newUiStatus === 'Non commencé') {
+        updates.progression = 0;
+      }
+
       const { error } = await supabase
         .from('taches')
-        .update({ statut: newStatus })
+        .update(updates)
         .eq('id', tacheId);
 
       if (error) throw error;
@@ -156,7 +217,12 @@ export function useTaches() {
       // Met à jour l'état local
       setTaches(taches.map(t =>
         t.id === tacheId
-          ? { ...t, status: newStatus }
+          ? {
+            ...t,
+            status: newUiStatus,
+            currentStage: stageIndex,
+            progress: updates.progression !== undefined ? updates.progression : t.progress
+          }
           : t
       ));
     } catch (err) {
@@ -201,11 +267,13 @@ export function useTaches() {
       if (!authData) throw new Error('Organisation non trouvée');
 
       // Prépare les données pour l'insertion
+      const dbStatus = UI_TO_DB_STATUS[tacheData.statut] || 'non_commence';
+
       const newTache = {
         titre: tacheData.titre || tacheData.memoName || 'Sans titre',
         tag: tacheData.tag || 'Autre',
         type: tacheData.type || 'Tâche',
-        statut: tacheData.statut || 'Non commencé',
+        statut: dbStatus,
         progression: tacheData.progression || 0,
         date_echeance: tacheData.date_echeance || tacheData.dueDate,
         note: tacheData.note,
@@ -213,8 +281,7 @@ export function useTaches() {
         nom_projet: tacheData.nom_projet,
         id_affecte_a: tacheData.id_affecte_a || null,
         id_organisation: authData.id_organisation,
-        index_tache: (taches.length || 0) + 1,
-        etape_tache: 'non_commence'
+        index_tache: (taches.length || 0) + 1
       };
 
       const { data, error } = await supabase
@@ -238,6 +305,8 @@ export function useTaches() {
       }
 
       // Formate la tâche retournée
+      const uiStatus = DB_TO_UI_STATUS[data[0].statut] || 'Non commencé';
+
       const formattedTache = {
         id: data[0].id,
         index: data[0].index_tache,
@@ -253,9 +322,9 @@ export function useTaches() {
         daysLate: 0,
         hasAlert: false,
         progress: data[0].progression || 0,
-        statut: data[0].statut,
+        status: uiStatus,
         stages: ['Non commencé', 'En cours', 'Terminé'],
-        currentStage: 0,
+        currentStage: DB_STATUS_TO_STAGE[data[0].statut] || 0,
         note: data[0].note,
         id_affecte_a: data[0].id_affecte_a,
         salarie_name: salarie_name,

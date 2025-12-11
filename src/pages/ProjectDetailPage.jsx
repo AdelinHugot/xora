@@ -623,10 +623,14 @@ function ProjectTasksTabContent({ project }) {
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const { taches, loading: tachesLoading } = useTaches();
 
-  // Filter tasks by project name
+  // Filter tasks by project ID (preferred) or project name (fallback)
   const projectTasksRaw = taches.filter(task => {
+    // Use id_projet if available (most reliable)
+    if (project?.id && task.id_projet === project.id) {
+      return true;
+    }
+    // Fallback to project name matching if id_projet is not set
     const projectName = project?.titre;
-    // Match tasks that belong to this project (exclude 'Non spécifié')
     return projectName && task.projectName === projectName && task.projectName !== 'Non spécifié';
   });
 

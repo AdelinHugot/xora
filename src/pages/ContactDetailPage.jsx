@@ -1727,10 +1727,15 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
     const contactName = `${contact?.prenom} ${contact?.nom}`.trim();
     const isClientMatch = task.clientName === contactName;
 
-    // Check if task belongs to any project of this contact
-    const isProjectMatch = projects.some(project =>
-      task.projectName === project.titre
-    );
+    // Check if task belongs to any project of this contact (using id_projet first, then name fallback)
+    const isProjectMatch = projects.some(project => {
+      // Prefer id_projet matching if available
+      if (task.id_projet && project.id && task.id_projet === project.id) {
+        return true;
+      }
+      // Fallback to name matching
+      return task.projectName === project.titre;
+    });
 
     // Show task if it matches the client name OR belongs to a project of this contact
     if (!isClientMatch && !isProjectMatch) {
