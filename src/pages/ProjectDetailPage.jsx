@@ -3734,6 +3734,116 @@ function ItemBadge({ icon, label }) {
   );
 }
 
+// Create Appointment Modal Component
+function CreateAppointmentModal({ isOpen, onClose, onSave, preFilledData = {}, users = [] }) {
+  const [formData, setFormData] = useState({
+    title: "",
+    startDate: "",
+    startTime: "",
+    location: preFilledData?.location || "",
+    comments: ""
+  });
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    onSave(formData);
+    setFormData({
+      title: "",
+      startDate: "",
+      startTime: "",
+      location: preFilledData?.location || "",
+      comments: ""
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-neutral-900">Planifier un rendez-vous</h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-neutral-100 rounded transition-colors"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Titre</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              placeholder="Nom du rendez-vous"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Date</label>
+            <input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Heure</label>
+            <input
+              type="time"
+              value={formData.startTime}
+              onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Lieu</label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              placeholder="Lieu du rendez-vous"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Commentaires</label>
+            <textarea
+              value={formData.comments}
+              onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              placeholder="Ajouter des commentaires"
+              rows="3"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 transition-colors"
+          >
+            Créer le rendez-vous
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Project Detail Page Component
 export default function ProjectDetailPage({
   onNavigate,
@@ -3754,8 +3864,46 @@ export default function ProjectDetailPage({
   const [headerHeight, setHeaderHeight] = useState(240);
   const headerRef = useRef(null);
 
+  // Modal states
+  const [isEditTitleModalOpen, setIsEditTitleModalOpen] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(project?.nom_projet || "");
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+
   const handleBack = () => {
     onNavigate("project-tracking");
+  };
+
+  // Button handlers
+  const handleEdit = () => {
+    setIsEditTitleModalOpen(true);
+  };
+
+  const handleSaveTitle = async () => {
+    try {
+      await updateProject({ nom_projet: editedTitle });
+      setIsEditTitleModalOpen(false);
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour du titre:', err);
+    }
+  };
+
+  const handleSchedule = () => {
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleAddTask = () => {
+    setIsAddTaskModalOpen(true);
+  };
+
+  const handleLost = async () => {
+    if (confirm('Êtes-vous sûr de vouloir marquer ce projet comme perdu ?')) {
+      try {
+        await updateProject({ statut: 'Perdu' });
+      } catch (err) {
+        console.error('Erreur lors de la mise à jour du statut:', err);
+      }
+    }
   };
 
   const progressSidebarWidth = progressSidebarCollapsed ? 80 : 256;
@@ -3866,10 +4014,10 @@ export default function ProjectDetailPage({
           <ProjectHeader
             project={formattedProject}
             onBack={handleBack}
-            onEdit={() => console.log("Edit")}
-            onSchedule={() => console.log("Schedule")}
-            onAddTask={() => console.log("Add task")}
-            onLost={() => console.log("Lost")}
+            onEdit={handleEdit}
+            onSchedule={handleSchedule}
+            onAddTask={handleAddTask}
+            onLost={handleLost}
           />
         </div>
 
@@ -3924,6 +4072,84 @@ export default function ProjectDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Edit Title Modal */}
+        {isEditTitleModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-neutral-900">Modifier le titre du projet</h3>
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                placeholder="Titre du projet"
+              />
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setIsEditTitleModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveTitle}
+                  className="px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 transition-colors"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Schedule Appointment Modal */}
+        {isScheduleModalOpen && (
+          <CreateAppointmentModal
+            isOpen={isScheduleModalOpen}
+            onClose={() => setIsScheduleModalOpen(false)}
+            onSave={(appointmentData) => {
+              console.log("Rendez-vous créé:", appointmentData);
+              setIsScheduleModalOpen(false);
+            }}
+            preFilledData={{
+              clientName: formattedProject?.clientName || "",
+              location: ""
+            }}
+            users={[]}
+          />
+        )}
+
+        {/* Add Task Modal */}
+        {isAddTaskModalOpen && (
+          <CreateTaskOrMemoModal
+            open={isAddTaskModalOpen}
+            onClose={() => setIsAddTaskModalOpen(false)}
+            onSubmit={async (payload) => {
+              try {
+                const taskData = {
+                  titre: payload.kind === "Tâche" ? payload.taskType || "Tâche sans titre" : payload.memoName,
+                  type: payload.kind,
+                  id_projet: project?.id || null,
+                  nom_projet: project?.nom_projet || null,
+                  tag: payload.taskType || "Autre",
+                  note: payload.note,
+                  date_echeance: payload.dueDate || payload.memoEcheance,
+                  statut: "non_commence",
+                  id_affecte_a: payload.salarie || null
+                };
+                await createTache(taskData);
+                setIsAddTaskModalOpen(false);
+              } catch (err) {
+                console.error("Erreur lors de la création de la tâche:", err);
+              }
+            }}
+            preFilledClient={formattedProject?.clientName || ""}
+            preFilledProject={formattedProject?.title || ""}
+            employees={[]}
+            commercials={[]}
+          />
+        )}
       </main>
     </div>
   );
