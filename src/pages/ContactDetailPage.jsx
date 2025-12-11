@@ -1764,16 +1764,27 @@ function TasksTabContent({ contact, users = [], projects = [] }) {
 
   const handleCreateTask = async (payload) => {
     try {
+      // Find the project ID if a project is selected
+      let id_projet = null;
+      if (payload.project) {
+        const selectedProject = projects.find(p => p.titre === payload.project);
+        if (selectedProject) {
+          id_projet = selectedProject.id;
+        }
+      }
+
       // Add contact and project information to the payload
       const taskData = {
         titre: payload.kind === "Tâche" ? payload.taskType || "Tâche sans titre" : payload.memoName,
         type: payload.kind,
+        id_contact: contact?.id || null,
         nom_client: `${contact?.prenom} ${contact?.nom}`.trim(),
+        id_projet: id_projet,
         nom_projet: payload.project || null,
         tag: payload.taskType || "Autre",
         note: payload.note,
         date_echeance: payload.dueDate || payload.memoEcheance,
-        statut: "Non commencé",
+        statut: "non_commence",
         id_affecte_a: payload.salarie || null
       };
 
