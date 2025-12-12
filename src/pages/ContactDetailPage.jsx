@@ -2570,6 +2570,21 @@ export default function ContactDetailPage({
 
       if (error) throw error;
 
+      // Update contact status to "Client" if not already
+      if (dbContact && dbContact.statut !== "Client") {
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({ statut: 'Client' })
+          .eq('id', dbContact.id);
+
+        if (updateError) {
+          console.warn('Erreur lors de la mise à jour du statut du contact:', updateError);
+          // Don't throw - project was created successfully, just warn about contact update
+        } else {
+          console.log('Contact mis à jour en Client');
+        }
+      }
+
       // Fermer la modale
       setIsCreateProjectModalOpen(false);
 
