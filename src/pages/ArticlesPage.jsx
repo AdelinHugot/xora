@@ -254,7 +254,7 @@ const RowActionsMenu = ({ article, onClose }) => {
   );
 };
 
-const ArticlesTable = ({ articles, sortConfig, onSort }) => {
+const ArticlesTable = ({ articles, sortConfig, onSort, onNavigate }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
 
   const handleSort = (key) => {
@@ -625,6 +625,7 @@ export default function ArticlesPage({ onNavigate, sidebarCollapsed, onToggleSid
                     articles={paginatedArticles}
                     sortConfig={sortConfig}
                     onSort={setSortConfig}
+                    onNavigate={onNavigate}
                   />
                 </div>
 
