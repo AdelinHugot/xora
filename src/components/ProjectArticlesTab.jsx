@@ -3,7 +3,7 @@ import { Plus, Trash2, Search } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useArticles } from "../hooks/useArticles";
 
-export default function ProjectArticlesTab({ project, onArticlesUpdated }) {
+export default function ProjectArticlesTab({ project }) {
   const { articles, loading: articlesLoading } = useArticles();
   const [projectArticles, setProjectArticles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,10 +42,6 @@ export default function ProjectArticlesTab({ project, onArticlesUpdated }) {
       if (error) throw error;
 
       setShowAddModal(false);
-      // Notify parent component that articles have been updated
-      if (onArticlesUpdated) {
-        onArticlesUpdated();
-      }
     } catch (err) {
       console.error("Erreur lors de l'ajout de l'article:", err);
       alert("Erreur: " + err.message);
@@ -66,11 +62,6 @@ export default function ProjectArticlesTab({ project, onArticlesUpdated }) {
         .eq("id", project.id);
 
       if (error) throw error;
-
-      // Notify parent component that articles have been updated
-      if (onArticlesUpdated) {
-        onArticlesUpdated();
-      }
     } catch (err) {
       console.error("Erreur lors de la suppression:", err);
       alert("Erreur: " + err.message);

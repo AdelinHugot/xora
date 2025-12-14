@@ -1245,7 +1245,7 @@ function CommercialPresentationTabContent() {
 }
 
 // Kitchen Discovery Tab Content Component
-function KitchenDiscoveryTabContent({ project, onUpdate, onArticlesUpdated }) {
+function KitchenDiscoveryTabContent({ project, onUpdate }) {
   // Options for dropdown menus
   const accessoriesOptions = [
     { value: "tirors-amortis", label: "Tiroirs avec amortisseurs" },
@@ -2290,7 +2290,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate, onArticlesUpdated }) {
 
       {/* Appliances Tab Content */}
       {activeTertiaryTab === "appliances" && (
-        <ProjectArticlesTab project={project} onArticlesUpdated={onArticlesUpdated} />
+        <ProjectArticlesTab project={project} />
       )}
 
       {/* OLD APPLIANCES SECTION - KEPT FOR REFERENCE */}
@@ -3874,7 +3874,7 @@ export default function ProjectDetailPage({
   const actualProjectId = projectId ? projectId.replace(/^project-detail-/, '') : null;
 
   // Fetch project data
-  const { project, loading, error, updateProject, refetch } = useProject(actualProjectId);
+  const { project, loading, error, updateProject } = useProject(actualProjectId);
 
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("study");
@@ -4070,7 +4070,7 @@ export default function ProjectDetailPage({
                 <ProjectDiscoveryTab project={project} onUpdate={updateProject} />
               )}
               {activeTab === "study" && activeSubTab === "kitchen" && (
-                <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} onArticlesUpdated={refetch} />
+                <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} />
               )}
               {activeTab === "study" && activeSubTab === "commercial" && (
                 <CommercialPresentationTabContent />
