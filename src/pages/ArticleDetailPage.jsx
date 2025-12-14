@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Edit, Trash2, Share2, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
@@ -13,6 +13,14 @@ export default function ArticleDetailPage({
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    titre: "",
+    categorie: "",
+    contenu: "",
+    tags: "",
+    est_publie: false
+  });
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -46,6 +54,14 @@ export default function ArticleDetailPage({
         if (!articleData) throw new Error("Article non trouvé");
 
         setArticle(articleData);
+        // Initialize edit form
+        setEditFormData({
+          titre: articleData.titre,
+          categorie: articleData.categorie || "",
+          contenu: articleData.contenu || "",
+          tags: articleData.tags || "",
+          est_publie: articleData.est_publie || false
+        });
       } catch (err) {
         console.error("Erreur lors de la récupération de l'article:", err);
         setError(err.message);
@@ -62,7 +78,49 @@ export default function ArticleDetailPage({
   };
 
   const handleEdit = () => {
-    console.log("Éditer l'article:", article.id);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const { error } = await supabase
+        .from("articles")
+        .update({
+          titre: editFormData.titre,
+          categorie: editFormData.categorie,
+          contenu: editFormData.contenu,
+          tags: editFormData.tags,
+          est_publie: editFormData.est_publie,
+          modifie_le: new Date().toISOString()
+        })
+        .eq("id", articleId);
+
+      if (error) throw error;
+
+      setArticle({
+        ...article,
+        ...editFormData,
+        modifie_le: new Date().toISOString()
+      });
+
+      setIsEditModalOpen(false);
+      alert("Article mis à jour avec succès!");
+    } catch (err) {
+      console.error("Erreur lors de la mise à jour:", err);
+      alert("Erreur lors de la mise à jour: " + err.message);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    // Reset form to current article data
+    setEditFormData({
+      titre: article?.titre || "",
+      categorie: article?.categorie || "",
+      contenu: article?.contenu || "",
+      tags: article?.tags || "",
+      est_publie: article?.est_publie || false
+    });
   };
 
   const handleDelete = async () => {
@@ -84,18 +142,6 @@ export default function ArticleDetailPage({
       console.error("Erreur lors de la suppression:", err);
       alert("Erreur lors de la suppression: " + err.message);
     }
-  };
-
-  const handleCopyArticle = () => {
-    if (!article) return;
-
-    const text = `${article.titre}
-${article.categorie}
-${article.contenu}
-${article.tags || ""}`;
-
-    navigator.clipboard.writeText(text);
-    alert("Article copié dans le presse-papiers!");
   };
 
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
@@ -232,13 +278,6 @@ ${article.tags || ""}`;
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={handleCopyArticle}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Copier"
-                    >
-                      <Copy className="size-5 text-gray-600" />
-                    </button>
-                    <button
                       onClick={handleEdit}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Éditer"
@@ -274,21 +313,9 @@ ${article.tags || ""}`;
                     <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
                       Slug
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 text-gray-900 font-mono text-sm">
-                        {article.slug}
-                      </code>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(article.slug);
-                          alert("Slug copié!");
-                        }}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Copier le slug"
-                      >
-                        <Copy className="size-4 text-gray-600" />
-                      </button>
-                    </div>
+                    <code className="block px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 text-gray-900 font-mono text-sm">
+                      {article.slug}
+                    </code>
                   </div>
                 )}
 
@@ -392,6 +419,114 @@ ${article.tags || ""}`;
           </div>
         </div>
       </main>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Éditer l'article</h2>
+              <button
+                onClick={handleCloseEditModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="size-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {/* Titre */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.titre}
+                  onChange={(e) => setEditFormData({ ...editFormData, titre: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  placeholder="Titre de l'article"
+                />
+              </div>
+
+              {/* Catégorie */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Catégorie
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.categorie}
+                  onChange={(e) => setEditFormData({ ...editFormData, categorie: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  placeholder="Ex: Electromenager, Sanitaire"
+                />
+              </div>
+
+              {/* Contenu */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editFormData.contenu}
+                  onChange={(e) => setEditFormData({ ...editFormData, contenu: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  placeholder="Description de l'article"
+                  rows="6"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tags
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.tags}
+                  onChange={(e) => setEditFormData({ ...editFormData, tags: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  placeholder="Ex: Cuisine,Four,Basique (séparés par des virgules)"
+                />
+              </div>
+
+              {/* Publié */}
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="est_publie"
+                  checked={editFormData.est_publie}
+                  onChange={(e) => setEditFormData({ ...editFormData, est_publie: e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                />
+                <label htmlFor="est_publie" className="text-sm font-medium text-gray-700">
+                  Publié
+                </label>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-200 bg-gray-50 p-6 flex justify-end gap-3">
+              <button
+                onClick={handleCloseEditModal}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-900 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+              >
+                <Edit className="size-4" />
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
