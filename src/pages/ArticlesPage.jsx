@@ -329,7 +329,7 @@ const ArticlesTable = ({ articles, sortConfig, onSort }) => {
           {articles.map((article) => (
             <tr
               key={article.id}
-              onClick={() => console.log("Voir article", article)}
+              onClick={() => onNavigate(`article-${article.id}`)}
               className="hover:bg-neutral-50 transition-colors cursor-pointer"
               style={{ borderBottom: "1px solid #E4E4E7" }}
               role="row"
@@ -379,7 +379,10 @@ const ArticlesTable = ({ articles, sortConfig, onSort }) => {
                     className="p-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors"
                     aria-label="Voir article"
                     title="Voir article"
-                    onClick={() => console.log("Voir", article)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigate(`article-${article.id}`);
+                    }}
                   >
                     <Eye className="size-4 text-neutral-600" />
                   </button>

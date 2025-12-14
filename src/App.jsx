@@ -11,6 +11,7 @@ import SettingsPage from "./pages/SettingsPage";
 import TeamMemberPage from "./pages/TeamMemberPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ContactDetailPage from "./pages/ContactDetailPage";
+import ArticleDetailPage from "./pages/ArticleDetailPage";
 import KPIPage from "./pages/KPIPage";
 import OurCompanyPage from "./pages/OurCompanyPage";
 import AfterSalesPage from "./pages/AfterSalesPage";
@@ -1074,6 +1075,18 @@ export default function App() {
               sidebarCollapsed={sidebarCollapsed}
               onToggleSidebar={handleToggleSidebar}
               contactId={contactId}
+            />
+          );
+        }
+        // Check if it's an article detail route (e.g., article-123)
+        if (currentRoute.startsWith("article-")) {
+          const articleId = currentRoute.replace("article-", "");
+          return (
+            <ArticleDetailPage
+              onNavigate={handleNavigation}
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={handleToggleSidebar}
+              articleId={articleId}
             />
           );
         }
