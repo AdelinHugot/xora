@@ -22,6 +22,7 @@ import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import ProjectDiscoveryTab from "../components/ProjectDiscoveryTab";
+import ProjectArticlesTab from "../components/ProjectArticlesTab";
 import { useProject } from "../hooks/useProject";
 import { useTaches } from "../hooks/useTaches";
 import { formatPhoneForDisplay } from "../utils/dataTransformers";
@@ -305,6 +306,7 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   const subTabs = [
     { id: "discovery", label: "Découverte" },
     { id: "kitchen", label: "Découverte cuisine" },
+    { id: "articles", label: "Electro et sanitaires" },
     { id: "commercial", label: "Présentation commerciale" },
     { id: "quote", label: "Devis en cours" }
   ];
@@ -4053,10 +4055,13 @@ export default function ProjectDetailPage({
               {activeTab === "study" && activeSubTab === "kitchen" && (
                 <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} />
               )}
+              {activeTab === "study" && activeSubTab === "articles" && (
+                <ProjectArticlesTab project={project} />
+              )}
               {activeTab === "study" && activeSubTab === "commercial" && (
                 <CommercialPresentationTabContent />
               )}
-              {activeTab === "study" && activeSubTab !== "discovery" && activeSubTab !== "kitchen" && activeSubTab !== "commercial" && (
+              {activeTab === "study" && activeSubTab !== "discovery" && activeSubTab !== "kitchen" && activeSubTab !== "articles" && activeSubTab !== "commercial" && (
                 <div className="p-12 text-center text-neutral-500">
                   Contenu à venir
                 </div>
