@@ -14,45 +14,13 @@ import {
   Layout,
   ChevronUp,
   ChevronDown,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import CreateArticleModal from "../components/CreateArticleModal";
 import UserTopBar from "../components/UserTopBar";
-
-// Mock data generator
-const generateMockArticles = () => {
-  const branches = ["Salle de bain", "Douche", "Baignoire", "Toilettes", "Bidet", "Lavabo", "Robinetterie", "Accessoires", "Meuble de salle de bain"];
-  const familles = ["Sanitaire vasque sdb", "Sanitaire douche dou", "Sanitaire baignoire bai", "Sanitaire WC", "Sanitaire bidet bid", "Sanitaire lavabo lav", "Robinetterie mitigeur", "Accessoires chrome", "Meuble sous-vasque"];
-  const gammes = ["Sanitaire Approsine SDB", "Sanitaire Approsine Douche", "Sanitaire Premium Bain", "Sanitaire Eco WC", "Sanitaire Luxe Bidet", "Sanitaire Standard Lavabo", "Robinetterie Design", "Accessoires Moderne", "Meuble Classique"];
-  const fournisseurs = ["APPROSINE", "HYDROPLUS", "SANIFIX", "BATHPRO", "AQUATECH"];
-
-  const articles = [];
-  for (let i = 1; i <= 72; i++) {
-    const branche = branches[Math.floor(Math.random() * branches.length)];
-    const famille = familles[Math.floor(Math.random() * familles.length)];
-    const gamme = gammes[Math.floor(Math.random() * gammes.length)];
-    const fournisseur = fournisseurs[Math.floor(Math.random() * fournisseurs.length)];
-    const reference = `ST${Math.floor(1000 + Math.random() * 9000)}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${Math.random() > 0.5 ? '/G' : '/W'}`;
-    const pp_ht = Math.round((50 + Math.random() * 950) * 100) / 100;
-    const pv_ttc = Math.round(pp_ht * 1.2 * 100) / 100;
-
-    articles.push({
-      id: i,
-      branche,
-      famille,
-      gamme,
-      fournisseur,
-      reference,
-      pp_ht,
-      pv_ttc
-    });
-  }
-
-  return articles;
-};
-
-const mockArticles = generateMockArticles();
+import { useArticles } from "../hooks/useArticles";
 
 // Custom hook for client-side table management
 const useClientTable = (data, filters, sortConfig, pageSize = 11) => {
@@ -150,12 +118,12 @@ const Topbar = ({ onNavigate }) => {
   );
 };
 
-const FiltersBar = ({ filters, onFilterChange }) => {
-  // Derive unique options from mock data
-  const branches = [...new Set(mockArticles.map(a => a.branche))].sort();
-  const familles = [...new Set(mockArticles.map(a => a.famille))].sort();
-  const gammes = [...new Set(mockArticles.map(a => a.gamme))].sort();
-  const fournisseurs = [...new Set(mockArticles.map(a => a.fournisseur))].sort();
+const FiltersBar = ({ filters, onFilterChange, articles }) => {
+  // Derive unique options from real data
+  const branches = [...new Set(articles.map(a => a.branche))].sort();
+  const familles = [...new Set(articles.map(a => a.famille))].sort();
+  const gammes = [...new Set(articles.map(a => a.gamme))].sort();
+  const fournisseurs = [...new Set(articles.map(a => a.fournisseur))].sort();
 
   return (
     <div className="p-6 border-b border-gray-200">
@@ -525,6 +493,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 };
 
 export default function ArticlesPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+  const { articles, loading, error } = useArticles();
+
   const [filters, setFilters] = useState({
     search: "",
     branche: "",
@@ -565,7 +535,7 @@ export default function ArticlesPage({ onNavigate, sidebarCollapsed, onToggleSid
     setCurrentPage,
     startIndex,
     endIndex
-  } = useClientTable(mockArticles, filters, sortConfig, 11);
+  } = useClientTable(articles, filters, sortConfig, 11);
 
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
 
@@ -587,69 +557,88 @@ export default function ArticlesPage({ onNavigate, sidebarCollapsed, onToggleSid
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
         <Topbar onNavigate={onNavigate} />
         <div className="w-full py-6 px-4 lg:px-6">
+          {/* Loading State */}
+          {loading && (
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-12 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <Loader className="size-6 text-gray-600 animate-spin" />
+                <p className="text-gray-600">Chargement des articles...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 shadow-sm p-6">
+              <p className="text-red-600">Erreur lors du chargement des articles: {error}</p>
+            </div>
+          )}
+
           {/* Main Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-            {/* Card Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <List className="size-5 text-gray-600" />
-                  <h2 className="text-base font-semibold text-gray-900">
-                    Liste des articles ({totalItems})
-                  </h2>
+          {!loading && !error && (
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+              {/* Card Header */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <List className="size-5 text-gray-600" />
+                    <h2 className="text-base font-semibold text-gray-900">
+                      Liste des articles ({totalItems})
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => console.log("Exporter")}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      <Download className="size-4" />
+                      Exporter
+                    </button>
+                    <button
+                      onClick={() => console.log("Importer")}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      <Upload className="size-4" />
+                      Importer
+                    </button>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus className="size-4" />
+                      Ajouter un article
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => console.log("Exporter")}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    <Download className="size-4" />
-                    Exporter
-                  </button>
-                  <button
-                    onClick={() => console.log("Importer")}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    <Upload className="size-4" />
-                    Importer
-                  </button>
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    <Plus className="size-4" />
-                    Ajouter un article
-                  </button>
+              </div>
+
+              {/* Filters */}
+              <FiltersBar filters={filters} onFilterChange={handleFilterChange} articles={articles} />
+
+              {/* Table */}
+              <div className="p-6">
+                <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden">
+                  <ArticlesTable
+                    articles={paginatedArticles}
+                    sortConfig={sortConfig}
+                    onSort={setSortConfig}
+                  />
+                </div>
+
+                {/* Footer */}
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Actuellement {startIndex} à {endIndex} sur {totalItems} résultats
+                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               </div>
             </div>
-
-            {/* Filters */}
-            <FiltersBar filters={filters} onFilterChange={handleFilterChange} />
-
-            {/* Table */}
-            <div className="p-6">
-              <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden">
-                <ArticlesTable
-                  articles={paginatedArticles}
-                  sortConfig={sortConfig}
-                  onSort={setSortConfig}
-                />
-              </div>
-
-              {/* Footer */}
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Actuellement {startIndex} à {endIndex} sur {totalItems} résultats
-                </div>
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
