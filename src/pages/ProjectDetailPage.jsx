@@ -306,7 +306,6 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   const subTabs = [
     { id: "discovery", label: "Découverte" },
     { id: "kitchen", label: "Découverte cuisine" },
-    { id: "articles", label: "Electro et sanitaires" },
     { id: "commercial", label: "Présentation commerciale" },
     { id: "quote", label: "Devis en cours" }
   ];
@@ -2278,6 +2277,11 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
 
       {/* Appliances Tab Content */}
       {activeTertiaryTab === "appliances" && (
+        <ProjectArticlesTab project={project} />
+      )}
+
+      {/* OLD APPLIANCES SECTION - KEPT FOR REFERENCE */}
+      {false && (
         <div className="space-y-6">
           {/* Appliances Section */}
           <div className="bg-white rounded-lg border border-[#ECEEF5] shadow-[0_16px_36px_rgba(15,23,42,0.04)]">
@@ -4055,13 +4059,10 @@ export default function ProjectDetailPage({
               {activeTab === "study" && activeSubTab === "kitchen" && (
                 <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} />
               )}
-              {activeTab === "study" && activeSubTab === "articles" && (
-                <ProjectArticlesTab project={project} />
-              )}
               {activeTab === "study" && activeSubTab === "commercial" && (
                 <CommercialPresentationTabContent />
               )}
-              {activeTab === "study" && activeSubTab !== "discovery" && activeSubTab !== "kitchen" && activeSubTab !== "articles" && activeSubTab !== "commercial" && (
+              {activeTab === "study" && activeSubTab !== "discovery" && activeSubTab !== "kitchen" && activeSubTab !== "commercial" && (
                 <div className="p-12 text-center text-neutral-500">
                   Contenu à venir
                 </div>
