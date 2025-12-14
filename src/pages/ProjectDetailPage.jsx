@@ -1692,23 +1692,38 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
   }, []);
 
   // Calculate total prices for appliances
+  // Helper function to extract min and max prices from article content
+  const parsePriceFromArticle = (article) => {
+    if (!article || !article.contenu) {
+      return { min: 0, max: 0 };
+    }
+
+    // Parse format: "Prix TTC: 400€ - 600€"
+    const priceMatch = article.contenu.match(/Prix TTC:\s*(\d+)€\s*-\s*(\d+)€/);
+    if (priceMatch) {
+      return {
+        min: parseInt(priceMatch[1]) || 0,
+        max: parseInt(priceMatch[2]) || 0
+      };
+    }
+    return { min: 0, max: 0 };
+  };
+
   const calculateApplianceTotals = () => {
     let minTotal = 0;
     let maxTotal = 0;
-    appliances.forEach((appliance) => {
-      // Only count if "Le client fournit" is NOT selected
-      if (applianceSupplier[appliance.id] !== "client") {
-        if (applianceArticles[appliance.id] && applianceArticles[appliance.id].length > 0) {
-          applianceArticles[appliance.id].forEach((article) => {
-            const familyKey = `${article.family}-${article.article.split('-')[article.article.split('-').length - 1]}`;
-            if (mockProducts[familyKey]) {
-              minTotal += parseInt(mockProducts[familyKey].minPrice) || 0;
-              maxTotal += parseInt(mockProducts[familyKey].maxPrice) || 0;
-            }
-          });
+
+    // Get articles from project that are Electromenager category
+    if (project && project.articles_data && Array.isArray(project.articles_data)) {
+      project.articles_data.forEach((article) => {
+        if (article.categorie === "Electromenager") {
+          const prices = parsePriceFromArticle(article);
+          minTotal += prices.min;
+          maxTotal += prices.max;
         }
-      }
-    });
+      });
+    }
+
     return { min: minTotal, max: maxTotal };
   };
 
@@ -1716,20 +1731,18 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
   const calculateSanitaryTotals = () => {
     let minTotal = 0;
     let maxTotal = 0;
-    sanitaries.forEach((sanitary) => {
-      // Only count if "Le client fournit" is NOT selected
-      if (sanitarySupplier[sanitary.id] !== "client") {
-        if (sanitaryArticles[sanitary.id] && sanitaryArticles[sanitary.id].length > 0) {
-          sanitaryArticles[sanitary.id].forEach((article) => {
-            const familyKey = `${article.family}-${article.article.split('-')[article.article.split('-').length - 1]}`;
-            if (mockProducts[familyKey]) {
-              minTotal += parseInt(mockProducts[familyKey].minPrice) || 0;
-              maxTotal += parseInt(mockProducts[familyKey].maxPrice) || 0;
-            }
-          });
+
+    // Get articles from project that are Sanitaire category
+    if (project && project.articles_data && Array.isArray(project.articles_data)) {
+      project.articles_data.forEach((article) => {
+        if (article.categorie === "Sanitaire") {
+          const prices = parsePriceFromArticle(article);
+          minTotal += prices.min;
+          maxTotal += prices.max;
         }
-      }
-    });
+      });
+    }
+
     return { min: minTotal, max: maxTotal };
   };
 
