@@ -1101,13 +1101,23 @@ export default function App() {
     }
   };
 
-  // Initialize route from URL hash
+  // Initialize route from URL hash and listen for changes
   React.useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      setCurrentRoute(hash || "dashboard");
+    };
+
+    // Set initial route from current hash
     const hash = window.location.hash.slice(1);
     if (hash && hash !== currentRoute) {
       setCurrentRoute(hash || "dashboard");
     }
-  }, [currentRoute]);
+
+    // Listen for hash changes
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   // Si l'utilisateur n'est pas connecté, afficher la page de login ou signup
   // Afficher un écran de chargement pendant la vérification de la session
