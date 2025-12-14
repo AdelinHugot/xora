@@ -1245,7 +1245,7 @@ function CommercialPresentationTabContent() {
 }
 
 // Kitchen Discovery Tab Content Component
-function KitchenDiscoveryTabContent({ project, onUpdate }) {
+function KitchenDiscoveryTabContent({ project, onUpdate, onArticlesUpdated }) {
   // Options for dropdown menus
   const accessoriesOptions = [
     { value: "tirors-amortis", label: "Tiroirs avec amortisseurs" },
@@ -2290,7 +2290,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
 
       {/* Appliances Tab Content */}
       {activeTertiaryTab === "appliances" && (
-        <ProjectArticlesTab project={project} onArticlesUpdated={refetch} />
+        <ProjectArticlesTab project={project} onArticlesUpdated={onArticlesUpdated} />
       )}
 
       {/* OLD APPLIANCES SECTION - KEPT FOR REFERENCE */}
@@ -4070,7 +4070,7 @@ export default function ProjectDetailPage({
                 <ProjectDiscoveryTab project={project} onUpdate={updateProject} />
               )}
               {activeTab === "study" && activeSubTab === "kitchen" && (
-                <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} />
+                <KitchenDiscoveryTabContent project={project} onUpdate={updateProject} onArticlesUpdated={refetch} />
               )}
               {activeTab === "study" && activeSubTab === "commercial" && (
                 <CommercialPresentationTabContent />
