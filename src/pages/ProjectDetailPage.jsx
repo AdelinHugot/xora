@@ -2290,7 +2290,7 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
 
       {/* Appliances Tab Content */}
       {activeTertiaryTab === "appliances" && (
-        <ProjectArticlesTab project={project} />
+        <ProjectArticlesTab project={project} onArticlesUpdated={refetch} />
       )}
 
       {/* OLD APPLIANCES SECTION - KEPT FOR REFERENCE */}
@@ -3874,7 +3874,7 @@ export default function ProjectDetailPage({
   const actualProjectId = projectId ? projectId.replace(/^project-detail-/, '') : null;
 
   // Fetch project data
-  const { project, loading, error, updateProject } = useProject(actualProjectId);
+  const { project, loading, error, updateProject, refetch } = useProject(actualProjectId);
 
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("study");
