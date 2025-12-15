@@ -466,16 +466,7 @@ const WEEK_PRESETS = [
       { id: "sat", label: "Samedi 17 avril" },
       { id: "sun", label: "Dimanche 18 avril" },
     ],
-    events: [
-      { id: "mon-standup", title: "Daily Standup", day: "mon", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
-      { id: "mon-event", title: "RDV Dupont", day: "mon", start: "10:30", end: "12:30", tone: "danger", color: "rose", location: "19 rue voltaire" },
-      { id: "tue-standup", title: "Daily Standup", day: "tue", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
-      { id: "wed-standup", title: "Daily Standup", day: "wed", start: "09:00", end: "09:30", tone: "success", color: "emerald" },
-      { id: "wed-event", title: "Réunion Client", day: "wed", start: "12:00", end: "14:00", tone: "danger", color: "amber", location: "Showroom" },
-      { id: "thu-standup", title: "Daily Standup", day: "thu", start: "09:00", end: "10:00", tone: "success", color: "emerald" },
-      { id: "thu-event", title: "Visite Chantier", day: "thu", start: "14:00", end: "16:30", tone: "danger", color: "violet", location: "Chantier" },
-      { id: "fri-standup", title: "RDV Visio", day: "fri", start: "09:00", end: "10:30", tone: "success", color: "sky", icons: ["🎥"] },
-    ],
+    events: [],
   },
   {
     id: "week-13",
@@ -490,13 +481,7 @@ const WEEK_PRESETS = [
       { id: "sat", label: "Samedi 24 avril" },
       { id: "sun", label: "Dimanche 25 avril" },
     ],
-    events: [
-      { id: "week13-mon-standup", title: "Daily Standup", day: "mon", start: "09:30", end: "10:00", tone: "success", color: "emerald" },
-      { id: "week13-tue-demo", title: "Démo projet client", day: "tue", start: "14:00", end: "15:30", tone: "danger", color: "rose" },
-      { id: "week13-wed-workshop", title: "Atelier UX", day: "wed", start: "11:00", end: "12:00", tone: "success", color: "sky" },
-      { id: "week13-thu-standup", title: "Daily Standup", day: "thu", start: "09:30", end: "10:00", tone: "success", color: "emerald" },
-      { id: "week13-fri-retro", title: "Rétro sprint", day: "fri", start: "16:00", end: "17:00", tone: "success", color: "violet" },
-    ],
+    events: [],
   },
 ];
 
