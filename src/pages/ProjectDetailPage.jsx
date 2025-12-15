@@ -306,8 +306,7 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   const subTabs = [
     { id: "discovery", label: "Découverte" },
     { id: "kitchen", label: "Découverte cuisine" },
-    { id: "commercial", label: "Présentation commerciale" },
-    { id: "quote", label: "Devis en cours" }
+    { id: "commercial", label: "Présentation commerciale" }
   ];
 
   const showSubTabs = activeTab === "study";
@@ -1523,6 +1522,13 @@ function KitchenDiscoveryTabContent({ project, onUpdate }) {
         columnsDescription: meubleData.columnsDescription || "",
         furnitureWasteManagement: meubleData.furnitureWasteManagement || ""
       }));
+      // Load notes from database
+      setTabNotes({
+        ambiance: project.notes_ambiance || "",
+        furniture: project.notes_meubles || "",
+        appliances: project.notes_electromenagers || "",
+        financial: project.notes_financier || ""
+      });
     }
   }, [project?.id]);
 

@@ -583,7 +583,7 @@ export default function TeamMemberPage({
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [activeTab, setActiveTab] = useState("info");
 
-  // Extract utilisateur ID from memberId (format: "team-member-{uuid}" or "mem_{id}")
+  // Extract utilisateur ID from memberId (format: "team-member-{uuid}" or "mem_{uuid}")
   const utilisateurId = useMemo(() => {
     if (!memberId) return null;
 
@@ -592,10 +592,10 @@ export default function TeamMemberPage({
       return memberId.replace('team-member-', '');
     }
 
-    // Try mem_ format
-    const idMatch = memberId.match(/mem_(\d+)/);
+    // Try mem_ format (captures UUID, not just digits)
+    const idMatch = memberId.match(/mem_(.+)$/);
     if (idMatch) {
-      return parseInt(idMatch[1]);
+      return idMatch[1];
     }
 
     return memberId;
