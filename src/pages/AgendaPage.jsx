@@ -10,7 +10,98 @@ import { useAllAppointments } from "../hooks/useAllAppointments";
 import { useContacts } from "../hooks/useContacts";
 import { useProjects } from "../hooks/useProjects";
 import { useTeamMembers } from "../hooks/useTeamMembers";
+import { useContactSearch } from "../hooks/useContactSearch";
+import { useDebounce } from "../hooks/useDebounce";
 import { transformAppointmentForAgenda, simplifyAddress } from "../utils/dataTransformers";
+
+// Icons
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M7.333 12.667A5.333 5.333 0 107.333 2a5.333 5.333 0 000 10.667zM14 14l-2.9-2.9" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const Spinner = () => (
+  <svg className="size-4 animate-spin" viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
+    <path d="M8 2a6 6 0 016 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+// Client Search Component
+const ClientSearch = ({ value, onChange, onContactSelect, placeholder = "Rechercher un client..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { results, loading, searchContacts } = useContactSearch();
+  const dropdownRef = useRef(null);
+
+  // Debounce the search term to avoid too many API calls
+  const debouncedSearchTerm = useDebounce(value, 300);
+
+  // Trigger search when debounced value changes
+  useEffect(() => {
+    if (debouncedSearchTerm && debouncedSearchTerm.length >= 2) {
+      searchContacts(debouncedSearchTerm);
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  }, [debouncedSearchTerm, searchContacts]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (clientName, contactId) => {
+    onChange(clientName); // Update parent state with selected name
+    if (onContactSelect) {
+      onContactSelect(contactId); // Notify parent of contact ID
+    }
+    setIsOpen(false); // Close dropdown
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pl-9 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+          onFocus={() => {
+            if (value && value.length >= 2) setIsOpen(true);
+          }}
+        />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A7B6]">
+          {loading ? <Spinner /> : <SearchIcon />}
+        </div>
+      </div>
+
+      {isOpen && results && results.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-[#E1E4ED] bg-white shadow-lg max-h-60 overflow-y-auto">
+          {results.map((result, idx) => (
+            <button
+              key={result.id || idx}
+              type="button"
+              onClick={() => handleSelect(result.name, result.id)}
+              className="w-full px-3 py-2 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 flex flex-col"
+            >
+              <span className="font-medium">{result.name}</span>
+              {result.email && <span className="text-xs text-[#6B7280]">{result.email}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Custom Select Component
 function CustomSelect({ value, onChange, options, placeholder = "Sélectionner" }) {
@@ -1020,7 +1111,6 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
     additionalInfo: "",
   });
 
-  const [searchResults, setSearchResults] = useState([]);
   const [addressSearchResults, setAddressSearchResults] = useState([]);
   const addressSearchTimeoutRef = useRef(null);
 
@@ -1086,19 +1176,9 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
   }, [teamMembers]);
 
   const handleChange = (field, value) => {
-    // Si c'est la recherche, filtrer les contacts
-    if (field === "searchQuery") {
-      const contactList = realContacts[formData.contactType] || [];
-      const filtered = contactList.filter((contact) =>
-        contact.name.toLowerCase().includes(value.toLowerCase())
-      );
-      setSearchResults(filtered);
-    }
-
     // Si c'est le type de contact, réinitialiser la recherche
     if (field === "contactType") {
       setFormData((prev) => ({ ...prev, [field]: value, searchQuery: "", selectedContact: "", selectedContactId: "" }));
-      setSearchResults([]);
       return;
     }
 
@@ -1114,7 +1194,6 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
       selectedProject: "",
       eventType: ""
     }));
-    setSearchResults([]);
   };
 
   const toggleCollaborator = (collaboratorId) => {
@@ -1273,47 +1352,20 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
 
             {/* Rechercher un contact - Conditionnel pour Annuaire avec type sélectionné */}
             {formData.directoryType === "annuaire" && formData.contactType && (
-              <div style={{ overflow: 'visible', position: 'relative', zIndex: 9999 }}>
-                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
-                  <label className="block text-xs text-[#6B7280] font-medium mb-3">
-                    Rechercher un {formData.contactType === "sous-traitant" ? "sous-traitant" : formData.contactType}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={formData.searchQuery}
-                      onChange={(e) => handleChange("searchQuery", e.target.value)}
-                      placeholder={`Saisir le nom d'un ${formData.contactType}`}
-                      className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
-                      id="search-input"
-                    />
-
-                    {/* Résultats de recherche */}
-                    {searchResults.length > 0 && (
-                      <div
-                        className="bg-white border border-[#E1E4ED] rounded-lg shadow-lg z-[9999]"
-                        style={{
-                          position: 'fixed',
-                          top: (document.getElementById('search-input')?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 8,
-                          left: document.getElementById('search-input')?.getBoundingClientRect().left ?? 0,
-                          width: document.getElementById('search-input')?.getBoundingClientRect().width ?? 'auto'
-                        }}
-                      >
-                        {searchResults.map((contact) => (
-                          <button
-                            key={contact.id}
-                            type="button"
-                            onClick={() => handleSelectContact(contact)}
-                            className="w-full px-3 py-2.5 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 transition-colors"
-                          >
-                            {contact.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </section>
-              </div>
+              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">
+                  {formData.contactType === "client" ? "Client" : formData.contactType === "fournisseur" ? "Fournisseur" : formData.contactType === "salarie" ? "Salarié" : "Prescripteur"}
+                </label>
+                <ClientSearch
+                  value={formData.searchQuery}
+                  onChange={(value) => handleChange("searchQuery", value)}
+                  onContactSelect={(contactId) => {
+                    const contact = { id: contactId, name: formData.searchQuery };
+                    handleSelectContact(contact);
+                  }}
+                  placeholder={`Rechercher un ${formData.contactType}`}
+                />
+              </section>
             )}
 
             {/* Sélectionner un projet client - Conditionnel pour Client avec contact sélectionné */}
