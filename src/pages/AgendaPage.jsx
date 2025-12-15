@@ -1973,6 +1973,18 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
 
       if (!authData) throw new Error('Organisation non trouvée');
 
+      // Construire le champ location à partir du type de lieu sélectionné
+      let location = '';
+      if (formData.locationType === 'showroom') {
+        location = 'Showroom';
+      } else if (formData.locationType === 'adresse-client') {
+        location = formData.clientAddress;
+      } else if (formData.locationType === 'autre-adresse') {
+        location = formData.otherAddress;
+      } else if (formData.locationType === 'rdv-tel') {
+        location = 'Rendez-vous téléphonique';
+      }
+
       // Préparer les données du rendez-vous pour la base de données
       const appointmentData = {
         titre: formData.title,
@@ -1981,7 +1993,7 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         heure_debut: formData.startTime,
         date_fin: formData.endDate,
         heure_fin: formData.endTime,
-        lieu: formData.location || '',
+        lieu: location,
         commentaires: formData.comment || '',
         id_cree_par: authData.id_utilisateur,
         id_organisation: authData.id_organisation
