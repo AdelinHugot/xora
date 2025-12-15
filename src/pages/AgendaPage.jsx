@@ -61,7 +61,7 @@ const ClientSearch = ({ value, onChange, onContactSelect, placeholder = "Recherc
   const handleSelect = (clientName, contactId) => {
     onChange(clientName); // Update parent state with selected name
     if (onContactSelect) {
-      onContactSelect(contactId); // Notify parent of contact ID
+      onContactSelect(contactId, clientName); // Notify parent of contact ID and name
     }
     setIsOpen(false); // Close dropdown
   };
@@ -97,6 +97,78 @@ const ClientSearch = ({ value, onChange, onContactSelect, placeholder = "Recherc
               {result.email && <span className="text-xs text-[#6B7280]">{result.email}</span>}
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Project Search Component
+const ProjectSearch = ({ value, onChange, projects = [], placeholder = "Rechercher un projet..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const filteredProjects = React.useMemo(() => {
+    if (!debouncedSearchTerm) return projects;
+    return projects.filter(p =>
+      p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [debouncedSearchTerm, projects]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (projectName, projectId) => {
+    onChange(projectId);
+    setSearchTerm("");
+    setIsOpen(false);
+  };
+
+  const selectedProject = projects.find(p => p.id === value);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div className="relative">
+        <input
+          type="text"
+          value={searchTerm || (selectedProject ? selectedProject.name : "")}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-[#E1E4ED] bg-white px-3 py-2.5 pl-9 text-sm text-[#1F2027] placeholder:text-[#A1A7B6] focus:outline-none focus:ring-2 focus:ring-[#2B7FFF]/30"
+          onFocus={() => setIsOpen(true)}
+        />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A7B6]">
+          <SearchIcon />
+        </div>
+      </div>
+
+      {isOpen && projects && projects.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-[#E1E4ED] bg-white shadow-lg max-h-60 overflow-y-auto">
+          {filteredProjects.length > 0 ? (
+            filteredProjects.map((project, idx) => (
+              <button
+                key={project.id || idx}
+                type="button"
+                onClick={() => handleSelect(project.name, project.id)}
+                className="w-full px-3 py-2 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 flex flex-col"
+              >
+                <span className="font-medium">{project.name}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-sm text-[#6B7280]">Aucun projet trouvé</div>
+          )}
         </div>
       )}
     </div>
@@ -1359,8 +1431,8 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
                 <ClientSearch
                   value={formData.searchQuery}
                   onChange={(value) => handleChange("searchQuery", value)}
-                  onContactSelect={(contactId) => {
-                    const contact = { id: contactId, name: formData.searchQuery };
+                  onContactSelect={(contactId, contactName) => {
+                    const contact = { id: contactId, name: contactName };
                     handleSelectContact(contact);
                   }}
                   placeholder={`Rechercher un ${formData.contactType}`}
@@ -1371,14 +1443,12 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
             {/* Sélectionner un projet client - Conditionnel pour Client avec contact sélectionné */}
             {formData.directoryType === "annuaire" && formData.contactType === "client" && formData.selectedContactId && (
               <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
-                <label className="block text-xs text-[#6B7280] font-medium mb-3">Sélectionner un projet client</label>
-                <CustomSelect
+                <label className="block text-xs text-[#6B7280] font-medium mb-3">Projet</label>
+                <ProjectSearch
                   value={formData.selectedProject}
                   onChange={(value) => handleChange("selectedProject", value)}
-                  options={(projectsByClient[formData.selectedContactId] || []).map((project) => ({
-                    value: project.id,
-                    label: project.name
-                  }))}
+                  projects={projectsByClient[formData.selectedContactId] || []}
+                  placeholder="Rechercher un projet..."
                 />
               </section>
             )}
