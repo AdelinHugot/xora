@@ -3,9 +3,13 @@ import { CalendarDays, Search, ChevronDown, Plus, User, X, Calendar, ArrowUpRigh
 import { DayPicker } from "react-day-picker";
 import { format, parse } from "date-fns";
 import "react-day-picker/dist/style.css";
+import { supabase } from "../lib/supabase";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
 import { useAllAppointments } from "../hooks/useAllAppointments";
+import { useContacts } from "../hooks/useContacts";
+import { useProjects } from "../hooks/useProjects";
+import { useTeamMembers } from "../hooks/useTeamMembers";
 import { transformAppointmentForAgenda, simplifyAddress } from "../utils/dataTransformers";
 
 // Custom Select Component
@@ -1003,7 +1007,7 @@ function AgendaControls({
   );
 }
 
-function AddAppointmentModal({ isOpen, onClose, onSave }) {
+function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects = [], teamMembers = [] }) {
   const [step, setStep] = useState(1); // 1 for first modal, 2 for second modal
   const [formData, setFormData] = useState({
     directoryType: "",
@@ -1035,96 +1039,73 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
   const [addressSearchResults, setAddressSearchResults] = useState([]);
   const addressSearchTimeoutRef = useRef(null);
 
-  // Mock contacts data by type
-  const mockContacts = {
-    client: [
-      { id: "c1", name: "Dupont Chloé" },
-      { id: "c2", name: "Martinez Lucas" },
-      { id: "c3", name: "Bernard Amélie" },
-      { id: "c4", name: "Farget Coline" },
-      { id: "c5", name: "Durand Jean" },
-    ],
-    fournisseur: [
-      { id: "f1", name: "APPROSINE" },
-      { id: "f2", name: "HYDROPLUS" },
-      { id: "f3", name: "SANIFIX" },
-      { id: "f4", name: "BATHPRO" },
-      { id: "f5", name: "AQUATECH" },
-    ],
-    salarie: [
-      { id: "s1", name: "Jérémy Colomb" },
-      { id: "s2", name: "Sophie Martin" },
-      { id: "s3", name: "Thomas Dubois" },
-      { id: "s4", name: "Claire Rousseau" },
-      { id: "s5", name: "Marc Lefebvre" },
-      { id: "s6", name: "Nathalie Blanc" },
-    ],
-    prescripteur: [
-      { id: "pr1", name: "Architecte Lambert" },
-      { id: "pr2", name: "Designer Lefevre" },
-      { id: "pr3", name: "Décorateur Moreau" },
-    ],
+  // Transform real contacts data by type
+  const realContacts = {
+    client: contacts.filter(c => c.type === 'client').map(c => ({
+      id: c.id,
+      name: `${c.prenom} ${c.nom}`
+    })),
+    fournisseur: contacts.filter(c => c.type === 'fournisseur').map(c => ({
+      id: c.id,
+      name: c.societe || `${c.prenom} ${c.nom}`
+    })),
+    salarie: contacts.filter(c => c.type === 'salarie').map(c => ({
+      id: c.id,
+      name: `${c.prenom} ${c.nom}`
+    })),
+    prescripteur: contacts.filter(c => c.type === 'prescripteur').map(c => ({
+      id: c.id,
+      name: `${c.prenom} ${c.nom}`
+    })),
   };
 
-  // Mock projects data by client
-  const mockProjectsByClient = {
-    c1: [
-      { id: "p1", name: "Cuisine étage 2" },
-      { id: "p2", name: "Salle de bain étage" },
-    ],
-    c2: [
-      { id: "p3", name: "Terrasse" },
-      { id: "p4", name: "Rénovation cuisine" },
-    ],
-    c3: [
-      { id: "p5", name: "Installation douche" },
-      { id: "p6", name: "Aménagement sdb" },
-      { id: "p7", name: "Pose robinetterie" },
-    ],
-    c4: [
-      { id: "p8", name: "Projet client 4" },
-    ],
-    c5: [
-      { id: "p9", name: "Cuisine moderne" },
-      { id: "p10", name: "Rénovation salle d'eau" },
-    ],
-  };
+  // Projects by selected client
+  const projectsByClient = useMemo(() => {
+    const result = {};
+    projects.forEach(project => {
+      const clientId = project.id_contact;
+      if (!result[clientId]) result[clientId] = [];
+      result[clientId].push({
+        id: project.id,
+        name: project.nom
+      });
+    });
+    return result;
+  }, [projects]);
 
-  // Mock addresses by client
-  const mockAddressesByClient = {
-    c1: [
-      { id: "a1", address: "12 rue de Paris, 75001 Paris" },
-      { id: "a2", address: "45 avenue des Champs, 75008 Paris" },
-    ],
-    c2: [
-      { id: "a3", address: "8 rue Montmartre, 75002 Paris" },
-    ],
-    c3: [
-      { id: "a4", address: "15 boulevard Saint-Germain, 75005 Paris" },
-      { id: "a5", address: "20 rue de Rivoli, 75004 Paris" },
-    ],
-    c4: [
-      { id: "a6", address: "5 avenue Foch, 75016 Paris" },
-    ],
-    c5: [
-      { id: "a7", address: "100 rue de Turenne, 75003 Paris" },
-    ],
-  };
+  // Addresses by selected client
+  const addressesByClient = useMemo(() => {
+    const result = {};
+    contacts.forEach(contact => {
+      if (contact.adresse) {
+        if (!result[contact.id]) result[contact.id] = [];
+        const fullAddress = contact.complement_adresse
+          ? `${contact.adresse}, ${contact.complement_adresse}`
+          : contact.adresse;
+        result[contact.id].push({
+          id: contact.id,
+          address: fullAddress
+        });
+      }
+    });
+    return result;
+  }, [contacts]);
 
-  // Mock collaborators
-  const mockCollaborators = [
-    { id: "s1", name: "Jérémy Colomb", avatar: "https://i.pravatar.cc/32?img=1" },
-    { id: "s2", name: "Sophie Martin", avatar: "https://i.pravatar.cc/32?img=2" },
-    { id: "s3", name: "Thomas Dubois", avatar: "https://i.pravatar.cc/32?img=3" },
-    { id: "s4", name: "Claire Rousseau", avatar: "https://i.pravatar.cc/32?img=4" },
-  ];
+  // Collaborators from team members
+  const realCollaborators = useMemo(() => {
+    return teamMembers.map((member, index) => ({
+      id: member.id,
+      name: `${member.prenom} ${member.nom}`,
+      avatar: `https://i.pravatar.cc/32?img=${index}`
+    }));
+  }, [teamMembers]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
     // Si c'est la recherche, filtrer les contacts
     if (field === "searchQuery") {
-      const contactList = mockContacts[formData.contactType] || [];
+      const contactList = realContacts[formData.contactType] || [];
       const filtered = contactList.filter((contact) =>
         contact.name.toLowerCase().includes(value.toLowerCase())
       );
@@ -1450,7 +1431,7 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
                       <CustomMultiSelect
                         value={formData.collaborators}
                         onChange={(value) => handleChange("collaborators", value)}
-                        options={mockCollaborators.map((collab) => ({
+                        options={realCollaborators.map((collab) => ({
                           value: collab.id,
                           label: collab.name,
                           avatar: collab.avatar
@@ -1665,7 +1646,7 @@ function AddAppointmentModal({ isOpen, onClose, onSave }) {
   );
 }
 
-function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit, eventPosition }) {
+function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit, event, eventPosition }) {
   const [position, setPosition] = React.useState({ top: 0, left: 0, side: 'right' });
 
   React.useEffect(() => {
@@ -1714,21 +1695,19 @@ function AppointmentDetailModal({ isOpen, onClose, onDelete, onEdit, eventPositi
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !event) return null;
 
-  // Mock data
+  // Format appointment data from real event
   const appointmentData = {
-    title: "RDV R1 Dupont",
-    clientName: "Chloé Dubois",
-    date: "Mardi 13 avril",
-    startTime: "11:30",
-    endTime: "13:30",
-    type: "home", // home ou visio
-    collaborators: [
-      { id: "1", avatarUrl: "https://i.pravatar.cc/40?img=12" },
-      { id: "2", avatarUrl: "https://i.pravatar.cc/40?img=8" },
-    ],
-    location: "Extérieur 19 rue voltaire, lyon, 69003",
+    id: event.id,
+    title: event.title || "Rendez-vous",
+    clientName: event.contactName || "Contact inconnu",
+    date: event.date ? new Date(event.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '',
+    startTime: event.start || event.startTime || '',
+    endTime: event.end || event.endTime || '',
+    type: event.location?.includes('visio') || event.location?.includes('Visio') ? "visio" : "home",
+    collaborators: event.collaborators || [],
+    location: event.location || event.comments || "Non spécifié",
   };
 
   return (
@@ -1860,7 +1839,12 @@ function Topbar({ onNavigate }) {
 
 export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
   // Récupérer tous les rendez-vous depuis Supabase
-  const { appointments: supabaseAppointments, loading, error } = useAllAppointments();
+  const { appointments: supabaseAppointments, loading, error, refetch: refetchAppointments } = useAllAppointments();
+
+  // Récupérer les contacts, projets et membres d'équipe
+  const { contacts } = useContacts();
+  const { projects } = useProjects();
+  const { teamMembers } = useTeamMembers();
 
   // Transformer les rendez-vous Supabase au format UI avec contact info
   const transformedAppointments = supabaseAppointments.map(appointment => {
@@ -1975,24 +1959,47 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
     });
   }, [filteredEvents, currentWeek]);
 
-  const handleAddEvent = (formData) => {
-    if (!currentWeek) return;
-    const newEvent = {
-      id: `custom-${Date.now()}`,
-      title: formData.name,
-      day: "mon", // À adapter selon votre logique
-      start: "09:00",
-      end: "10:00",
-      tone: "success",
-      color: "emerald",
-    };
-    setUserCreatedEvents((prev) => {
-      const current = prev[currentWeek.id] ?? [];
-      return {
-        ...prev,
-        [currentWeek.id]: [...current, newEvent],
+  const handleAddEvent = async (formData) => {
+    try {
+      // Récupérer l'utilisateur connecté et son organisation
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non connecté');
+
+      const { data: authData } = await supabase
+        .from('utilisateurs_auth')
+        .select('id_organisation, id_utilisateur')
+        .eq('id_auth_user', user.id)
+        .single();
+
+      if (!authData) throw new Error('Organisation non trouvée');
+
+      // Préparer les données du rendez-vous pour la base de données
+      const appointmentData = {
+        titre: formData.title,
+        id_contact: formData.selectedContactId,
+        date_debut: formData.startDate,
+        heure_debut: formData.startTime,
+        date_fin: formData.endDate,
+        heure_fin: formData.endTime,
+        lieu: formData.location || '',
+        commentaires: formData.comment || '',
+        id_cree_par: authData.id_utilisateur,
+        id_organisation: authData.id_organisation
       };
-    });
+
+      // Enregistrer en base de données
+      const { error } = await supabase
+        .from('rendez_vous')
+        .insert([appointmentData]);
+
+      if (error) throw error;
+
+      // Rafraîchir les rendez-vous après l'ajout
+      refetchAppointments();
+    } catch (err) {
+      console.error('Erreur lors de l\'ajout du rendez-vous:', err);
+      alert('Erreur: ' + err.message);
+    }
   };
 
   const handleEventClick = (event, clickEvent) => {
@@ -2064,6 +2071,9 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddEvent}
+        contacts={contacts}
+        projects={projects}
+        teamMembers={teamMembers}
       />
       <AppointmentDetailModal
         isOpen={isDetailModalOpen}
@@ -2072,19 +2082,32 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
           setSelectedEvent(null);
           setEventPosition(null);
         }}
-        onDelete={() => {
-          console.log("Supprimer le rendez-vous:", selectedEvent);
-          setDetailModalOpen(false);
-          setSelectedEvent(null);
-          setEventPosition(null);
+        onDelete={async () => {
+          if (selectedEvent && selectedEvent.id) {
+            try {
+              const { error } = await supabase
+                .from('rendez_vous')
+                .update({ supprime_le: new Date().toISOString() })
+                .eq('id', selectedEvent.id);
+              if (error) throw error;
+              refetchAppointments();
+              setDetailModalOpen(false);
+              setSelectedEvent(null);
+              setEventPosition(null);
+            } catch (err) {
+              console.error('Erreur lors de la suppression:', err);
+              alert('Erreur: ' + err.message);
+            }
+          }
         }}
         onEdit={() => {
           console.log("Modifier le rendez-vous:", selectedEvent);
           setDetailModalOpen(false);
           setSelectedEvent(null);
           setEventPosition(null);
-          // Ici vous pourriez ouvrir une modale d'édition
+          // TODO: Ouvrir une modale d'édition complète
         }}
+        event={selectedEvent}
         eventPosition={eventPosition}
       />
     </div>
