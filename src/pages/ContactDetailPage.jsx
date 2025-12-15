@@ -131,9 +131,7 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, p
     { id: "contact-info", label: "Informations contact" },
     { id: "projects", label: "Projet", count: projectsCount },
     { id: "tasks", label: "Tâches", count: tasksCount },
-    { id: "appointments", label: "Rendez-vous", count: appointmentsCount },
-    { id: "loyalty", label: "Fidélisation" },
-    { id: "documents", label: "Documents" }
+    { id: "appointments", label: "Rendez-vous", count: appointmentsCount }
   ];
 
   const subTabs = [
@@ -923,6 +921,136 @@ function AddressModal({ isOpen, onClose, onSave, initialAddress, initialCompleme
 function AddressBlockComponent({ address, complement, onAddressChange, onComplementChange, onAddressBlur, onComplementBlur, statusColor }) {
   const [coordinates, setCoordinates] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [adresseSearchResults, setAdresseSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [adresseValidated, setAdresseValidated] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  // Search address using Nominatim API with debounce
+  const searchAddress = async (addressQuery) => {
+    if (!addressQuery.trim()) {
+      setAdresseSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&countrycodes=fr&limit=5`,
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+      const results = await response.json();
+      setAdresseSearchResults(results.slice(0, 5));
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error("Error searching address:", error);
+      }
+      setAdresseSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounced search handler
+  const handleAddressSearch = (query) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!query.trim()) {
+      setAdresseSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    if (query.trim().length <= 3) {
+      setAdresseSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAddress(query);
+    }, 500);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Format address to show only: N° de rue Nom de rue, Code postal, Ville
+  const formatAddressDisplay = (result) => {
+    const fullAddress = result.display_name;
+    const parts = fullAddress.split(',').map(p => p.trim());
+
+    let streetAddress = '';
+    let postalCode = '';
+    let city = '';
+
+    // Find postal code first (5-digit number)
+    let postalCodeIndex = -1;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i];
+      if (/^\d{5}$/.test(part)) {
+        postalCode = part;
+        postalCodeIndex = i;
+        break;
+      }
+    }
+
+    // Extract street address: combine first 1 or 2 parts
+    const streetParts = [];
+    for (let i = 0; i < Math.min(2, parts.length); i++) {
+      const part = parts[i];
+      if (part.length > 0 && !part.match(/^\d{5}$/)) {
+        streetParts.push(part);
+      }
+    }
+    streetAddress = streetParts.join(' ');
+
+    // Find city: look for text between postal code and end
+    if (postalCodeIndex >= 0) {
+      for (let i = postalCodeIndex - 1; i >= 0; i--) {
+        const part = parts[i];
+        if (!/^\d{5}$/.test(part) && !/^\d+$/.test(part)) {
+          city = part;
+          break;
+        }
+      }
+    }
+
+    const display = [streetAddress, postalCode, city].filter(Boolean).join(', ');
+    return display || fullAddress;
+  };
+
+  // Handle address selection
+  const handleSelectAddress = (result) => {
+    onAddressChange(result.display_name);
+    setAdresseValidated(true);
+    setAdresseSearchResults([]);
+  };
+
+  // Handle field changes
+  const handleAddressFieldChange = (value) => {
+    onAddressChange(value);
+    setAdresseValidated(false);
+    if (value.trim().length > 3) {
+      handleAddressSearch(value);
+    } else {
+      setAdresseSearchResults([]);
+    }
+  };
 
   // Geocode address when it changes
   useEffect(() => {
@@ -990,12 +1118,41 @@ function AddressBlockComponent({ address, complement, onAddressChange, onComplem
       {/* Left: Address fields */}
       <div className="flex-1 flex flex-col gap-4">
         <FormField label="Adresse">
-          <TextInput
-            value={address}
-            onChange={onAddressChange}
-            onBlur={onAddressBlur}
-            placeholder="Entrer une adresse"
-          />
+          <div className="relative">
+            <TextInput
+              value={address}
+              onChange={(value) => handleAddressFieldChange(value)}
+              onBlur={onAddressBlur}
+              placeholder="Tapez une adresse..."
+            />
+
+            {address.trim().length > 3 && !adresseValidated && (
+              <>
+                {isSearching && (
+                  <div className="mt-2 rounded-lg border border-[#E1E4ED] bg-white shadow-sm p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-gray-900"></div>
+                      <span className="text-sm text-[#6B7280]">Recherche en cours...</span>
+                    </div>
+                  </div>
+                )}
+                {!isSearching && adresseSearchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-[#E1E4ED] bg-white shadow-sm max-h-48 overflow-y-auto z-50">
+                    {adresseSearchResults.map((result, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectAddress(result)}
+                        className="w-full px-3 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0"
+                      >
+                        {formatAddressDisplay(result)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </FormField>
         <FormField label="Complément d'adresse">
           <TextInput
@@ -2485,6 +2642,8 @@ export default function ContactDetailPage({
   const [activeSubTab, setActiveSubTab] = useState("client-info");
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
 
   // Extract the actual contact identifier from contactId (remove "contact-" prefix)
@@ -2598,6 +2757,90 @@ export default function ContactDetailPage({
     }
   };
 
+  const handleCreateTaskFromHeader = async (payload) => {
+    try {
+      // Find the project ID if a project is selected
+      let id_projet = null;
+      if (payload.project) {
+        const selectedProject = projects.find(p => p.titre === payload.project);
+        if (selectedProject) {
+          id_projet = selectedProject.id;
+        }
+      }
+
+      // Create task data
+      const taskData = {
+        titre: payload.kind === "Tâche" ? payload.taskType || "Tâche sans titre" : payload.memoName,
+        type: payload.kind,
+        id_contact: dbContact?.id || null,
+        nom_client: dbContact ? `${dbContact.prenom} ${dbContact.nom}`.trim() : "",
+        id_projet: id_projet,
+        nom_projet: payload.project || null,
+        tag: payload.taskType || "Autre",
+        note: payload.note,
+        date_echeance: payload.dueDate || payload.memoEcheance,
+        statut: "non_commence",
+        id_affecte_a: payload.salarie || null
+      };
+
+      const { data, error } = await supabase
+        .from('taches')
+        .insert([taskData])
+        .select();
+
+      if (error) throw error;
+
+      setIsAddTaskModalOpen(false);
+      alert("Tâche créée avec succès!");
+    } catch (err) {
+      console.error('Erreur lors de la création de la tâche:', err);
+      alert("Erreur lors de la création de la tâche: " + err.message);
+    }
+  };
+
+  const handleCreateAppointmentFromHeader = async (formData) => {
+    try {
+      if (!dbContact?.id) throw new Error('Contact non trouvé');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non authentifié');
+
+      // Get organization and user ID
+      const { data: authData } = await supabase
+        .from('utilisateurs_auth')
+        .select('id_organisation, id_utilisateur')
+        .eq('id_auth_user', user.id)
+        .single();
+
+      if (!authData) throw new Error('Organisation non trouvée');
+
+      const appointmentData = {
+        titre: formData.title,
+        id_contact: dbContact.id,
+        date_debut: formData.startDate,
+        heure_debut: formData.startTime,
+        date_fin: formData.endDate,
+        heure_fin: formData.endTime,
+        lieu: formData.location,
+        commentaires: formData.comments || '',
+        id_cree_par: authData.id_utilisateur,
+        id_organisation: authData.id_organisation
+      };
+
+      const { error } = await supabase
+        .from('rendez_vous')
+        .insert([appointmentData]);
+
+      if (error) throw error;
+
+      setIsScheduleModalOpen(false);
+      alert("Rendez-vous créé avec succès!");
+    } catch (err) {
+      console.error('Erreur lors de la création du rendez-vous:', err);
+      alert("Erreur lors de la création du rendez-vous: " + err.message);
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -2665,10 +2908,40 @@ export default function ContactDetailPage({
         <ContactHeader
           contact={contactData}
           onBack={handleBack}
-          onContact={() => console.log("Contact")}
-          onCall={() => console.log("Call")}
-          onSchedule={() => console.log("Schedule")}
-          onAddTask={() => console.log("Add task")}
+          onContact={() => {
+            // Open email client
+            if (dbContact?.email) {
+              window.location.href = `mailto:${dbContact.email}`;
+            }
+          }}
+          onCall={() => {
+            // Initiate phone call
+            if (dbContact?.telephone) {
+              window.location.href = `tel:${dbContact.telephone}`;
+            }
+          }}
+          onSchedule={() => setIsScheduleModalOpen(true)}
+          onAddTask={() => setIsAddTaskModalOpen(true)}
+        />
+
+        {/* Schedule Modal */}
+        <CreateAppointmentModal
+          isOpen={isScheduleModalOpen}
+          onClose={() => setIsScheduleModalOpen(false)}
+          onSave={handleCreateAppointmentFromHeader}
+          users={users}
+        />
+
+        {/* Add Task Modal */}
+        <CreateTaskOrMemoModal
+          open={isAddTaskModalOpen}
+          onClose={() => setIsAddTaskModalOpen(false)}
+          onSubmit={handleCreateTaskFromHeader}
+          preFilledClient={dbContact ? `${dbContact.prenom} ${dbContact.nom}` : ""}
+          preFilledContactId={dbContact?.id || null}
+          employees={users}
+          commercials={users}
+          projects={projects}
         />
 
         {/* Tab Navigation */}

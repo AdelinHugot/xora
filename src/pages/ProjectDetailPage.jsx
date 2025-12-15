@@ -23,6 +23,7 @@ import UserTopBar from "../components/UserTopBar";
 import CreateTaskOrMemoModal from "../components/CreateTaskOrMemoModal";
 import ProjectDiscoveryTab from "../components/ProjectDiscoveryTab";
 import ProjectArticlesTab from "../components/ProjectArticlesTab";
+import ProjectCalendarTab from "../components/ProjectCalendarTab";
 import { useProject } from "../hooks/useProject";
 import { useTaches } from "../hooks/useTaches";
 import { formatPhoneForDisplay } from "../utils/dataTransformers";
@@ -299,8 +300,7 @@ function TabNavigation({ activeTab, onTabChange, activeSubTab, onSubTabChange, o
   const tabs = [
     { id: "study", label: "Étude client", hasProgress: true },
     { id: "tasks", label: "Tâches", count: 4 },
-    { id: "calendar", label: "Calendrier" },
-    { id: "documents", label: "Documents" }
+    { id: "calendar", label: "Calendrier" }
   ];
 
   const subTabs = [
@@ -4083,7 +4083,10 @@ export default function ProjectDetailPage({
               {activeTab === "tasks" && (
                 <ProjectTasksTabContent project={project} />
               )}
-              {activeTab !== "study" && activeTab !== "tasks" && (
+              {activeTab === "calendar" && (
+                <ProjectCalendarTab project={project} />
+              )}
+              {activeTab !== "study" && activeTab !== "tasks" && activeTab !== "calendar" && (
                 <div className="p-12 text-center text-neutral-500">
                   Contenu à venir
                 </div>

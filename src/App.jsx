@@ -146,17 +146,8 @@ function Topbar({ onSettingsClick = () => { } }) {
   };
 
   const handleSettingsClick = () => {
-    console.log('Settings clicked, userId:', userId);
-    if (userId) {
-      // Pass the team member route to the callback
-      const route = `team-member-${userId}`;
-      console.log('Navigating to:', route);
-      onSettingsClick(route);
-    } else {
-      // Fallback if userId not loaded yet
-      console.log('userId not loaded, using fallback');
-      onSettingsClick("settings-connection");
-    }
+    console.log('Settings clicked');
+    onSettingsClick("our-company");
   };
 
   return (
@@ -829,7 +820,7 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout
         onLogout={onLogout}
       />
       <main className="lg:transition-[margin] lg:duration-200 min-h-screen" style={{ marginLeft: `${sidebarWidth}px` }}>
-        <Topbar onSettingsClick={() => onNavigate("settings-connection")} />
+        <Topbar onSettingsClick={() => onNavigate("our-company")} />
         <div className="w-full">
           <Searchbar onNavigate={onNavigate} />
           <KpiStrip />
@@ -1033,14 +1024,6 @@ export default function App() {
         );
       case "settings":
         return renderSettingsPage("company");
-      case "settings-team":
-        return renderSettingsPage("team");
-      case "settings-company":
-        return renderSettingsPage("company");
-      case "settings-role":
-        return renderSettingsPage("role");
-      case "settings-connection":
-        return renderSettingsPage("connection");
       default:
         // Check if it's a team member route (e.g., team-member-123)
         if (currentRoute.startsWith("team-member-")) {
@@ -1100,6 +1083,7 @@ export default function App() {
         );
     }
   };
+
 
   // Initialize route from URL hash and listen for changes
   React.useEffect(() => {

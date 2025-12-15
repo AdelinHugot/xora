@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { CalendarDays, Search, ChevronDown, Plus, User, X, Calendar, ArrowUpRight, Pencil, Trash2, Check } from "lucide-react";
+import { CalendarDays, Search, ChevronDown, Plus, User, X, Calendar, ArrowUpRight, Pencil, Trash2, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import { format, parse } from "date-fns";
 import "react-day-picker/dist/style.css";
@@ -153,21 +153,25 @@ const ProjectSearch = ({ value, onChange, projects = [], placeholder = "Recherch
         </div>
       </div>
 
-      {isOpen && projects && projects.length > 0 && (
+      {isOpen && (
         <div className="absolute z-20 mt-1 w-full rounded-lg border border-[#E1E4ED] bg-white shadow-lg max-h-60 overflow-y-auto">
-          {filteredProjects.length > 0 ? (
-            filteredProjects.map((project, idx) => (
-              <button
-                key={project.id || idx}
-                type="button"
-                onClick={() => handleSelect(project.name, project.id)}
-                className="w-full px-3 py-2 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 flex flex-col"
-              >
-                <span className="font-medium">{project.name}</span>
-              </button>
-            ))
+          {projects && projects.length > 0 ? (
+            filteredProjects.length > 0 ? (
+              filteredProjects.map((project, idx) => (
+                <button
+                  key={project.id || idx}
+                  type="button"
+                  onClick={() => handleSelect(project.name, project.id)}
+                  className="w-full px-3 py-2 text-left text-sm text-[#1F2027] hover:bg-[#F3F4F6] border-b border-[#E1E4ED] last:border-b-0 flex flex-col"
+                >
+                  <span className="font-medium">{project.name}</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-[#6B7280]">Aucun projet trouvé</div>
+            )
           ) : (
-            <div className="px-3 py-2 text-sm text-[#6B7280]">Aucun projet trouvé</div>
+            <div className="px-3 py-2 text-sm text-[#6B7280]">Aucun projet disponible</div>
           )}
         </div>
       )}
@@ -611,8 +615,16 @@ function generateWeekFromDate(date) {
     rangeLabel: `${format(startDate, 'dd/MM')} - ${format(endDate, 'dd/MM')}`,
     badge: `Semaine ${format(startDate, 'w')}`,
     days: days,
-    events: []
+    events: [],
+    startDate: new Date(startDate),
+    endDate: new Date(endDate)
   };
+}
+
+// Get the current week's range label
+function getCurrentWeekRangeLabel() {
+  const currentWeek = generateWeekFromDate(new Date());
+  return currentWeek.rangeLabel;
 }
 
 const WEEK_PRESETS = [
@@ -630,6 +642,8 @@ const WEEK_PRESETS = [
       { id: "sun", label: "Dimanche 18 avril" },
     ],
     events: [],
+    startDate: new Date(2025, 3, 12),
+    endDate: new Date(2025, 3, 18),
   },
   {
     id: "week-13",
@@ -645,6 +659,8 @@ const WEEK_PRESETS = [
       { id: "sun", label: "Dimanche 25 avril" },
     ],
     events: [],
+    startDate: new Date(2025, 3, 19),
+    endDate: new Date(2025, 3, 25),
   },
 ];
 
@@ -1061,7 +1077,28 @@ function AgendaControls({
   onSearch,
   onAddEvent,
   onAddTask,
+  teamMembers = [],
+  selectedUserId,
+  onSelectedUserChange,
+  currentUser,
 }) {
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedUser = teamMembers.find(tm => tm.id === selectedUserId);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    if (isUserDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isUserDropdownOpen]);
   return (
     <div className="space-y-4">
       {/* First row: Title, week number, view pills, date selector (LEFT) | Add buttons (RIGHT) */}
@@ -1095,7 +1132,12 @@ function AgendaControls({
               Semaine
             </button>
             <button
-              className="px-4 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-700 rounded-full transition-colors"
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                viewMode === "month"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-700"
+              }`}
+              onClick={() => onViewChange("month")}
             >
               Mois
             </button>
@@ -1141,21 +1183,61 @@ function AgendaControls({
             className="w-full rounded-lg border border-neutral-200 bg-white pl-10 pr-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
           />
         </div>
-        <button className="flex-1 flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors">
-          <div className="flex items-center gap-2.5">
-            <img src="https://i.pravatar.cc/40?img=12" alt="" className="size-6 rounded-full flex-shrink-0" />
-            <span>
-              Loïc <span className="text-neutral-400">(Vous)</span>
-            </span>
-          </div>
-          <ChevronDown className="size-4 text-neutral-400 flex-shrink-0" />
-        </button>
+        <div className="relative flex-1" ref={dropdownRef}>
+          <button
+            onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+            className="w-full flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="size-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                {selectedUser ? selectedUser.prenom?.charAt(0).toUpperCase() : '?'}
+              </div>
+              <span>
+                {selectedUser ? `${selectedUser.prenom} ${selectedUser.nom}` : 'Sélectionner'}
+                {currentUser && selectedUser?.id === currentUser.id && <span className="text-neutral-400"> (Vous)</span>}
+              </span>
+            </div>
+            <ChevronDown className={`size-4 text-neutral-400 flex-shrink-0 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isUserDropdownOpen && (
+            <div className="absolute z-20 top-full right-0 mt-1 w-full bg-white rounded-lg border border-neutral-200 shadow-lg max-h-60 overflow-y-auto">
+              {teamMembers.map((member) => (
+                <button
+                  key={member.id}
+                  onClick={() => {
+                    onSelectedUserChange(member.id);
+                    setIsUserDropdownOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 border-b border-neutral-200 last:border-b-0 hover:bg-neutral-50 transition-colors ${
+                    selectedUserId === member.id ? 'bg-neutral-50' : ''
+                  }`}
+                >
+                  <div className="size-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                    {member.prenom?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-medium text-neutral-900">{member.prenom} {member.nom}</div>
+                    {currentUser && member.id === currentUser.id && <div className="text-xs text-neutral-500">Vous</div>}
+                  </div>
+                  {selectedUserId === member.id && (
+                    <div className="ml-auto">
+                      <svg className="size-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects = [], teamMembers = [] }) {
+function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects = [], projectsByClient = {}, teamMembers = [] }) {
   const [step, setStep] = useState(1); // 1 for first modal, 2 for second modal
   const [formData, setFormData] = useState({
     directoryType: "",
@@ -1205,20 +1287,6 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
       name: `${c.prenom} ${c.nom}`
     })),
   };
-
-  // Projects by selected client
-  const projectsByClient = useMemo(() => {
-    const result = {};
-    projects.forEach(project => {
-      const clientId = project.id_contact;
-      if (!result[clientId]) result[clientId] = [];
-      result[clientId].push({
-        id: project.id,
-        name: project.nom
-      });
-    });
-    return result;
-  }, [projects]);
 
   // Addresses by selected client
   const addressesByClient = useMemo(() => {
@@ -1442,15 +1510,17 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
 
             {/* Sélectionner un projet client - Conditionnel pour Client avec contact sélectionné */}
             {formData.directoryType === "annuaire" && formData.contactType === "client" && formData.selectedContactId && (
-              <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
-                <label className="block text-xs text-[#6B7280] font-medium mb-3">Projet</label>
-                <ProjectSearch
-                  value={formData.selectedProject}
-                  onChange={(value) => handleChange("selectedProject", value)}
-                  projects={projectsByClient[formData.selectedContactId] || []}
-                  placeholder="Rechercher un projet..."
-                />
-              </section>
+              <div style={{ overflow: 'visible', position: 'relative', zIndex: 9998 }}>
+                <section className="rounded-lg bg-[#F3F4F6] p-4 border border-[#E1E4ED]">
+                  <label className="block text-xs text-[#6B7280] font-medium mb-3">Projet</label>
+                  <ProjectSearch
+                    value={formData.selectedProject}
+                    onChange={(value) => handleChange("selectedProject", value)}
+                    projects={projectsByClient[formData.selectedContactId] || []}
+                    placeholder="Rechercher un projet..."
+                  />
+                </section>
+              </div>
             )}
 
             {/* Type d'événement - Conditionnel pour Client avec contact sélectionné */}
@@ -1945,6 +2015,148 @@ function Topbar({ onNavigate }) {
   );
 }
 
+// Month Calendar View Component
+function MonthCalendarView({ events, onEventClick }) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+                      "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+  const getDaysInMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date) => {
+    let day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return day === 0 ? 6 : day - 1; // Convert to Monday = 0
+  };
+
+  const getEventsForDate = (day) => {
+    return events.filter(event => {
+      if (!event.date) return false;
+      const eventDate = new Date(event.date);
+      return eventDate.getDate() === day &&
+             eventDate.getMonth() === currentDate.getMonth() &&
+             eventDate.getFullYear() === currentDate.getFullYear();
+    }).sort((a, b) => {
+      // Sort by time
+      const timeA = a.startTime || '00:00';
+      const timeB = b.startTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  };
+
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+  };
+
+  const today = new Date();
+  const daysInMonth = getDaysInMonth(currentDate);
+  const firstDay = getFirstDayOfMonth(currentDate);
+  const days = [];
+
+  for (let i = 0; i < firstDay; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(i);
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-neutral-900">
+          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+        </h2>
+        <div className="flex gap-2">
+          <button
+            onClick={prevMonth}
+            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <button
+            onClick={nextMonth}
+            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Day names */}
+      <div className="grid grid-cols-7 gap-px mb-2">
+        {dayNames.map(day => (
+          <div key={day} className="p-2 text-center text-sm font-semibold text-neutral-600">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-px bg-neutral-200 rounded-lg overflow-hidden border border-neutral-200">
+        {days.map((day, idx) => {
+          const isCurrentMonth = day !== null;
+          const isToday = isCurrentMonth &&
+                         day === today.getDate() &&
+                         currentDate.getMonth() === today.getMonth() &&
+                         currentDate.getFullYear() === today.getFullYear();
+          const dayEvents = isCurrentMonth ? getEventsForDate(day) : [];
+
+          return (
+            <div
+              key={idx}
+              className={`min-h-24 p-2 ${
+                isCurrentMonth
+                  ? isToday
+                    ? 'bg-blue-50'
+                    : 'bg-white'
+                  : 'bg-gray-50'
+              }`}
+            >
+              <div className={`text-sm font-semibold mb-1 ${
+                isCurrentMonth
+                  ? isToday
+                    ? 'text-blue-600'
+                    : 'text-neutral-900'
+                  : 'text-neutral-400'
+              }`}>
+                {isCurrentMonth ? day : ''}
+              </div>
+              <div className="space-y-0.5">
+                {dayEvents.slice(0, 4).map((event, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onEventClick(event)}
+                    className="w-full text-left text-xs px-1.5 py-1 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors truncate flex items-center gap-1"
+                    title={`${event.startTime || event.start || ''} ${event.title}`}
+                  >
+                    {(event.startTime || event.start) && (
+                      <span className="font-semibold flex-shrink-0">{event.startTime || event.start}</span>
+                    )}
+                    <span className="truncate">{event.title}</span>
+                  </button>
+                ))}
+                {dayEvents.length > 4 && (
+                  <div className="text-xs text-neutral-500 px-1.5 font-medium">
+                    +{dayEvents.length - 4} plus
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
   // Récupérer tous les rendez-vous depuis Supabase
   const { appointments: supabaseAppointments, loading, error, refetch: refetchAppointments } = useAllAppointments();
@@ -1958,17 +2170,18 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
   const transformedAppointments = supabaseAppointments.map(appointment => {
     const contact = appointment.contacts;
     const appointmentForAgenda = transformAppointmentForAgenda(appointment, contact);
-    // Ajouter le contact info au rendez-vous transformé pour affichage
+    // Ajouter le contact info et créateur au rendez-vous transformé pour affichage
     return {
       ...appointmentForAgenda,
       contactName: contact ? `${contact.prenom} ${contact.nom}` : 'Contact inconnu',
-      contactId: appointment.id_contact
+      contactId: appointment.id_contact,
+      createdBy: appointment.id_cree_par
     };
   });
 
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [viewMode, setViewMode] = useState("week");
-  const [selectedWeekRange, setSelectedWeekRange] = useState(WEEK_PRESETS[0].rangeLabel);
+  const [selectedWeekRange, setSelectedWeekRange] = useState(getCurrentWeekRangeLabel());
   const [searchTerm, setSearchTerm] = useState("");
   const [userCreatedEvents, setUserCreatedEvents] = useState(() =>
     Object.fromEntries(WEEK_PRESETS.map((preset) => [preset.id, []]))
@@ -1977,6 +2190,39 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
   const [isDetailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventPosition, setEventPosition] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  // Get current user
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: authData } = await supabase
+          .from('utilisateurs_auth')
+          .select('id_utilisateur, id_organisation')
+          .eq('id_auth_user', user.id)
+          .single();
+
+        if (authData) {
+          // Find the user in teamMembers
+          const foundUser = teamMembers.find(tm => tm.id === authData.id_utilisateur);
+          if (foundUser) {
+            setCurrentUser(foundUser);
+            setSelectedUserId(foundUser.id);
+          }
+        }
+      } catch (err) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', err);
+      }
+    };
+
+    if (teamMembers.length > 0) {
+      getCurrentUser();
+    }
+  }, [teamMembers]);
 
   const currentWeek = useMemo(() => {
     // D'abord, chercher dans WEEK_PRESETS
@@ -2006,6 +2252,20 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
     6: 'sun'
   };
 
+  // Projects by selected client
+  const projectsByClient = useMemo(() => {
+    const result = {};
+    projects.forEach(project => {
+      const clientId = project.id_contact;
+      if (!result[clientId]) result[clientId] = [];
+      result[clientId].push({
+        id: project.id,
+        name: project.nom_projet
+      });
+    });
+    return result;
+  }, [projects]);
+
   const mergedEvents = useMemo(() => {
     const base = currentWeek?.events ?? [];
     const added = userCreatedEvents[currentWeek?.id] ?? [];
@@ -2019,13 +2279,13 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         const aptDate = new Date(apt.date);
         aptDate.setHours(0, 0, 0, 0);
 
-        // Vérifier si la date du rendez-vous tombe dans la semaine actuelle
-        // En utilisant le jour de la semaine (0 = lundi à 6 = dimanche)
-        const dayOfWeek = aptDate.getDay();
-        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert JS day (0=Sun) to our day (0=Mon)
+        // Vérifier si la date du rendez-vous tombe dans la plage de la semaine actuelle
+        const weekStart = new Date(currentWeek.startDate);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(currentWeek.endDate);
+        weekEnd.setHours(23, 59, 59, 999);
 
-        // Vérifier si c'est un jour de la semaine actuelle
-        return adjustedDay >= 0 && adjustedDay < currentWeek.days.length;
+        return aptDate >= weekStart && aptDate <= weekEnd;
       })
       .map(apt => {
         // Déterminer le jour de la semaine
@@ -2052,10 +2312,32 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
   }, [currentWeek, userCreatedEvents, transformedAppointments]);
 
   const filteredEvents = useMemo(() => {
+    let events = mergedEvents;
+
+    // Filter by selected user (include events with no createdBy for backward compatibility)
+    if (selectedUserId) {
+      events = events.filter((event) => event.createdBy === selectedUserId || !event.createdBy);
+    }
+
+    // Filter by search term
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return mergedEvents;
-    return mergedEvents.filter((event) => event.title.toLowerCase().includes(term));
-  }, [mergedEvents, searchTerm]);
+    if (!term) return events;
+    return events.filter((event) => event.title.toLowerCase().includes(term));
+  }, [mergedEvents, searchTerm, selectedUserId]);
+
+  const filteredMonthEvents = useMemo(() => {
+    let events = transformedAppointments;
+
+    // Filter by selected user (include events with no createdBy for backward compatibility)
+    if (selectedUserId) {
+      events = events.filter((event) => event.createdBy === selectedUserId || !event.createdBy);
+    }
+
+    // Filter by search term
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return events;
+    return events.filter((event) => event.title.toLowerCase().includes(term));
+  }, [transformedAppointments, searchTerm, selectedUserId]);
 
   const sortedFilteredEvents = useMemo(() => {
     if (!currentWeek) return filteredEvents;
@@ -2177,9 +2459,15 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
               onSearch={setSearchTerm}
               onAddEvent={() => setAddModalOpen(true)}
               onAddTask={() => console.log("Add task clicked")}
+              teamMembers={teamMembers}
+              selectedUserId={selectedUserId}
+              onSelectedUserChange={setSelectedUserId}
+              currentUser={currentUser}
             />
             {viewMode === "week" ? (
               <WeeklyCalendarGrid days={currentWeek.days} events={sortedFilteredEvents} onEventClick={handleEventClick} />
+            ) : viewMode === "month" ? (
+              <MonthCalendarView events={filteredMonthEvents} onEventClick={handleEventClick} />
             ) : (
               <AgendaList days={currentWeek.days} events={sortedFilteredEvents} onEventClick={handleEventClick} />
             )}
@@ -2193,6 +2481,7 @@ export default function AgendaPage({ onNavigate, sidebarCollapsed, onToggleSideb
         onSave={handleAddEvent}
         contacts={contacts}
         projects={projects}
+        projectsByClient={projectsByClient}
         teamMembers={teamMembers}
       />
       <AppointmentDetailModal

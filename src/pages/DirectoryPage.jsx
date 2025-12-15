@@ -1168,14 +1168,6 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
             />
           </div>
           <div className="flex items-center gap-3">
-            <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors" style={{ backgroundColor: "#F8F9FA", border: "1px solid #E4E4E7", color: "#323130" }}>
-              <Download className="size-4" />
-              Exporter
-            </button>
-            <button className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors" style={{ backgroundColor: "#F8F9FA", border: "1px solid #E4E4E7", color: "#323130" }}>
-              <Upload className="size-4" />
-              Importer
-            </button>
             <button
               onClick={() => setIsModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 text-sm font-medium transition-colors"
