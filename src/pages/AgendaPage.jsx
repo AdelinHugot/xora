@@ -1086,8 +1086,6 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
   }, [teamMembers]);
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-
     // Si c'est la recherche, filtrer les contacts
     if (field === "searchQuery") {
       const contactList = realContacts[formData.contactType] || [];
@@ -1099,9 +1097,12 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
 
     // Si c'est le type de contact, réinitialiser la recherche
     if (field === "contactType") {
-      setFormData((prev) => ({ ...prev, searchQuery: "", selectedContact: "" }));
+      setFormData((prev) => ({ ...prev, [field]: value, searchQuery: "", selectedContact: "", selectedContactId: "" }));
       setSearchResults([]);
+      return;
     }
+
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSelectContact = (contact) => {
@@ -1322,7 +1323,7 @@ function AddAppointmentModal({ isOpen, onClose, onSave, contacts = [], projects 
                 <CustomSelect
                   value={formData.selectedProject}
                   onChange={(value) => handleChange("selectedProject", value)}
-                  options={(mockProjectsByClient[formData.selectedContactId] || []).map((project) => ({
+                  options={(projectsByClient[formData.selectedContactId] || []).map((project) => ({
                     value: project.id,
                     label: project.name
                   }))}
