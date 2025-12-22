@@ -17,6 +17,7 @@ import OurCompanyPage from "./pages/OurCompanyPage";
 import AfterSalesPage from "./pages/AfterSalesPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import { GlobalAuthProvider, useGlobalAuth } from "./contexts/GlobalAuthContext";
 import { useKPIs } from "./hooks/useKPIs";
 import { usePipelineKPIs } from "./hooks/usePipelineKPIs";
 import { useTaches } from "./hooks/useTaches";
@@ -63,87 +64,23 @@ const PillIcon = ({ Icon }) => (
 // Layout pieces
 
 function Topbar({ onSettingsClick = () => { } }) {
+  // Use global auth context instead of making independent API calls
+  const { userProfile } = useGlobalAuth();
   const [userName, setUserName] = useState("Chargement...");
-  const [userRole, setUserRole] = useState("");
+  const [userRole, setUserRole] = useState("Utilisateur");
   const [userAvatar, setUserAvatar] = useState("https://i.pravatar.cc/40?img=12");
-  const [userId, setUserId] = useState(null);
 
+  // Update display when profile loads from context
   useEffect(() => {
-    fetchCurrentUser();
-  }, []);
-
-  const fetchCurrentUser = async () => {
-    try {
-      // Get authenticated user
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        console.log('No authenticated user found');
-        return;
-      }
-
-      console.log('Authenticated user:', authUser.email);
-
-      // Fetch user info from utilisateurs_auth table to get id_utilisateur
-      const { data: authData, error: authError } = await supabase
-        .from('utilisateurs_auth')
-        .select('id_utilisateur')
-        .eq('id_auth_user', authUser.id)
-        .single();
-
-      if (authError) {
-        console.error('Erreur lors de la récupération des données auth:', authError);
-        // Use email as fallback
-        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
-        setUserName(nameFromEmail);
-        setUserAvatar(`https://i.pravatar.cc/40?u=${authUser.id}`);
-        return;
-      }
-
-      if (!authData) {
-        console.log('No auth data found for user');
-        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
-        setUserName(nameFromEmail);
-        setUserAvatar(`https://i.pravatar.cc/40?u=${authUser.id}`);
-        return;
-      }
-
-      console.log('Auth data retrieved, id_utilisateur:', authData.id_utilisateur);
-      setUserId(authData.id_utilisateur);
-
-      // Fetch from utilisateurs table
-      const { data: userData, error: userError } = await supabase
-        .from('utilisateurs')
-        .select('prenom, nom')
-        .eq('id', authData.id_utilisateur)
-        .single();
-
-      if (userError) {
-        console.error('Erreur lors de la récupération du profil utilisateur:', userError);
-        // Use email as fallback
-        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
-        setUserName(nameFromEmail);
-        setUserAvatar(`https://i.pravatar.cc/40?u=${authData.id_utilisateur}`);
-        return;
-      }
-
-      if (userData) {
-        const prenom = userData.prenom ? userData.prenom.charAt(0).toUpperCase() + userData.prenom.slice(1).toLowerCase() : '';
-        const nom = userData.nom ? userData.nom.charAt(0).toUpperCase() + userData.nom.slice(1).toLowerCase() : '';
-        const fullName = `${prenom} ${nom}`.trim();
-        console.log('User found:', { fullName });
-        setUserName(fullName || "Utilisateur");
-        setUserRole("Utilisateur");
-        setUserAvatar(`https://i.pravatar.cc/40?u=${authData.id_utilisateur}`);
-      } else {
-        console.log('No user data returned');
-        const nameFromEmail = authUser.email?.split('@')[0] || 'Utilisateur';
-        setUserName(nameFromEmail);
-        setUserAvatar(`https://i.pravatar.cc/40?u=${authData.id_utilisateur}`);
-      }
-    } catch (err) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', err);
+    if (userProfile) {
+      const prenom = userProfile.prenom ? userProfile.prenom.charAt(0).toUpperCase() + userProfile.prenom.slice(1).toLowerCase() : '';
+      const nom = userProfile.nom ? userProfile.nom.charAt(0).toUpperCase() + userProfile.nom.slice(1).toLowerCase() : '';
+      const fullName = `${prenom} ${nom}`.trim();
+      setUserName(fullName || "Utilisateur");
+      setUserRole("Utilisateur");
+      setUserAvatar(`https://i.pravatar.cc/40?u=${userProfile.id}`);
     }
-  };
+  }, [userProfile]);
 
   const handleSettingsClick = () => {
     console.log('Settings clicked');
@@ -288,8 +225,16 @@ function KpiStrip() {
 }
 
 // Composant pour les cartes KPI colorées (colonne gauche)
-function KpiStack() {
+function KpiStack({ onNavigate }) {
   const { kpis, loading, error } = usePipelineKPIs();
+
+  const handleKpiNavigation = (kpiId) => {
+    if (kpiId === 'leads') {
+      onNavigate('directory-leads');
+    } else if (kpiId === 'studies') {
+      onNavigate('project-tracking');
+    }
+  };
 
   if (loading) {
     return (
@@ -317,7 +262,7 @@ function KpiStack() {
               <div className="text-3xl font-black">{kpi.value}</div>
             </div>
             <button
-              onClick={() => console.log(`Ouvrir ${kpi.label}`)}
+              onClick={() => handleKpiNavigation(kpi.id)}
               className="p-2 rounded-xl border border-neutral-200 bg-white/70 hover:bg-white transition-colors"
               aria-label={`Ouvrir ${kpi.label}`}
               title={`Ouvrir ${kpi.label}`}
@@ -796,7 +741,7 @@ function MainPanels({ onNavigate }) {
       <div className="grid grid-cols-1 xl:grid-cols-[350px_1fr] 2xl:grid-cols-[400px_1fr] gap-6">
         {/* Colonne gauche - KPI colorés */}
         <div ref={kpiRef}>
-          <KpiStack />
+          <KpiStack onNavigate={onNavigate} />
         </div>
 
         {/* Colonne droite - Tâches avec hauteur synchronisée */}
@@ -833,45 +778,13 @@ function DashboardPage({ onNavigate, sidebarCollapsed, onToggleSidebar, onLogout
   );
 }
 
-export default function App() {
+function AppContent() {
   const [currentRoute, setCurrentRoute] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-  // Vérifier la session utilisateur au chargement
-  useEffect(() => {
-    const checkAuthSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoadingAuth(false);
-      }
-    };
-
-    checkAuthSession();
-
-    // S'abonner aux changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
+  // Use global context - auth state is managed by GlobalAuthProvider
+  const { isAuthenticated, loading: isLoadingAuth } = useGlobalAuth();
 
   const navigateToRoute = (route) => {
     setCurrentRoute(route);
@@ -886,10 +799,6 @@ export default function App() {
     setSidebarCollapsed(prev => !prev);
   };
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
   const handleShowSignup = () => {
     setShowSignup(true);
   };
@@ -900,27 +809,16 @@ export default function App() {
 
   const handleSignupSuccess = () => {
     setShowSignup(false);
-    // L'utilisateur est automatiquement connecté après l'inscription
-    // On pourrait aussi rediriger vers login si on préfère
+    // User is automatically logged in after signup via Supabase auth
   };
 
   const handleLogout = async () => {
     try {
-      // Déconnecter l'utilisateur de Supabase
+      // Sign out from Supabase - GlobalAuthContext will automatically update via auth listener
       await supabase.auth.signOut();
-
-      // Réinitialiser l'état de l'application
-      setIsAuthenticated(false);
-      setCurrentRoute("dashboard");
-      window.location.hash = "";
-
       console.log('Utilisateur déconnecté avec succès');
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
-      // Même en cas d'erreur, on déconnecte l'utilisateur localement
-      setIsAuthenticated(false);
-      setCurrentRoute("dashboard");
-      window.location.hash = "";
     }
   };
 
@@ -956,6 +854,16 @@ export default function App() {
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={handleToggleSidebar}
             filter={currentRoute.replace("directory-", "")}
+          />
+        );
+      case "directory-leads":
+        return (
+          <DirectoryPage
+            onNavigate={handleNavigation}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+            filter="all"
+            statusFilter="Leads"
           />
         );
       case "tasks":
@@ -1129,4 +1037,13 @@ export default function App() {
   }
 
   return renderPage();
+}
+
+// Wrapper component qui enveloppe l'app avec GlobalAuthProvider
+export default function App() {
+  return (
+    <GlobalAuthProvider>
+      <AppContent />
+    </GlobalAuthProvider>
+  );
 }

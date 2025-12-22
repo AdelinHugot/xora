@@ -16,58 +16,34 @@ export function useSignup() {
       setLoading(true);
       setError(null);
 
-      // Générer le slug de l'organisation
-      const slug = organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      // Étape 1 : Créer l'organisation via Edge Function
+      const { data: supabaseConfig } = await supabase.functions.getProjectConfig?.() || {};
+      const supabaseUrl = supabase.supabaseUrl;
 
-      // Étape 1 : Créer l'organisation
-      const { data: orgData, error: orgError } = await supabase
-        .from('organisations')
-        .insert({
-          nom: organizationName,
-          slug: slug,
-          description: `Organisation ${organizationName}`,
-          statut: 'actif'
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-signup-organisation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName,
+          lastName,
+          organizationName
         })
-        .select()
-        .single();
+      });
 
-      if (orgError) {
-        console.error('Erreur création organisation:', orgError);
-        throw new Error('Impossible de créer l\'organisation.');
+      const signupData = await response.json();
+
+      if (!response.ok) {
+        console.error('Erreur création organisation:', signupData);
+        throw new Error(`Impossible de créer l'organisation: ${signupData.error || 'Erreur inconnue'}`);
       }
 
+      const orgData = { id: signupData.organisation_id };
+      const roleData = { id: signupData.role_id };
       console.log('Organisation créée:', orgData);
-
-      // Étape 2 : Créer ou récupérer le rôle administrateur
-      let roleData;
-      const { data: existingRole } = await supabase
-        .from('roles')
-        .select('*')
-        .eq('nom', 'Administrateur')
-        .single();
-
-      if (existingRole) {
-        roleData = existingRole;
-      } else {
-        const { data: newRole, error: roleError } = await supabase
-          .from('roles')
-          .insert({
-            nom: 'Administrateur',
-            description: 'Accès complet à l\'application',
-            couleur: 'violet'
-          })
-          .select()
-          .single();
-
-        if (roleError) {
-          console.error('Erreur création rôle:', roleError);
-          // Nettoyer
-          await supabase.from('organisations').delete().eq('id', orgData.id);
-          throw new Error('Impossible de créer le rôle administrateur.');
-        }
-        roleData = newRole;
-      }
-
       console.log('Rôle:', roleData);
 
       // Étape 3 : Créer l'utilisateur dans auth.users
@@ -114,7 +90,7 @@ export function useSignup() {
 
       if (userError) {
         console.error('Erreur création profil:', userError);
-        throw new Error('Impossible de créer le profil utilisateur.');
+        throw new Error(`Impossible de créer le profil utilisateur: ${userError.message || JSON.stringify(userError)}`);
       }
 
       console.log('Profil utilisateur créé:', userData);
@@ -130,7 +106,7 @@ export function useSignup() {
 
       if (linkError) {
         console.error('Erreur liaison auth:', linkError);
-        throw new Error('Impossible de finaliser la création du compte.');
+        throw new Error(`Impossible de finaliser la création du compte: ${linkError.message || JSON.stringify(linkError)}`);
       }
 
       console.log('Liaison auth créée avec succès');

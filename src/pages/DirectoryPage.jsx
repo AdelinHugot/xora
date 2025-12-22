@@ -967,7 +967,7 @@ const ContactsMapView = ({ contacts, onViewContact }) => {
   );
 };
 
-const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAddContact }) => {
+const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAddContact, initialStatusFilter = null }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("list");
   const [sortBy, setSortBy] = useState(null); // null, 'asc', 'desc'
@@ -976,7 +976,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
     origin: "",
     location: "",
     project: "",
-    status: "",
+    status: initialStatusFilter || "",
     dateAdded: { startDate: "", endDate: "" }
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -1287,7 +1287,7 @@ const DirectoryContactsCard = ({ filter = "all", onNavigate, contacts = [], onAd
   );
 };
 
-export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSidebar, filter = "all" }) {
+export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSidebar, filter = "all", statusFilter = null }) {
   const sidebarWidth = sidebarCollapsed ? 72 : 256;
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -1348,11 +1348,12 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
   };
 
   const pageTitle = filterTitles[filter] || "Tous les contacts";
+  const sidebarPageId = statusFilter ? "directory-leads" : `directory-${filter}`;
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
       <Sidebar
-        currentPage={`directory-${filter}`}
+        currentPage={sidebarPageId}
         onNavigate={onNavigate}
         initialCollapsed={sidebarCollapsed}
         onToggleCollapse={onToggleSidebar}
@@ -1376,7 +1377,7 @@ export default function DirectoryPage({ onNavigate, sidebarCollapsed, onToggleSi
               </div>
             </div>
           ) : (
-            <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} onAddContact={addContact} />
+            <DirectoryContactsCard filter={filter} onNavigate={onNavigate} contacts={mockContacts} onAddContact={addContact} initialStatusFilter={statusFilter} />
           )}
         </div>
       </main>

@@ -1,33 +1,41 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useOrgId } from './useOrgId';
 
-export function useContacts() {
+export function useContacts(pageSize = 20) {
+  const { orgId, loading: orgLoading } = useOrgId();
   const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!orgId);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchContacts();
-  }, []);
+    if (orgId) {
+      fetchContacts(1);
+    }
+  }, [pageSize, orgId]);
 
-  const fetchContacts = async () => {
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const fetchContacts = async (page = 1) => {
+    if (!orgId) return;
+
     try {
       setLoading(true);
+      setCurrentPage(page);
 
-      // Get current user's organization
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Utilisateur non authentifié');
-      }
+      // Get total count for pagination
+      const { count } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_organisation', orgId)
+        .is('supprime_le', null);
 
-      const { data: authData, error: authError } = await supabase
-        .from('utilisateurs_auth')
-        .select('id_organisation')
-        .eq('id_auth_user', user.id)
-        .single();
+      setTotalCount(count || 0);
 
-      if (authError) throw authError;
-      if (!authData) throw new Error('Organisation non trouvée');
+      // Calculate offset for pagination
+      const offset = (page - 1) * pageSize;
 
       const { data, error } = await supabase
         .from('contacts')
@@ -35,9 +43,10 @@ export function useContacts() {
           *,
           utilisateurs!contacts_agenceur_referent_fkey(id, prenom, nom)
         `)
-        .eq('id_organisation', authData.id_organisation)
+        .eq('id_organisation', orgId)
         .is('supprime_le', null)
-        .order('cree_le', { ascending: false });
+        .order('cree_le', { ascending: false })
+        .range(offset, offset + pageSize - 1);
 
       if (error) throw error;
 
@@ -126,5 +135,38 @@ export function useContacts() {
     }
   };
 
-  return { contacts, loading, error, addContact, updateContact, deleteContact, refetch: fetchContacts };
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      fetchContacts(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      fetchContacts(currentPage - 1);
+    }
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchContacts(page);
+    }
+  };
+
+  return {
+    contacts,
+    loading,
+    error,
+    addContact,
+    updateContact,
+    deleteContact,
+    refetch: () => fetchContacts(currentPage),
+    currentPage,
+    totalPages,
+    totalCount,
+    pageSize,
+    nextPage,
+    prevPage,
+    goToPage
+  };
 }

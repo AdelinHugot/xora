@@ -95,6 +95,12 @@ const GripVerticalIcon = () => (
   </svg>
 );
 
+const XIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M15 5L5 15M5 5l10 10" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const MessageIcon = () => <SearchIcon />;
 const NoteIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -393,7 +399,15 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [viewTaskId, setViewTaskId] = useState(null);
+  const [editTaskId, setEditTaskId] = useState(null);
+  const [editFormData, setEditFormData] = useState(null);
+  const menuRef = useRef(null);
   const pageSize = 10;
+
+  // Close menu when clicking outside
+  useOutsideClick(menuRef, () => setOpenMenuId(null));
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -427,6 +441,33 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
       setIsModalOpen(false);
     } catch (err) {
       alert("Erreur lors de la création de la tâche: " + err.message);
+    }
+  };
+
+  const handleViewTask = (taskId) => {
+    setViewTaskId(taskId);
+  };
+
+  const handleEditTask = (task) => {
+    setEditTaskId(task.id);
+    setEditFormData({
+      titre: task.title || "",
+      type: task.tag || "",
+      statut: task.status || "",
+      note: task.note || ""
+    });
+  };
+
+  const handleSaveEditTask = async () => {
+    try {
+      if (editFormData.statut !== undefined) {
+        await updateTacheStatus(editTaskId, editFormData.statut);
+      }
+      setEditTaskId(null);
+      setEditFormData(null);
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour:', err);
+      alert("Erreur lors de la mise à jour: " + err.message);
     }
   };
 
@@ -696,10 +737,46 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
                       </div>
 
                       {/* Actions */}
-                      <div className="flex justify-end">
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-neutral-400 hover:text-red-500">
+                      <div className="flex justify-end relative" ref={menuRef}>
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}
+                          className="text-neutral-400 hover:text-neutral-600 p-1"
+                        >
                           <MoreVerticalIcon />
                         </button>
+
+                        {/* Dropdown Menu */}
+                        {openMenuId === task.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-10 min-w-max">
+                            <button
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleEditTask(task);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 first:rounded-t-lg"
+                            >
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleViewTask(task.id);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                            >
+                              Voir
+                            </button>
+                            <button
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleDeleteTask(task.id);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                            >
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -722,6 +799,164 @@ export default function TasksMemoPage({ onNavigate, sidebarCollapsed, onToggleSi
             </div>
           </div>
         </div>
+
+        {/* View Task Modal */}
+        {viewTaskId && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-neutral-200 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-neutral-900">Détails de la tâche</h2>
+                <button
+                  onClick={() => setViewTaskId(null)}
+                  className="text-neutral-400 hover:text-neutral-600"
+                >
+                  <XIcon />
+                </button>
+              </div>
+
+              {(() => {
+                const task = mappedTaches.find(t => t.id === viewTaskId);
+                if (!task) return null;
+
+                return (
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Titre</label>
+                      <p className="text-sm text-neutral-900">{task.title || "-"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Type</label>
+                      <p className="text-sm text-neutral-900">{task.tag || "-"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Statut</label>
+                      <p className="text-sm text-neutral-900">{task.status || "-"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Client</label>
+                      <p className="text-sm text-neutral-900">{task.client || "-"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Projet</label>
+                      <p className="text-sm text-neutral-900">{task.project || "-"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Progression</label>
+                      <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600"
+                          style={{ width: `${task.progress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-neutral-500 mt-1">{task.progress}%</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Note</label>
+                      <p className="text-sm text-neutral-900">{task.note || "-"}</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-2">Échéance</label>
+                      <p className="text-sm text-neutral-900">{task.dueDate || "-"}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="p-6 border-t border-neutral-200">
+                <button
+                  onClick={() => setViewTaskId(null)}
+                  className="w-full px-4 py-2 rounded-lg border border-neutral-200 text-neutral-900 hover:bg-neutral-50 font-medium"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Task Modal */}
+        {editTaskId && editFormData && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-neutral-200 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-neutral-900">Modifier la tâche</h2>
+                <button
+                  onClick={() => {
+                    setEditTaskId(null);
+                    setEditFormData(null);
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600"
+                >
+                  <XIcon />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 mb-2">Titre</label>
+                  <input
+                    type="text"
+                    value={editFormData.titre}
+                    onChange={(e) => setEditFormData({ ...editFormData, titre: e.target.value })}
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 mb-2">Type</label>
+                  <input
+                    type="text"
+                    value={editFormData.type}
+                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 mb-2">Statut</label>
+                  <select
+                    value={editFormData.statut}
+                    onChange={(e) => setEditFormData({ ...editFormData, statut: e.target.value })}
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Sélectionner un statut</option>
+                    <option value="Non commencé">Non commencé</option>
+                    <option value="En cours">En cours</option>
+                    <option value="Terminé">Terminé</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 mb-2">Note</label>
+                  <textarea
+                    value={editFormData.note}
+                    onChange={(e) => setEditFormData({ ...editFormData, note: e.target.value })}
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="4"
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-neutral-200 flex gap-3">
+                <button
+                  onClick={() => {
+                    setEditTaskId(null);
+                    setEditFormData(null);
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg border border-neutral-200 text-neutral-900 hover:bg-neutral-50 font-medium"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveEditTask}
+                  className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

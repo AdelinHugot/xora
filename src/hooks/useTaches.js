@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useOrgId } from './useOrgId';
 
-export function useTaches(limit = null) {
+export function useTaches(pageSize = 50) {
+  const { orgId, loading: orgLoading } = useOrgId();
   const [taches, setTaches] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!orgId);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Mappings Statiques
   const DB_TO_UI_STATUS = {
@@ -39,72 +43,68 @@ export function useTaches(limit = null) {
     2: 'termine'
   };
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   useEffect(() => {
-    const fetchTaches = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    if (orgId) {
+      fetchTaches(1);
+    }
+  }, [pageSize, orgId]);
 
-        // Récupère l'utilisateur courant
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Utilisateur non authentifié');
+  const fetchTaches = async (page = 1) => {
+    if (!orgId) return;
 
-        // Récupère l'organisation de l'utilisateur
-        const { data: authData, error: authError } = await supabase
-          .from('utilisateurs_auth')
-          .select('id_organisation')
-          .eq('id_auth_user', user.id)
-          .single();
+    try {
+      setLoading(true);
+      setError(null);
+      setCurrentPage(page);
 
-        if (authError) throw authError;
-        if (!authData) throw new Error('Organisation non trouvée');
+      // Get total count for pagination
+      const { count } = await supabase
+        .from('taches')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_organisation', orgId)
+        .is('supprime_le', null);
 
-        // Récupère les tâches avec relations (contact et projet)
-        let query = supabase
-          .from('taches')
-          .select(
-            `id,
-            index_tache,
-            type,
-            titre,
-            tag,
-            id_projet,
-            id_contact,
-            nom_client,
-            nom_projet,
-            statut,
-            progression,
-            date_echeance,
-            note,
-            est_en_retard,
-            jours_retard,
-            a_alerte,
-            id_affecte_a,
-            cree_le,
-            modifie_le`
-          )
-          .eq('id_organisation', authData.id_organisation)
-          .is('supprime_le', null)
-          .order('index_tache', { ascending: true });
+      setTotalCount(count || 0);
 
-        if (limit) {
-          query = query.limit(limit);
-        }
+      // Calculate offset for pagination
+      const offset = (page - 1) * pageSize;
 
-        const { data: tachesData, error: tachesError } = await query;
+      // Récupère les tâches avec relations (contact et projet)
+      let query = supabase
+        .from('taches')
+        .select(
+          `id,
+          index_tache,
+          type,
+          titre,
+          tag,
+          id_projet,
+          id_contact,
+          nom_client,
+          nom_projet,
+          statut,
+          progression,
+          date_echeance,
+          note,
+          est_en_retard,
+          jours_retard,
+          a_alerte,
+          id_affecte_a,
+          cree_le,
+          modifie_le`
+        )
+        .eq('id_organisation', orgId)
+        .is('supprime_le', null)
+        .order('index_tache', { ascending: true })
+        .range(offset, offset + pageSize - 1);
 
-        if (tachesError) throw tachesError;
+      const { data: tachesData, error: tachesError } = await query;
 
-        console.log(`[useTaches] Fetched ${tachesData?.length || 0} tasks for organisation ${authData.id_organisation}`, tachesData);
+      if (tachesError) throw tachesError;
 
-        // DEBUG: Fetch ALL tasks without filters to see what's in the database
-        const { data: allTaches } = await supabase
-          .from('taches')
-          .select('id, titre, id_organisation, supprime_le, statut, index_tache, nom_client, nom_projet, id_contact, id_projet');
-
-        console.log(`[useTaches] DEBUG - Total tasks in database: ${allTaches?.length || 0}`, allTaches);
-
-        // Récupère les utilisateurs pour résoudre les noms des salariés assignés
+      // Récupère les utilisateurs pour résoudre les noms des salariés assignés
         const { data: utilisateurs } = await supabase
           .from('utilisateurs')
           .select('id, prenom, nom');
@@ -158,9 +158,6 @@ export function useTaches(limit = null) {
         setLoading(false);
       }
     };
-
-    fetchTaches();
-  }, [limit]);
 
   // Fonction pour mettre à jour l'étape d'une tâche (Dashboard logic)
   const updateTacheStage = async (tacheId, stageIndex) => {
@@ -355,6 +352,24 @@ export function useTaches(limit = null) {
     }
   };
 
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      fetchTaches(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      fetchTaches(currentPage - 1);
+    }
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchTaches(page);
+    }
+  };
+
   return {
     taches,
     loading,
@@ -363,9 +378,13 @@ export function useTaches(limit = null) {
     updateTacheStatus,
     deleteTache,
     createTache,
-    refetch: () => {
-      setLoading(true);
-      // Retrigger le useEffect
-    }
+    refetch: () => fetchTaches(currentPage),
+    currentPage,
+    totalPages,
+    totalCount,
+    pageSize,
+    nextPage,
+    prevPage,
+    goToPage
   };
 }

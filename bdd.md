@@ -14,8 +14,10 @@ CREATE TABLE public.articles (
   cree_le timestamp without time zone DEFAULT now(),
   modifie_le timestamp without time zone DEFAULT now(),
   publie_le timestamp without time zone,
+  id_organisation uuid,
   CONSTRAINT articles_pkey PRIMARY KEY (id),
-  CONSTRAINT articles_id_auteur_fkey FOREIGN KEY (id_auteur) REFERENCES public.utilisateurs(id)
+  CONSTRAINT articles_id_auteur_fkey FOREIGN KEY (id_auteur) REFERENCES public.utilisateurs(id),
+  CONSTRAINT articles_id_organisation_fkey FOREIGN KEY (id_organisation) REFERENCES public.organisations(id)
 );
 CREATE TABLE public.biens_immobiliers (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -149,6 +151,7 @@ CREATE TABLE public.integrations (
 );
 CREATE TABLE public.kpis (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id_organisation uuid NOT NULL,
   type_kpi character varying NOT NULL,
   label character varying NOT NULL,
   valeur numeric,
@@ -158,7 +161,8 @@ CREATE TABLE public.kpis (
   periode character varying,
   regle_calcul character varying,
   modifie_le timestamp without time zone DEFAULT now(),
-  CONSTRAINT kpis_pkey PRIMARY KEY (id)
+  CONSTRAINT kpis_pkey PRIMARY KEY (id),
+  CONSTRAINT kpis_id_organisation_fkey FOREIGN KEY (id_organisation) REFERENCES public.organisations(id)
 );
 CREATE TABLE public.logs_audit (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -190,6 +194,14 @@ CREATE TABLE public.organisations (
   modifie_le timestamp without time zone DEFAULT now(),
   siret character varying,
   numero_tva character varying,
+  kpi_ca_genere_valeur numeric DEFAULT 0,
+  kpi_ca_genere_objectif numeric DEFAULT 0,
+  kpi_marge_generee_valeur numeric DEFAULT 0,
+  kpi_marge_generee_objectif numeric DEFAULT 0,
+  kpi_taux_marge_valeur numeric DEFAULT 0,
+  kpi_taux_marge_objectif numeric DEFAULT 0,
+  kpi_taux_transformation_valeur numeric DEFAULT 0,
+  kpi_taux_transformation_objectif numeric DEFAULT 0,
   CONSTRAINT organisations_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.projets (
@@ -251,6 +263,10 @@ CREATE TABLE public.projets (
   modifie_le timestamp without time zone DEFAULT now(),
   supprime_le timestamp without time zone,
   id_organisation uuid,
+  kitchen_meubles_data jsonb DEFAULT '{}'::jsonb,
+  kitchen_ambiance_data jsonb DEFAULT '{}'::jsonb,
+  kitchen_discovery_data jsonb DEFAULT '{}'::jsonb,
+  articles_data jsonb DEFAULT '[]'::jsonb,
   CONSTRAINT projets_pkey PRIMARY KEY (id),
   CONSTRAINT projets_id_contact_fkey FOREIGN KEY (id_contact) REFERENCES public.contacts(id),
   CONSTRAINT projets_id_referent_fkey FOREIGN KEY (id_referent) REFERENCES public.utilisateurs(id),
@@ -315,6 +331,7 @@ CREATE TABLE public.taches (
   modifie_le timestamp without time zone DEFAULT now(),
   supprime_le timestamp without time zone,
   id_organisation uuid,
+  etape_tache character varying DEFAULT 'non_commence'::character varying,
   CONSTRAINT taches_pkey PRIMARY KEY (id),
   CONSTRAINT taches_id_projet_fkey FOREIGN KEY (id_projet) REFERENCES public.projets(id),
   CONSTRAINT taches_id_contact_fkey FOREIGN KEY (id_contact) REFERENCES public.contacts(id),

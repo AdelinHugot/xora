@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { MoreHorizontal, Plus, Eye } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import UserTopBar from "../components/UserTopBar";
+import AddTeamMemberModal from "../components/AddTeamMemberModal";
 import { useTeamMembers } from "../hooks/useTeamMembers";
 import { useOrganization } from "../hooks/useOrganization";
 import { formatPhoneForDisplay } from "../utils/dataTransformers";
@@ -48,7 +49,8 @@ function TabNavigation({ activeTab, onTabChange }) {
 function TeamsTabContent({ onNavigate }) {
   const [searchValue, setSearchValue] = useState("");
   const [filterJobType, setFilterJobType] = useState("");
-  const { teamMembers, loading, error } = useTeamMembers();
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const { teamMembers, loading, error, refetch } = useTeamMembers();
 
   // Get unique job types for the filter
   const uniqueJobTypes = [...new Set(teamMembers.map(member => member.roles?.nom).filter(Boolean))].sort();
@@ -74,6 +76,7 @@ function TeamsTabContent({ onNavigate }) {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-neutral-900">Liste des salariés</h3>
           <button
+            onClick={() => setAddModalOpen(true)}
             className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
           >
             <Plus className="size-4" />
@@ -191,6 +194,15 @@ function TeamsTabContent({ onNavigate }) {
           )}
         </div>
       </div>
+
+      {/* Add Team Member Modal */}
+      <AddTeamMemberModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={() => {
+          refetch();
+        }}
+      />
     </div>
   );
 }

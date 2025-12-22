@@ -1,32 +1,46 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useOrgId } from './useOrgId';
 
-export function useProjects(contactId = null) {
+export function useProjects(contactId = null, pageSize = 20) {
+  const { orgId, loading: orgLoading } = useOrgId();
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!orgId);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchProjects();
-  }, [contactId]);
+    if (orgId) {
+      fetchProjects(1);
+    }
+  }, [contactId, pageSize, orgId]);
 
-  const fetchProjects = async () => {
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const fetchProjects = async (page = 1) => {
+    if (!orgId) return;
+
     try {
       setLoading(true);
+      setCurrentPage(page);
 
-      // Get current user's organization
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Utilisateur non authentifié');
+      // Build count query
+      let countQuery = supabase
+        .from('projets')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_organisation', orgId)
+        .is('supprime_le', null);
+
+      if (contactId) {
+        countQuery = countQuery.eq('id_contact', contactId);
       }
 
-      const { data: authData, error: authError } = await supabase
-        .from('utilisateurs_auth')
-        .select('id_organisation')
-        .eq('id_auth_user', user.id)
-        .single();
+      const { count } = await countQuery;
+      setTotalCount(count || 0);
 
-      if (authError || !authData) throw new Error('Organisation non trouvée');
+      // Calculate offset for pagination
+      const offset = (page - 1) * pageSize;
 
       // Join with contacts to get client name, and with utilisateurs to get agent name
       let query = supabase
@@ -44,9 +58,10 @@ export function useProjects(contactId = null) {
             nom
           )
         `)
-        .eq('id_organisation', authData.id_organisation)
+        .eq('id_organisation', orgId)
         .is('supprime_le', null)
-        .order('cree_le', { ascending: false });
+        .order('cree_le', { ascending: false })
+        .range(offset, offset + pageSize - 1);
 
       if (contactId) {
         query = query.eq('id_contact', contactId);
@@ -122,5 +137,38 @@ export function useProjects(contactId = null) {
     }
   };
 
-  return { projects, loading, error, addProject, updateProject, deleteProject, refetch: fetchProjects };
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      fetchProjects(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      fetchProjects(currentPage - 1);
+    }
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchProjects(page);
+    }
+  };
+
+  return {
+    projects,
+    loading,
+    error,
+    addProject,
+    updateProject,
+    deleteProject,
+    refetch: () => fetchProjects(currentPage),
+    currentPage,
+    totalPages,
+    totalCount,
+    pageSize,
+    nextPage,
+    prevPage,
+    goToPage
+  };
 }
