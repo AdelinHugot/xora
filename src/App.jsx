@@ -812,6 +812,11 @@ function AppContent() {
     // User is automatically logged in after signup via Supabase auth
   };
 
+  const handleLogin = () => {
+    // User is automatically logged in via Supabase auth
+    // GlobalAuthContext will automatically update via auth listener
+  };
+
   const handleLogout = async () => {
     try {
       // Sign out from Supabase - GlobalAuthContext will automatically update via auth listener
