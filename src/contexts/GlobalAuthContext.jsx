@@ -32,7 +32,12 @@ export function GlobalAuthProvider({ children }) {
         console.log('[GlobalAuthContext] Starting auth initialization...');
 
         // 1. Get authenticated user
+        console.log('[GlobalAuthContext] Calling supabase.auth.getUser()...');
+        const startTime = Date.now();
         const authResponse = await supabase.auth.getUser();
+        const elapsed = Date.now() - startTime;
+        console.log('[GlobalAuthContext] supabase.auth.getUser() completed in', elapsed, 'ms');
+
         const authUser = authResponse?.data?.user;
         console.log('[GlobalAuthContext] Auth user:', authUser?.id);
 
