@@ -3,10 +3,6 @@ import { supabase } from '../lib/supabase';
 
 export const GlobalAuthContext = createContext(null);
 
-// Prevent duplicate initialization in Strict Mode
-let initializationInProgress = false;
-let initializationPromise = null;
-
 export function GlobalAuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [orgId, setOrgId] = useState(null);
@@ -14,22 +10,24 @@ export function GlobalAuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Use useRef for mounted so it persists across React Strict Mode remounts
+  // Use useRef for mounted and initialization tracking
   const mounted = useRef(true);
+  const initializationInProgress = useRef(false);
 
   useEffect(() => {
     // Reset mounted to true on each effect execution (including Strict Mode remounts)
     // This ensures that state updates from the first initialization can still complete
     mounted.current = true;
 
-    if (initializationInProgress) {
+    if (initializationInProgress.current) {
+      console.log('[GlobalAuthContext] Initialization already in progress, skipping...');
       return;
     }
 
     // Fetch user, org ID, and profile ONCE at app startup
     const initializeAuth = async () => {
       try {
-        initializationInProgress = true;
+        initializationInProgress.current = true;
         setLoading(true);
         console.log('[GlobalAuthContext] Starting auth initialization...');
 
@@ -88,7 +86,7 @@ export function GlobalAuthProvider({ children }) {
           setLoading(false);
         }
       } finally {
-        initializationInProgress = false;
+        initializationInProgress.current = false;
       }
     };
 
