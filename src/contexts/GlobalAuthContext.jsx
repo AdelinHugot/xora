@@ -31,12 +31,15 @@ export function GlobalAuthProvider({ children }) {
       try {
         initializationInProgress = true;
         setLoading(true);
+        console.log('[GlobalAuthContext] Starting auth initialization...');
 
         // 1. Get authenticated user
         const authResponse = await supabase.auth.getUser();
         const authUser = authResponse?.data?.user;
+        console.log('[GlobalAuthContext] Auth user:', authUser?.id);
 
         if (!authUser) {
+          console.log('[GlobalAuthContext] No auth user, setting to null');
           if (mounted.current) {
             setUser(null);
             setOrgId(null);
@@ -48,6 +51,7 @@ export function GlobalAuthProvider({ children }) {
         if (mounted.current) setUser(authUser);
 
         // 2. Get user's organization ID
+        console.log('[GlobalAuthContext] Fetching organization...');
         const { data: authData, error: authError } = await supabase
           .from('utilisateurs_auth')
           .select('id_organisation, id_utilisateur')
@@ -57,9 +61,11 @@ export function GlobalAuthProvider({ children }) {
         if (authError) throw authError;
         if (!authData) throw new Error('Organisation non trouvée');
 
+        console.log('[GlobalAuthContext] Org ID fetched:', authData.id_organisation);
         if (mounted.current) setOrgId(authData.id_organisation);
 
         // 3. Get user profile
+        console.log('[GlobalAuthContext] Fetching user profile...');
         const { data: profile, error: profileError } = await supabase
           .from('utilisateurs')
           .select('id, civilite, prenom, nom, email, telephone, url_avatar')
@@ -68,10 +74,12 @@ export function GlobalAuthProvider({ children }) {
 
         if (profileError) throw profileError;
 
+        console.log('[GlobalAuthContext] Profile fetched successfully');
         if (mounted.current) {
           setUserProfile(profile);
           setError(null);
           setLoading(false);
+          console.log('[GlobalAuthContext] Auth initialization complete!');
         }
       } catch (err) {
         console.error('[GlobalAuthContext] Auth error:', err);
